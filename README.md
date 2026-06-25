@@ -77,8 +77,10 @@ is gated by a flag, login/register are rate-limited, uploads are validated, and 
 container runs as a non-root user. See the Security section in [PLAN.md](./PLAN.md).
 
 ## Status
-Planning. Application code (M1–M6) not started yet; the dev container, CI/CD
-workflows, solution/test skeleton, and Unraid template are in place.
+Planning. The application code and production image (M1–M7) are not started yet;
+the dev container, CI/CD workflows, solution/test skeleton, and Unraid template are
+in place. The CI/CD workflows are intentionally scaffolding-aware — the frontend,
+docker-build, and image-publish steps are no-ops until their code lands (M6/M7).
 
 ## Built with Claude
 I use [Claude](https://claude.ai) (via Claude Code) to help design and build this
