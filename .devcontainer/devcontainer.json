@@ -1,0 +1,30 @@
+{
+  "name": "coffee-tracker",
+  // Build the dev image from .devcontainer/Dockerfile. Paths are relative to
+  // THIS file: "Dockerfile" => .devcontainer/Dockerfile; ".." => repo root,
+  // so the build context is the whole workspace.
+  "build": { "dockerfile": "Dockerfile", "context": ".." },
+  "features": {
+    // Node 22 + npm, layered on top of the .NET 10 SDK base image.
+    "ghcr.io/devcontainers/features/node:1": { "version": "22" }
+  },
+  // Dev runs the API HTTP-only on localhost:5000 (http://localhost is a secure
+  // context, so PWA service worker + camera still work) and ng serve on 4200.
+  // No 5001/HTTPS in the container — see the dev-HTTPS note in PLAN.md (M0).
+  "forwardPorts": [5000, 4200],
+  // Runs once from the workspace root after the container is created.
+  "postCreateCommand": "bash .devcontainer/post-create.sh",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-dotnettools.csdevkit",
+        "Angular.ng-template",
+        "ms-azuretools.vscode-docker"
+      ],
+      "settings": {
+        "dotnet.defaultSolution": "CoffeeTracker.sln"
+      }
+    }
+  },
+  "remoteUser": "vscode"
+}

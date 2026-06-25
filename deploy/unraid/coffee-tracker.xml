@@ -1,0 +1,43 @@
+<?xml version="1.0"?>
+<!--
+  Unraid container template for Coffee Tracker.
+  Install via the Unraid Docker GUI ("Add Container" -> paste this template, or
+  drop it in /boot/config/plugins/dockerMan/templates-user/). Pulls the public
+  GHCR image; all secrets/config are injected here at runtime (never baked in).
+  Put the container behind your reverse proxy for HTTPS — do not expose the port
+  directly to the internet.
+-->
+<Container version="2">
+  <Name>coffee-tracker</Name>
+  <Repository>ghcr.io/thomas-lg/coffee-tracker:latest</Repository>
+  <Registry>https://github.com/thomas-lg/coffee-tracker/pkgs/container/coffee-tracker</Registry>
+  <Network>bridge</Network>
+  <Privileged>false</Privileged>
+  <Support/>
+  <Project>https://github.com/thomas-lg/coffee-tracker</Project>
+  <Overview>
+    Self-hosted coffee catalog: rate coffees, snap a bag photo to auto-fill the
+    form (OCR), multi-user. Place behind a reverse proxy that terminates HTTPS.
+  </Overview>
+  <Category>Tools: Productivity:</Category>
+  <WebUI>http://[IP]:[PORT:8080]/</WebUI>
+  <Icon>https://raw.githubusercontent.com/thomas-lg/coffee-tracker/main/frontend/src/assets/icons/icon-192x192.png</Icon>
+
+  <!-- WebUI / app port (container listens on 8080) -->
+  <Config Name="WebUI Port" Target="8080" Default="8080" Mode="tcp" Description="HTTP port the app listens on. Map your reverse proxy to this." Type="Port" Display="always" Required="true" Mask="false">8080</Config>
+
+  <!-- Persistent data -->
+  <Config Name="Config (SQLite DB)" Target="/config" Default="/mnt/user/appdata/coffee-tracker/config" Mode="rw" Description="Holds coffee.db. Back this up before updating the image." Type="Path" Display="always" Required="true" Mask="false">/mnt/user/appdata/coffee-tracker/config</Config>
+  <Config Name="Photos" Target="/photos" Default="/mnt/user/appdata/coffee-tracker/photos" Mode="rw" Description="Uploaded coffee photos. Back this up before updating." Type="Path" Display="always" Required="true" Mask="false">/mnt/user/appdata/coffee-tracker/photos</Config>
+
+  <!-- Required secrets / config (injected at runtime; never in the image) -->
+  <Config Name="JWT Signing Key" Target="Jwt__Key" Default="" Mode="" Description="REQUIRED. Long random secret for signing auth tokens. The app refuses to start without a strong value. Generate e.g. with: openssl rand -base64 48" Type="Variable" Display="always" Required="true" Mask="true"/>
+  <Config Name="JWT Issuer" Target="Jwt__Issuer" Default="coffee-tracker" Mode="" Description="JWT issuer claim." Type="Variable" Display="advanced" Required="false" Mask="false">coffee-tracker</Config>
+  <Config Name="JWT Audience" Target="Jwt__Audience" Default="coffee-tracker" Mode="" Description="JWT audience claim." Type="Variable" Display="advanced" Required="false" Mask="false">coffee-tracker</Config>
+
+  <!-- Behaviour flags -->
+  <Config Name="Registration Enabled" Target="REGISTRATION_ENABLED" Default="false" Mode="" Description="When false (default) new signups are blocked — safe for a public/shared instance. Set true to allow registration; the first user to register becomes admin." Type="Variable" Display="always" Required="false" Mask="false">false</Config>
+
+  <!-- Reverse-proxy support: honor X-Forwarded-Proto so auth redirects / Secure cookies work behind TLS termination -->
+  <Config Name="Known Proxies" Target="ForwardedHeaders__KnownProxies" Default="" Mode="" Description="Comma-separated IPs of your reverse proxy (e.g. 172.17.0.1). Lets the app trust X-Forwarded-* headers." Type="Variable" Display="advanced" Required="false" Mask="false"/>
+</Container>
