@@ -1,0 +1,25 @@
+# --- .NET ---
+bin/
+obj/
+*.user
+appsettings.*.local.json
+*.db
+*.db-shm
+*.db-wal
+
+# --- Angular / Node ---
+node_modules/
+dist/
+.angular/
+npm-debug.log*
+
+# --- OCR / uploads (runtime data) ---
+photos/
+tessdata/*.traineddata
+
+# --- OS / editor ---
+.DS_Store
+Thumbs.db
+.vs/
+.idea/
+*.swp
