@@ -1,0 +1,26 @@
+# Keep the production build context small and free of dev/runtime junk.
+# (Mirrors .gitignore plus build outputs and the dev-only tooling.)
+.git
+.github
+.devcontainer
+
+# Build outputs
+**/bin
+**/obj
+dist
+.angular
+node_modules
+
+# Runtime data — never bake the dev SQLite DB or uploaded photos into the image
+*.db
+*.db-shm
+*.db-wal
+photos/
+tessdata/*.traineddata
+
+# Docs / editor
+README.md
+.vs
+.idea
+*.swp
+.DS_Store
