@@ -77,8 +77,16 @@ is gated by a flag, login/register are rate-limited, uploads are validated, and 
 container runs as a non-root user. See the Security section in [PLAN.md](./PLAN.md).
 
 ## Status
-Planning. Application code (M1–M6) not started yet; the dev container, CI/CD
-workflows, solution/test skeleton, and Unraid template are in place.
+Early days — no application code yet, but the groundwork is in place:
+
+- ✅ **M0** — dev container (reproducible .NET 10 + Node 22 + Tesseract toolchain)
+- ✅ **Scaffolding & CI/CD** — `ci.yml` (build/test) + `release.yml` (GHCR publish),
+  solution + xUnit test skeleton, `.dockerignore`, Unraid template
+- ⬜ **M1–M6** — backend, auth, reviews, OCR, Angular 22 PWA (application code)
+- ⬜ **M7** — production Docker image + local compose
+
+The CI/CD workflows are intentionally scaffolding-aware: the frontend,
+docker-build, and image-publish steps are no-ops until their code lands (M6/M7).
 
 ## Built with Claude
 I use [Claude](https://claude.ai) (via Claude Code) to help design and build this

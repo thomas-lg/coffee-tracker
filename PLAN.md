@@ -276,8 +276,11 @@ opens on a phone.
      `apt-get install -y tesseract-ocr tesseract-ocr-eng libtesseract-dev
      libleptonica-dev` (the **same** OCR set as dev), set
      `ENV TESSDATA_PREFIX=/usr/share/tesseract-ocr/5`, copy the published API +
-     Angular `dist` (served as same-origin static files). **Run as a non-root
-     user**; make only `/config` + `/photos` writable.
+     Angular `dist` (served as same-origin static files). Set
+     `ENV ASPNETCORE_URLS=http://+:8080` + `EXPOSE 8080` so the container listens
+     on **8080** — the port the Unraid template
+     ([`deploy/unraid/coffee-tracker.xml`](./deploy/unraid/coffee-tracker.xml))
+     maps. **Run as a non-root user**; make only `/config` + `/photos` writable.
 2. `Program.cs` prod wiring: configure **`UseForwardedHeaders`** (honor
    `X-Forwarded-Proto`, set `KnownProxies`/`KnownNetworks`) so auth redirects /
    Secure cookies behave behind the reverse proxy; enable **HSTS**. Run
@@ -289,9 +292,10 @@ opens on a phone.
    explicitly **not** how the NAS runs the app.
 4. `.dockerignore` keeps `node_modules`, `bin`/`obj`, `.git`, the dev SQLite DB,
    and photos out of the build context.
-5. **CI cleanup:** now that the `Dockerfile` exists, drop the `Dockerfile`
-   existence guard in `ci.yml` (the `check` step + the `if:` on `setup-buildx`
-   and `build-push`) so `docker-build` always builds for real.
+5. **CI/CD cleanup:** now that the `Dockerfile` exists, drop the `Dockerfile`
+   existence guard (the `check` step + the `if:` conditions) from **both**
+   workflows — `ci.yml`'s `docker-build` job and `release.yml`'s `image` job —
+   so they always build (and, for release, push) for real.
 
 **Verify:** `docker compose up --build`; hit the single container; OCR `/scan`
 works inside the image; data + photos persist across `down/up`.
