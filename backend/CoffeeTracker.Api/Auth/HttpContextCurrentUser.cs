@@ -12,4 +12,8 @@ public class HttpContextCurrentUser(IHttpContextAccessor accessor) : ICurrentUse
 {
     public string? Id =>
         accessor.HttpContext?.User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+    // TokenService emits the admin flag as the custom "isAdmin" claim ("true"/"false").
+    public bool IsAdmin =>
+        string.Equals(accessor.HttpContext?.User.FindFirstValue("isAdmin"), "true", StringComparison.OrdinalIgnoreCase);
 }
