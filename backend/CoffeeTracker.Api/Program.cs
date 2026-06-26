@@ -1,5 +1,7 @@
 using CoffeeTracker.Application;
 using CoffeeTracker.Infrastructure;
+using Microsoft.AspNetCore.Http.Features;
+using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.Extensions.FileProviders;
 
@@ -14,6 +16,14 @@ builder.Services.AddOpenApi();
 // Composition root: wire the hexagon's ports to their adapters.
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
+
+// Refuse oversized uploads at the request boundary rather than after buffering the
+// whole body. The storage adapter still enforces the exact MaxPhotoBytes cap; this
+// just bounds what the server will read in. Headroom covers multipart framing.
+var maxPhotoBytes = builder.Configuration.GetValue<long?>("Storage:MaxPhotoBytes") ?? 5 * 1024 * 1024;
+var maxRequestBytes = maxPhotoBytes + 64 * 1024;
+builder.Services.Configure<KestrelServerOptions>(o => o.Limits.MaxRequestBodySize = maxRequestBytes);
+builder.Services.Configure<FormOptions>(o => o.MultipartBodyLengthLimit = maxRequestBytes);
 
 var app = builder.Build();
 
@@ -48,6 +58,10 @@ app.UseStaticFiles(new StaticFileOptions
     FileProvider = new PhysicalFileProvider(photosPath),
     RequestPath = "/photos",
     ContentTypeProvider = photoContentTypes,
+    // These are user-uploaded files: stop browsers from MIME-sniffing a stored
+    // file into active content (e.g. a script disguised as an image).
+    OnPrepareResponse = ctx =>
+        ctx.Context.Response.Headers["X-Content-Type-Options"] = "nosniff",
 });
 
 app.UseAuthorization();

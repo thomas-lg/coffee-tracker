@@ -69,4 +69,20 @@ public class FileSystemPhotoStorage : IPhotoStorage
 
         return PhotoStorageResult.Stored($"{PublicPrefix}/{fileName}");
     }
+
+    public Task DeleteAsync(string relativePath, CancellationToken ct = default)
+    {
+        // Resolve by filename only, so a stored value can never point outside the
+        // photos directory (defence-in-depth even though we generate the names).
+        var fileName = Path.GetFileName(relativePath);
+        if (!string.IsNullOrEmpty(fileName))
+        {
+            var fullPath = Path.Combine(_directory, fileName);
+            // File.Delete is a no-op if the file is already gone, so this is
+            // idempotent and best-effort.
+            File.Delete(fullPath);
+        }
+
+        return Task.CompletedTask;
+    }
 }

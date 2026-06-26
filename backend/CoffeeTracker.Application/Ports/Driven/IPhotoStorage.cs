@@ -14,6 +14,14 @@ public interface IPhotoStorage
     /// the upload was rejected and nothing is written to disk.
     /// </summary>
     Task<PhotoStorageResult> SaveAsync(Stream content, string? contentType, long length, CancellationToken ct = default);
+
+    /// <summary>
+    /// Deletes a previously stored photo identified by the relative path returned
+    /// from <see cref="SaveAsync"/>. Best-effort and idempotent: a missing file is
+    /// not an error. Used to avoid orphaning files when a photo is replaced or its
+    /// coffee deleted.
+    /// </summary>
+    Task DeleteAsync(string relativePath, CancellationToken ct = default);
 }
 
 /// <summary>Outcome of a <see cref="IPhotoStorage.SaveAsync"/> call.</summary>
