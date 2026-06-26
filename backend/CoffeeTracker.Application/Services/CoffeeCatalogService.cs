@@ -12,6 +12,7 @@ namespace CoffeeTracker.Application.Services;
 public class CoffeeCatalogService(
     ICoffeeRepository repository,
     IPhotoStorage photoStorage,
+    ICurrentUser currentUser,
     TimeProvider timeProvider) : ICoffeeCatalogService
 {
     public async Task<IReadOnlyList<CoffeeResponseDto>> GetCatalogAsync(CancellationToken ct = default)
@@ -39,6 +40,7 @@ public class CoffeeCatalogService(
             ShopName = dto.ShopName,
             PurchaseUrl = dto.PurchaseUrl,
             CreatedAt = timeProvider.GetUtcNow(),
+            CreatedByUserId = currentUser.Id,
         };
 
         var saved = await repository.AddAsync(coffee, ct);
@@ -99,8 +101,10 @@ public class CoffeeCatalogService(
             return new SetPhotoResult(MapRejection(stored.Status), null);
         }
 
+        // RelativePath is guaranteed non-null once the status is Stored.
+        var newPath = stored.RelativePath!;
         var previousPath = coffee.PhotoPath;
-        coffee.PhotoPath = stored.RelativePath;
+        coffee.PhotoPath = newPath;
 
         try
         {
@@ -110,7 +114,7 @@ public class CoffeeCatalogService(
         {
             // The new file is already on disk but the path didn't get persisted;
             // delete it so a failed update doesn't leave an unreferenced orphan.
-            await photoStorage.DeleteAsync(stored.RelativePath, ct);
+            await photoStorage.DeleteAsync(newPath, ct);
             throw;
         }
 

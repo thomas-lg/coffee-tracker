@@ -64,7 +64,7 @@ port directly to the internet.
 | `Jwt__Issuer`                     | no       | `coffee-tracker` | JWT issuer claim.                                                           |
 | `Jwt__Audience`                   | no       | `coffee-tracker` | JWT audience claim.                                                         |
 | `REGISTRATION_ENABLED`            | no       | `false`          | When `false`, new signups are blocked (safe default for a public instance). Set `true` to allow registration; the first user becomes admin. |
-| `ForwardedHeaders__KnownProxies`  | no       | —                | IP(s) of your reverse proxy, so the app trusts `X-Forwarded-*` headers.     |
+| `ForwardedHeaders__KnownProxies`  | recommended | —             | Comma-separated IP(s) of your reverse proxy (SWAG/Authelia), so the app trusts `X-Forwarded-For`/`-Proto`. **Set this** behind a proxy — otherwise auth rate-limiting keys off the proxy's single IP and throttles all clients together. |
 
 ## Updating
 
@@ -92,8 +92,11 @@ Early days, but the backend foundation is now running:
   DataAnnotations validation, plus photo upload (`POST /api/coffees/{id}/photo`)
   behind an `IPhotoStorage` port — content-type allowlist, 5 MB cap, server-generated
   filenames — served read-only at `/photos`
-- ⬜ **M3–M6** — auth (Identity + JWT), reviews &
-  flavor tags, OCR snap-to-fill, Angular 22 PWA
+- ✅ **M3** — auth: ASP.NET Identity + JWT (`POST /api/auth/register` & `/login`),
+  `REGISTRATION_ENABLED` gate (first user becomes admin), password policy + lockout,
+  rate-limited auth endpoints, and **all** catalog endpoints now require a token.
+  `Jwt__Key` is required at startup (no baked default); created coffees record their owner
+- ⬜ **M4–M6** — reviews & flavor tags, OCR snap-to-fill, Angular 22 PWA
 - ⬜ **M7** — production Docker image + local compose
 
 The CI/CD workflows are intentionally scaffolding-aware: the frontend,
