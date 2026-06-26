@@ -3,6 +3,7 @@ using CoffeeTracker.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 
 namespace CoffeeTracker.Infrastructure;
 
@@ -33,6 +34,32 @@ public static class DependencyInjection
         // "database is locked" errors under our (light, single-instance) load.
         // journal_mode is persisted in the database file, so this only needs to run
         // once, but issuing it on every startup is cheap and idempotent.
-        await db.Database.ExecuteSqlRawAsync("PRAGMA journal_mode=WAL;", ct);
+        //
+        // PRAGMA journal_mode returns the resulting mode instead of throwing when
+        // it can't switch (e.g. the DB lives on a network filesystem that doesn't
+        // support WAL's shared-memory index), so read the result back and warn
+        // rather than silently believing WAL is on.
+        await db.Database.OpenConnectionAsync(ct);
+        try
+        {
+            using var command = db.Database.GetDbConnection().CreateCommand();
+            command.CommandText = "PRAGMA journal_mode=WAL;";
+            var resultingMode = await command.ExecuteScalarAsync(ct) as string;
+
+            if (!string.Equals(resultingMode, "wal", StringComparison.OrdinalIgnoreCase))
+            {
+                scope.ServiceProvider
+                    .GetRequiredService<ILoggerFactory>()
+                    .CreateLogger("CoffeeTracker.Infrastructure.Database")
+                    .LogWarning(
+                        "SQLite WAL mode was not enabled (journal_mode={JournalMode}); " +
+                        "the database file may be on a filesystem that does not support WAL.",
+                        resultingMode ?? "unknown");
+            }
+        }
+        finally
+        {
+            await db.Database.CloseConnectionAsync();
+        }
     }
 }
