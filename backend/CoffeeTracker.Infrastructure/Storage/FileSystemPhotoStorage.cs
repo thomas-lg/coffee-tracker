@@ -1,0 +1,72 @@
+using CoffeeTracker.Application.Ports.Driven;
+using Microsoft.Extensions.Options;
+
+namespace CoffeeTracker.Infrastructure.Storage;
+
+/// <summary>
+/// Driven adapter: stores uploaded photos on the local filesystem. Owns the
+/// storage-security decisions — content-type allowlist, size cap, and
+/// server-generated filenames — so no client-supplied path ever reaches disk.
+/// </summary>
+public class FileSystemPhotoStorage : IPhotoStorage
+{
+    /// <summary>
+    /// Allowed upload content types mapped to the extension we store them under.
+    /// The extension is derived from this map, never from the client filename.
+    /// </summary>
+    private static readonly IReadOnlyDictionary<string, string> AllowedTypes =
+        new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+        {
+            ["image/jpeg"] = ".jpg",
+            ["image/png"] = ".png",
+            ["image/webp"] = ".webp",
+        };
+
+    /// <summary>Request-relative path segment the photos directory is served under.</summary>
+    private const string PublicPrefix = "photos";
+
+    private readonly string _directory;
+    private readonly long _maxBytes;
+
+    public FileSystemPhotoStorage(IOptions<PhotoStorageOptions> options)
+    {
+        _directory = Path.GetFullPath(options.Value.PhotosPath);
+        _maxBytes = options.Value.MaxPhotoBytes;
+    }
+
+    public async Task<PhotoStorageResult> SaveAsync(Stream content, string? contentType, long length, CancellationToken ct = default)
+    {
+        if (contentType is null || !AllowedTypes.TryGetValue(contentType, out var extension))
+        {
+            return PhotoStorageResult.Rejected(PhotoStorageStatus.InvalidContentType);
+        }
+
+        if (length > _maxBytes)
+        {
+            return PhotoStorageResult.Rejected(PhotoStorageStatus.TooLarge);
+        }
+
+        Directory.CreateDirectory(_directory);
+
+        // Server-generated name: no client input contributes to the path, so
+        // directory traversal is structurally impossible.
+        var fileName = $"{Guid.NewGuid():N}{extension}";
+        var fullPath = Path.Combine(_directory, fileName);
+
+        await using (var file = new FileStream(fullPath, FileMode.CreateNew, FileAccess.Write, FileShare.None))
+        {
+            await content.CopyToAsync(file, ct);
+
+            // Guard against a stream that lied about its length (chunked uploads
+            // where Length was 0/unknown): if it overran the cap, discard it.
+            if (file.Length > _maxBytes)
+            {
+                file.Close();
+                File.Delete(fullPath);
+                return PhotoStorageResult.Rejected(PhotoStorageStatus.TooLarge);
+            }
+        }
+
+        return PhotoStorageResult.Stored($"{PublicPrefix}/{fileName}");
+    }
+}

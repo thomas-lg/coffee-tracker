@@ -7,15 +7,93 @@ namespace CoffeeTracker.Application.Services;
 
 /// <summary>
 /// Application service implementing the catalog driving port. Orchestrates the
-/// repository port and maps domain entities to response DTOs.
+/// repository and photo-storage ports and maps domain entities to/from DTOs.
 /// </summary>
-public class CoffeeCatalogService(ICoffeeRepository repository) : ICoffeeCatalogService
+public class CoffeeCatalogService(
+    ICoffeeRepository repository,
+    IPhotoStorage photoStorage,
+    TimeProvider timeProvider) : ICoffeeCatalogService
 {
     public async Task<IReadOnlyList<CoffeeResponseDto>> GetCatalogAsync(CancellationToken ct = default)
     {
         var coffees = await repository.GetAllAsync(ct);
         return coffees.Select(ToDto).ToList();
     }
+
+    public async Task<CoffeeResponseDto?> GetByIdAsync(int id, CancellationToken ct = default)
+    {
+        var coffee = await repository.GetByIdAsync(id, ct);
+        return coffee is null ? null : ToDto(coffee);
+    }
+
+    public async Task<CoffeeResponseDto> CreateAsync(CoffeeCreateDto dto, CancellationToken ct = default)
+    {
+        var coffee = new Coffee
+        {
+            Name = dto.Name,
+            Roaster = dto.Roaster,
+            Origin = dto.Origin,
+            RoastLevel = dto.RoastLevel,
+            Price = dto.Price,
+            DateBought = dto.DateBought,
+            ShopName = dto.ShopName,
+            PurchaseUrl = dto.PurchaseUrl,
+            CreatedAt = timeProvider.GetUtcNow(),
+        };
+
+        var saved = await repository.AddAsync(coffee, ct);
+        return ToDto(saved);
+    }
+
+    public async Task<bool> UpdateAsync(int id, CoffeeUpdateDto dto, CancellationToken ct = default)
+    {
+        var coffee = await repository.GetByIdAsync(id, ct);
+        if (coffee is null)
+        {
+            return false;
+        }
+
+        coffee.Name = dto.Name;
+        coffee.Roaster = dto.Roaster;
+        coffee.Origin = dto.Origin;
+        coffee.RoastLevel = dto.RoastLevel;
+        coffee.Price = dto.Price;
+        coffee.DateBought = dto.DateBought;
+        coffee.ShopName = dto.ShopName;
+        coffee.PurchaseUrl = dto.PurchaseUrl;
+
+        await repository.UpdateAsync(coffee, ct);
+        return true;
+    }
+
+    public Task<bool> DeleteAsync(int id, CancellationToken ct = default) =>
+        repository.DeleteAsync(id, ct);
+
+    public async Task<SetPhotoResult> SetPhotoAsync(int id, Stream content, string? contentType, long length, CancellationToken ct = default)
+    {
+        var coffee = await repository.GetByIdAsync(id, ct);
+        if (coffee is null)
+        {
+            return new SetPhotoResult(SetPhotoStatus.CoffeeNotFound, null);
+        }
+
+        var stored = await photoStorage.SaveAsync(content, contentType, length, ct);
+        if (stored.Status != PhotoStorageStatus.Stored)
+        {
+            return new SetPhotoResult(MapRejection(stored.Status), null);
+        }
+
+        coffee.PhotoPath = stored.RelativePath;
+        await repository.UpdateAsync(coffee, ct);
+        return new SetPhotoResult(SetPhotoStatus.Success, ToDto(coffee));
+    }
+
+    private static SetPhotoStatus MapRejection(PhotoStorageStatus status) => status switch
+    {
+        PhotoStorageStatus.InvalidContentType => SetPhotoStatus.InvalidContentType,
+        PhotoStorageStatus.TooLarge => SetPhotoStatus.TooLarge,
+        _ => SetPhotoStatus.InvalidContentType,
+    };
 
     private static CoffeeResponseDto ToDto(Coffee c) => new(
         c.Id,
