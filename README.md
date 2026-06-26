@@ -96,7 +96,10 @@ Early days, but the backend foundation is now running:
   `REGISTRATION_ENABLED` gate (first user becomes admin), password policy + lockout,
   rate-limited auth endpoints, and **all** catalog endpoints now require a token.
   `Jwt__Key` is required at startup (no baked default); created coffees record their owner
-- ⬜ **M4–M6** — reviews & flavor tags, OCR snap-to-fill, Angular 22 PWA
+- ✅ **M4** — reviews & ratings: one review per user per coffee (rating 1–5, tasting
+  notes, brew details, flavor tags), owner-only edit / owner-or-admin delete, a seeded
+  `GET /api/flavor-tags` set, and `averageRating`/`reviewCount` on every coffee response
+- ⬜ **M5–M6** — OCR snap-to-fill, Angular 22 PWA
 - ⬜ **M7** — production Docker image + local compose
 
 The CI/CD workflows are intentionally scaffolding-aware: the frontend,
