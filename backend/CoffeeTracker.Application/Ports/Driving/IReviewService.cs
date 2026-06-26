@@ -32,7 +32,6 @@ public enum ReviewStatus
 {
     Success,
     CoffeeNotFound,
-    AlreadyReviewed,
     ReviewNotFound,
     Forbidden,
     /// <summary>One or more referenced flavor-tag ids don't exist.</summary>

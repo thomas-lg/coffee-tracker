@@ -21,11 +21,16 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : IdentityDbCo
         // Required: lets Identity configure its own entity mappings before ours.
         base.OnModelCreating(builder);
 
-        // One review per user per coffee. The unique index is the source of truth
-        // (a backstop against races); the service also pre-checks.
+        // A user may rate a coffee many times over its life — multiple entries per
+        // (CoffeeId, UserId) are allowed. Keep a non-unique index so listing a
+        // coffee's reviews and a user's entries for it stay fast.
         builder.Entity<Review>()
-            .HasIndex(r => new { r.CoffeeId, r.UserId })
-            .IsUnique();
+            .HasIndex(r => new { r.CoffeeId, r.UserId });
+
+        // Optional context label for when the rating was taken.
+        builder.Entity<Review>()
+            .Property(r => r.Stage)
+            .HasMaxLength(40);
 
         // Deleting a coffee removes its reviews.
         builder.Entity<Review>()
