@@ -11,6 +11,9 @@ public interface IReviewService
     /// <summary>Lists a coffee's reviews. <see cref="ReviewListResult.Status"/> is CoffeeNotFound if the coffee is missing.</summary>
     Task<ReviewListResult> GetForCoffeeAsync(int coffeeId, CancellationToken ct = default);
 
+    /// <summary>Returns a single review (scoped to the coffee), or ReviewNotFound.</summary>
+    Task<ReviewResult> GetByIdAsync(int coffeeId, int reviewId, CancellationToken ct = default);
+
     /// <summary>Creates the caller's review for a coffee.</summary>
     Task<ReviewResult> CreateAsync(int coffeeId, ReviewCreateDto dto, CancellationToken ct = default);
 
@@ -32,6 +35,8 @@ public enum ReviewStatus
     AlreadyReviewed,
     ReviewNotFound,
     Forbidden,
+    /// <summary>One or more referenced flavor-tag ids don't exist.</summary>
+    InvalidTags,
 }
 
 /// <summary>Result of an operation that returns a single review on success.</summary>

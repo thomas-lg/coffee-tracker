@@ -69,6 +69,9 @@ public class ReviewServiceTests
 
         public int Count => _store.Count;
 
+        /// <summary>When set, AddAsync throws as if the unique index caught a race.</summary>
+        public bool ThrowDuplicateOnAdd { get; set; }
+
         public Task<IReadOnlyList<Review>> GetByCoffeeAsync(int coffeeId, CancellationToken ct = default)
             => Task.FromResult<IReadOnlyList<Review>>(_store.Values.Where(r => r.CoffeeId == coffeeId).ToList());
 
@@ -80,6 +83,11 @@ public class ReviewServiceTests
 
         public Task<Review> AddAsync(Review review, CancellationToken ct = default)
         {
+            if (ThrowDuplicateOnAdd)
+            {
+                throw new DuplicateReviewException();
+            }
+
             review.Id = _nextId++;
             _store[review.Id] = review;
             return Task.FromResult(review);
@@ -222,5 +230,74 @@ public class ReviewServiceTests
 
         Assert.Equal(ReviewStatus.CoffeeNotFound, result.Status);
         Assert.Null(result.Reviews);
+    }
+
+    [Fact]
+    public async Task CreateAsync_ReturnsInvalidTags_WhenAnyTagIdUnknown()
+    {
+        var repo = new FakeReviewRepo();
+        var service = NewService(repo);
+
+        var result = await service.CreateAsync(42, CreateDto(rating: 4, 1, 999));
+
+        Assert.Equal(ReviewStatus.InvalidTags, result.Status);
+        Assert.Equal(0, repo.Count);
+    }
+
+    [Fact]
+    public async Task CreateAsync_ReturnsAlreadyReviewed_WhenIndexCatchesRace()
+    {
+        // Pre-check passes (empty store) but AddAsync throws as the unique index would.
+        var repo = new FakeReviewRepo { ThrowDuplicateOnAdd = true };
+        var service = NewService(repo);
+
+        var result = await service.CreateAsync(42, CreateDto());
+
+        Assert.Equal(ReviewStatus.AlreadyReviewed, result.Status);
+    }
+
+    [Fact]
+    public async Task UpdateAsync_ReturnsInvalidTags_WhenAnyTagIdUnknown()
+    {
+        var repo = new FakeReviewRepo(OwnedReview(1, 42, "user-1"));
+        var service = NewService(repo, currentUserId: "user-1");
+
+        var result = await service.UpdateAsync(42, 1, new ReviewUpdateDto(3, null, null, null, null, [1, 999]));
+
+        Assert.Equal(ReviewStatus.InvalidTags, result.Status);
+    }
+
+    [Fact]
+    public async Task UpdateAsync_ClearsTags_WhenTagIdsNull()
+    {
+        var review = OwnedReview(1, 42, "user-1");
+        review.Tags.Add(new FlavorTag { Id = 1, Name = "Fruity" });
+        var service = NewService(new FakeReviewRepo(review), currentUserId: "user-1");
+
+        var result = await service.UpdateAsync(42, 1, new ReviewUpdateDto(3, null, null, null, null, null));
+
+        Assert.Equal(ReviewStatus.Success, result.Status);
+        Assert.Empty(result.Review!.Tags);
+    }
+
+    [Fact]
+    public async Task GetByIdAsync_ReturnsReview_WhenPresentOnCoffee()
+    {
+        var service = NewService(new FakeReviewRepo(OwnedReview(1, 42, "user-1")));
+
+        var result = await service.GetByIdAsync(42, 1);
+
+        Assert.Equal(ReviewStatus.Success, result.Status);
+        Assert.Equal(1, result.Review!.Id);
+    }
+
+    [Fact]
+    public async Task GetByIdAsync_ReturnsNotFound_WhenReviewBelongsToOtherCoffee()
+    {
+        var service = NewService(new FakeReviewRepo(OwnedReview(1, 42, "user-1")), coffees: new FakeCoffeeRepo(42, 99));
+
+        var result = await service.GetByIdAsync(99, 1);
+
+        Assert.Equal(ReviewStatus.ReviewNotFound, result.Status);
     }
 }

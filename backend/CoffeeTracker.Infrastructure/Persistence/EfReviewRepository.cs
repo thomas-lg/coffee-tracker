@@ -1,5 +1,6 @@
 using CoffeeTracker.Application.Ports.Driven;
 using CoffeeTracker.Domain;
+using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 
 namespace CoffeeTracker.Infrastructure.Persistence;
@@ -28,14 +29,36 @@ public class EfReviewRepository(AppDbContext db) : IReviewRepository
     public async Task<Review> AddAsync(Review review, CancellationToken ct = default)
     {
         db.Reviews.Add(review);
-        await db.SaveChangesAsync(ct);
+        try
+        {
+            await db.SaveChangesAsync(ct);
+        }
+        catch (DbUpdateException ex) when (IsUniqueViolation(ex))
+        {
+            // The (CoffeeId, UserId) unique index is the race backstop: two
+            // concurrent creates can both pass the service's pre-check. Translate
+            // the constraint violation into a typed result so the API returns 409
+            // rather than leaking a 500.
+            throw new DuplicateReviewException(ex);
+        }
+
         return review;
     }
 
-    // `review` is the tracked instance from GetByIdAsync, so SaveChanges alone
-    // persists the mutated scalars and the re-built Tags join rows.
+    // `review` MUST be the tracked instance returned by GetByIdAsync (which eager-
+    // loads Tags): SaveChanges alone then persists the mutated scalars and diffs the
+    // re-built Tags join rows. Passing a detached entity would silently no-op, and
+    // the re-added tags must also be tracked (see EfFlavorTagRepository.GetByIdsAsync)
+    // or EF would try to INSERT duplicate FlavorTags.
     public async Task UpdateAsync(Review review, CancellationToken ct = default) =>
         await db.SaveChangesAsync(ct);
+
+    // A UNIQUE constraint failure is SQLITE_CONSTRAINT (19) whose message names the
+    // failure as UNIQUE — distinguishing it from other code-19 violations (FK, NOT
+    // NULL, CHECK) so those still surface normally instead of as "already reviewed".
+    private static bool IsUniqueViolation(DbUpdateException ex) =>
+        ex.InnerException is SqliteException { SqliteErrorCode: 19 } sqlite
+        && sqlite.Message.Contains("UNIQUE", StringComparison.OrdinalIgnoreCase);
 
     public async Task DeleteAsync(Review review, CancellationToken ct = default)
     {

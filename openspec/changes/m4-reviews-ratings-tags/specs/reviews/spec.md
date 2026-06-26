@@ -28,14 +28,19 @@ The system SHALL let an authenticated user create one review for a coffee via `P
 - **WHEN** a user posts a review for a coffee id that does not exist
 - **THEN** the system SHALL respond with `404`
 
-### Requirement: Reviews for a coffee can be listed
+### Requirement: Reviews for a coffee can be listed and read individually
 
-The system SHALL return all reviews for a coffee via `GET /api/coffees/{coffeeId}/reviews`, each including its rating, notes, brew details, flavor tags, owner, and timestamps.
+The system SHALL return all reviews for a coffee via `GET /api/coffees/{coffeeId}/reviews`, and a single review via `GET /api/coffees/{coffeeId}/reviews/{id}`, each including its rating, notes, brew details, flavor tags, owner, and timestamps. A successful create SHALL return a `Location` header pointing at the new review's single-review URL.
 
 #### Scenario: Listing reviews
 
 - **WHEN** an authenticated user requests the reviews for an existing coffee
 - **THEN** the system SHALL respond with the list of that coffee's reviews
+
+#### Scenario: Reading a single review
+
+- **WHEN** an authenticated user requests an existing review by id under its coffee
+- **THEN** the system SHALL respond with that review
 
 #### Scenario: Listing reviews for a missing coffee
 
@@ -89,6 +94,12 @@ The system SHALL provide a fixed, seeded set of flavor tags via `GET /api/flavor
 
 - **WHEN** a review is created or updated referencing existing flavor-tag ids
 - **THEN** the system SHALL associate exactly those tags with the review
+
+#### Scenario: Unknown tag ids are rejected
+
+- **WHEN** a review is created or updated referencing a flavor-tag id that does not exist
+- **THEN** the system SHALL respond with `400`
+- **AND** SHALL NOT create or change the review
 
 ### Requirement: Review endpoints require authentication
 

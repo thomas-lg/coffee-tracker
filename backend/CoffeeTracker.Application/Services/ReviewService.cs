@@ -28,6 +28,14 @@ public class ReviewService(
         return new ReviewListResult(ReviewStatus.Success, list.Select(ToDto).ToList());
     }
 
+    public async Task<ReviewResult> GetByIdAsync(int coffeeId, int reviewId, CancellationToken ct = default)
+    {
+        var review = await reviews.GetByIdAsync(reviewId, ct);
+        return review is null || review.CoffeeId != coffeeId
+            ? new ReviewResult(ReviewStatus.ReviewNotFound, null)
+            : new ReviewResult(ReviewStatus.Success, ToDto(review));
+    }
+
     public async Task<ReviewResult> CreateAsync(int coffeeId, ReviewCreateDto dto, CancellationToken ct = default)
     {
         var userId = RequireUserId();
@@ -42,6 +50,12 @@ public class ReviewService(
             return new ReviewResult(ReviewStatus.AlreadyReviewed, null);
         }
 
+        var tags = await ResolveTagsAsync(dto.TagIds, ct);
+        if (tags is null)
+        {
+            return new ReviewResult(ReviewStatus.InvalidTags, null);
+        }
+
         var review = new Review
         {
             CoffeeId = coffeeId,
@@ -52,11 +66,20 @@ public class ReviewService(
             Grind = dto.Grind,
             Ratio = dto.Ratio,
             CreatedAt = timeProvider.GetUtcNow(),
-            Tags = await ResolveTagsAsync(dto.TagIds, ct),
+            Tags = tags,
         };
 
-        var saved = await reviews.AddAsync(review, ct);
-        return new ReviewResult(ReviewStatus.Success, ToDto(saved));
+        try
+        {
+            var saved = await reviews.AddAsync(review, ct);
+            return new ReviewResult(ReviewStatus.Success, ToDto(saved));
+        }
+        catch (DuplicateReviewException)
+        {
+            // Lost the race against a concurrent create that passed the same
+            // pre-check; the unique index caught it — report it as already-reviewed.
+            return new ReviewResult(ReviewStatus.AlreadyReviewed, null);
+        }
     }
 
     public async Task<ReviewResult> UpdateAsync(int coffeeId, int reviewId, ReviewUpdateDto dto, CancellationToken ct = default)
@@ -75,6 +98,12 @@ public class ReviewService(
             return new ReviewResult(ReviewStatus.Forbidden, null);
         }
 
+        var resolved = await ResolveTagsAsync(dto.TagIds, ct);
+        if (resolved is null)
+        {
+            return new ReviewResult(ReviewStatus.InvalidTags, null);
+        }
+
         review.Rating = dto.Rating;
         review.TastingNotes = dto.TastingNotes;
         review.BrewMethod = dto.BrewMethod;
@@ -82,7 +111,8 @@ public class ReviewService(
         review.Ratio = dto.Ratio;
         review.UpdatedAt = timeProvider.GetUtcNow();
 
-        var resolved = await ResolveTagsAsync(dto.TagIds, ct);
+        // Full replace (PUT semantics, consistent with the coffee update): the tag set
+        // becomes exactly dto.TagIds — null/empty clears all tags.
         review.Tags.Clear();
         foreach (var tag in resolved)
         {
@@ -119,15 +149,21 @@ public class ReviewService(
         return tags.Select(t => new FlavorTagDto(t.Id, t.Name)).ToList();
     }
 
-    private async Task<List<FlavorTag>> ResolveTagsAsync(IReadOnlyList<int>? tagIds, CancellationToken ct)
+    /// <summary>
+    /// Resolves the requested tag ids to entities. Returns null if any id doesn't
+    /// exist (so the caller can reject with "invalid tags" rather than silently
+    /// dropping them), or an empty list when no tags were requested.
+    /// </summary>
+    private async Task<List<FlavorTag>?> ResolveTagsAsync(IReadOnlyList<int>? tagIds, CancellationToken ct)
     {
-        if (tagIds is null || tagIds.Count == 0)
+        var requested = tagIds?.Distinct().ToList() ?? [];
+        if (requested.Count == 0)
         {
             return [];
         }
 
-        var resolved = await flavorTags.GetByIdsAsync(tagIds, ct);
-        return resolved.ToList();
+        var resolved = await flavorTags.GetByIdsAsync(requested, ct);
+        return resolved.Count == requested.Count ? resolved.ToList() : null;
     }
 
     private string RequireUserId() =>

@@ -18,6 +18,14 @@ public class ReviewsController(IReviewService reviews) : ControllerBase
         return result.Status == ReviewStatus.CoffeeNotFound ? NotFound() : Ok(result.Reviews);
     }
 
+    /// <summary>Returns a single review.</summary>
+    [HttpGet("{id:int}")]
+    public async Task<ActionResult<ReviewResponseDto>> GetReview(int coffeeId, int id, CancellationToken ct)
+    {
+        var result = await reviews.GetByIdAsync(coffeeId, id, ct);
+        return result.Status == ReviewStatus.Success ? Ok(result.Review) : NotFound();
+    }
+
     /// <summary>Creates the caller's review for a coffee.</summary>
     [HttpPost]
     public async Task<ActionResult<ReviewResponseDto>> CreateReview(int coffeeId, ReviewCreateDto dto, CancellationToken ct)
@@ -25,9 +33,10 @@ public class ReviewsController(IReviewService reviews) : ControllerBase
         var result = await reviews.CreateAsync(coffeeId, dto, ct);
         return result.Status switch
         {
-            ReviewStatus.Success => CreatedAtAction(nameof(GetReviews), new { coffeeId }, result.Review),
+            ReviewStatus.Success => CreatedAtAction(nameof(GetReview), new { coffeeId, id = result.Review!.Id }, result.Review),
             ReviewStatus.CoffeeNotFound => NotFound(),
             ReviewStatus.AlreadyReviewed => Problem(statusCode: StatusCodes.Status409Conflict, detail: "You have already reviewed this coffee."),
+            ReviewStatus.InvalidTags => Problem(statusCode: StatusCodes.Status400BadRequest, detail: "One or more flavor tag ids do not exist."),
             _ => throw new InvalidOperationException($"Unexpected create-review status: {result.Status}"),
         };
     }
@@ -42,6 +51,7 @@ public class ReviewsController(IReviewService reviews) : ControllerBase
             ReviewStatus.Success => Ok(result.Review),
             ReviewStatus.ReviewNotFound => NotFound(),
             ReviewStatus.Forbidden => Forbid(),
+            ReviewStatus.InvalidTags => Problem(statusCode: StatusCodes.Status400BadRequest, detail: "One or more flavor tag ids do not exist."),
             _ => throw new InvalidOperationException($"Unexpected update-review status: {result.Status}"),
         };
     }
