@@ -15,4 +15,6 @@ public record CoffeeResponseDto(
     string? PhotoPath,
     string? ShopName,
     string? PurchaseUrl,
-    DateTimeOffset CreatedAt);
+    DateTimeOffset CreatedAt,
+    double? AverageRating,
+    int ReviewCount);
