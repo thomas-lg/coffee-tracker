@@ -6,8 +6,16 @@
   "build": { "dockerfile": "Dockerfile", "context": ".." },
   "features": {
     // Node 22 + npm, layered on top of the .NET 10 SDK base image.
-    "ghcr.io/devcontainers/features/node:1": { "version": "22" }
+    "ghcr.io/devcontainers/features/node:1": { "version": "22" },
+    // Claude Code CLI (npm-based, so it needs the Node feature above).
+    "ghcr.io/anthropics/devcontainer-features/claude-code:1.0": {}
   },
+  // Reuse the host's Claude Code credentials so the CLI is logged in inside the
+  // container without re-running OAuth on every rebuild. Drop this line to log
+  // in interactively instead.
+  "mounts": [
+    "source=${localEnv:USERPROFILE}/.claude,target=/home/vscode/.claude,type=bind"
+  ],
   // Dev runs the API HTTP-only on localhost:5000 (http://localhost is a secure
   // context, so PWA service worker + camera still work) and ng serve on 4200.
   // No 5001/HTTPS in the container — see the dev-HTTPS note in PLAN.md (M0).
