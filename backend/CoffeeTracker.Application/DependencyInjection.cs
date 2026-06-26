@@ -13,6 +13,8 @@ public static class DependencyInjection
         services.TryAddSingleton(TimeProvider.System);
         services.AddScoped<ICoffeeCatalogService, CoffeeCatalogService>();
         services.AddScoped<IReviewService, ReviewService>();
+        services.AddScoped<ICoffeeScanService, CoffeeScanService>();
+        services.AddSingleton<ICoffeeLabelParser, CoffeeLabelParser>();
         return services;
     }
 }

@@ -65,6 +65,9 @@ port directly to the internet.
 | `Jwt__Audience`                   | no       | `coffee-tracker` | JWT audience claim.                                                         |
 | `REGISTRATION_ENABLED`            | no       | `false`          | When `false`, new signups are blocked (safe default for a public instance). Set `true` to allow registration; the first user becomes admin. |
 | `ForwardedHeaders__KnownProxies`  | recommended | —             | Comma-separated IP(s) of your reverse proxy (SWAG/Authelia), so the app trusts `X-Forwarded-For`/`-Proto`. **Set this** behind a proxy — otherwise auth rate-limiting keys off the proxy's single IP and throttles all clients together. |
+| `Ocr__Engine`                     | no       | `tesseract`      | OCR engine for `/api/coffees/scan`: `tesseract` (uses the bundled native libs) or `none` (disables scanning → 503). |
+| `Ocr__TessdataPath`               | no       | system path      | Override the tessdata directory; defaults to the `TESSDATA_PREFIX` system path (the image ships English data). |
+| `Ocr__Language`                   | no       | `eng`            | Tesseract language code. |
 
 ## Updating
 
@@ -99,7 +102,11 @@ Early days, but the backend foundation is now running:
 - ✅ **M4** — reviews & ratings: one review per user per coffee (rating 1–5, tasting
   notes, brew details, flavor tags), owner-only edit / owner-or-admin delete, a seeded
   `GET /api/flavor-tags` set, and `averageRating`/`reviewCount` on every coffee response
-- ⬜ **M5–M6** — OCR snap-to-fill, Angular 22 PWA
+- ✅ **M5** — snap-to-fill OCR (backend): `POST /api/coffees/scan` runs an image through
+  a swappable `IOcrService` (`Ocr:Engine` — Tesseract in the container/prod, `none` on
+  hosts without the native libs → 503) and a pure `CoffeeLabelParser` to return raw text
+  + best-effort fields + the stored photo path; does not create a coffee
+- ⬜ **M6** — Angular 22 PWA + snap-to-fill UX
 - ⬜ **M7** — production Docker image + local compose
 
 The CI/CD workflows are intentionally scaffolding-aware: the frontend,
