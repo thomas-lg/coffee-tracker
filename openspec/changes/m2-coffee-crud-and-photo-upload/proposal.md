@@ -8,8 +8,9 @@ M1 left the catalog read-only (`GET /api/coffees`). Milestone M2 in `PLAN.md` ma
 - Extend the driven repository port (`ICoffeeRepository`) with `GetByIdAsync`, `AddAsync`, `UpdateAsync`, `DeleteAsync`; implement them in the EF Core adapter.
 - Extend the driving port (`ICoffeeCatalogService`) with get-one / create / update / delete operations and a set-photo operation; the application service maps DTO ↔ domain entity and stamps `CreatedAt`.
 - Add full CRUD to `CoffeesController`: `GET /api/coffees/{id}`, `POST /api/coffees`, `PUT /api/coffees/{id}`, `DELETE /api/coffees/{id}` — all async, returning correct status codes (201 + Location on create, 404 on missing, 204 on delete).
-- Add a `photo-storage` capability: a driven `IPhotoStorage` port and a filesystem adapter that saves uploads to a configurable directory with a **content-type allowlist, size cap, and server-generated random filenames** (no user-controlled path → path-traversal-safe).
-- Add `POST /api/coffees/{id}/photo` (multipart `IFormFile`) → validate, store, set `PhotoPath`; serve stored images read-only under `/photos`.
+- Add a `photo-storage` capability: a driven `IPhotoStorage` port and a filesystem adapter that saves uploads to a configurable directory with a **content-type allowlist, size cap, and server-generated random filenames** (no user-controlled path → path-traversal-safe), and deletes files when replaced or when their coffee is deleted (no orphans).
+- Enforce the size cap at the **request boundary** (Kestrel `MaxRequestBodySize` + `MultipartBodyLengthLimit` derived from `MaxPhotoBytes`) so oversized uploads are refused before the whole body is buffered.
+- Add `POST /api/coffees/{id}/photo` (multipart `IFormFile`) → validate, store, set `PhotoPath`; serve stored images read-only under `/photos` with `X-Content-Type-Options: nosniff`.
 
 Out of scope (later milestones): authentication / ownership (`CreatedByUserId` stays null until M3), reviews & ratings (M4), OCR (M5).
 

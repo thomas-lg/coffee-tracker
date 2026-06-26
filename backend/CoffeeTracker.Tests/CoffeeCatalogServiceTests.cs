@@ -20,6 +20,9 @@ public class CoffeeCatalogServiceTests
         private readonly Dictionary<int, Coffee> _store = new();
         private int _nextId = 1;
 
+        /// <summary>When set, UpdateAsync throws — to exercise failure paths.</summary>
+        public bool ThrowOnUpdate { get; set; }
+
         public InMemoryCoffeeRepository(params Coffee[] seed)
         {
             foreach (var c in seed)
@@ -45,6 +48,11 @@ public class CoffeeCatalogServiceTests
 
         public Task UpdateAsync(Coffee coffee, CancellationToken ct = default)
         {
+            if (ThrowOnUpdate)
+            {
+                throw new InvalidOperationException("simulated update failure");
+            }
+
             _store[coffee.Id] = coffee;
             return Task.CompletedTask;
         }
@@ -56,11 +64,18 @@ public class CoffeeCatalogServiceTests
     private sealed class FakePhotoStorage(PhotoStorageResult result) : IPhotoStorage
     {
         public int SaveCalls { get; private set; }
+        public List<string> Deleted { get; } = [];
 
         public Task<PhotoStorageResult> SaveAsync(Stream content, string? contentType, long length, CancellationToken ct = default)
         {
             SaveCalls++;
             return Task.FromResult(result);
+        }
+
+        public Task DeleteAsync(string relativePath, CancellationToken ct = default)
+        {
+            Deleted.Add(relativePath);
+            return Task.CompletedTask;
         }
     }
 
@@ -193,6 +208,30 @@ public class CoffeeCatalogServiceTests
     }
 
     [Fact]
+    public async Task DeleteAsync_RemovesPhotoFile_WhenCoffeeHasOne()
+    {
+        var coffee = SampleCoffee();
+        coffee.PhotoPath = "photos/old.jpg";
+        var storage = new FakePhotoStorage(PhotoStorageResult.Stored("photos/x.jpg"));
+        var service = NewService(new InMemoryCoffeeRepository(coffee), storage);
+
+        await service.DeleteAsync(7);
+
+        Assert.Equal(["photos/old.jpg"], storage.Deleted);
+    }
+
+    [Fact]
+    public async Task DeleteAsync_DoesNotTouchStorage_WhenNoPhoto()
+    {
+        var storage = new FakePhotoStorage(PhotoStorageResult.Stored("photos/x.jpg"));
+        var service = NewService(new InMemoryCoffeeRepository(SampleCoffee()), storage);
+
+        await service.DeleteAsync(7);
+
+        Assert.Empty(storage.Deleted);
+    }
+
+    [Fact]
     public async Task SetPhotoAsync_ReturnsNotFound_AndSkipsStorage_WhenCoffeeMissing()
     {
         var storage = new FakePhotoStorage(PhotoStorageResult.Stored("photos/x.jpg"));
@@ -217,6 +256,44 @@ public class CoffeeCatalogServiceTests
         Assert.Equal("photos/abc.jpg", result.Coffee!.PhotoPath);
         var reloaded = await service.GetByIdAsync(7);
         Assert.Equal("photos/abc.jpg", reloaded!.PhotoPath);
+    }
+
+    [Fact]
+    public async Task SetPhotoAsync_DeletesPreviousPhoto_WhenReplacing()
+    {
+        var coffee = SampleCoffee();
+        coffee.PhotoPath = "photos/old.jpg";
+        var storage = new FakePhotoStorage(PhotoStorageResult.Stored("photos/new.jpg"));
+        var service = NewService(new InMemoryCoffeeRepository(coffee), storage);
+
+        await service.SetPhotoAsync(7, Stream.Null, "image/jpeg", 10);
+
+        Assert.Equal(["photos/old.jpg"], storage.Deleted);
+    }
+
+    [Fact]
+    public async Task SetPhotoAsync_DeletesNothing_OnFirstPhoto()
+    {
+        var storage = new FakePhotoStorage(PhotoStorageResult.Stored("photos/new.jpg"));
+        var service = NewService(new InMemoryCoffeeRepository(SampleCoffee()), storage);
+
+        await service.SetPhotoAsync(7, Stream.Null, "image/jpeg", 10);
+
+        Assert.Empty(storage.Deleted);
+    }
+
+    [Fact]
+    public async Task SetPhotoAsync_DeletesNewFile_WhenPersistFails()
+    {
+        var repo = new InMemoryCoffeeRepository(SampleCoffee()) { ThrowOnUpdate = true };
+        var storage = new FakePhotoStorage(PhotoStorageResult.Stored("photos/new.jpg"));
+        var service = NewService(repo, storage);
+
+        await Assert.ThrowsAsync<InvalidOperationException>(
+            () => service.SetPhotoAsync(7, Stream.Null, "image/jpeg", 10));
+
+        // The just-stored file must not be left orphaned when the DB update fails.
+        Assert.Equal(["photos/new.jpg"], storage.Deleted);
     }
 
     [Theory]
