@@ -9,6 +9,13 @@ namespace CoffeeTracker.Application.Ports.Driving;
 /// </summary>
 public interface IAuthService
 {
+    /// <summary>
+    /// Whether open registration is currently allowed. Exposed so an anonymous
+    /// client (the login page) can show/hide the register option before signing in,
+    /// without the API layer reaching into Infrastructure's registration options.
+    /// </summary>
+    bool RegistrationEnabled { get; }
+
     /// <summary>Registers a user (subject to the registration flag and password policy).</summary>
     Task<AuthResult> RegisterAsync(RegisterDto dto, CancellationToken ct = default);
 
