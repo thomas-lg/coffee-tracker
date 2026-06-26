@@ -41,32 +41,47 @@ public partial class CoffeeLabelParser : ICoffeeLabelParser
         return new ScannedCoffeeDto(
             Name: name,
             Roaster: roaster,
-            Origin: FindEarliest(text, Origins),
+            Origin: FindKeyword(lines, Origins),
             // Normalize "Medium Dark" → "Medium-Dark" so the value is canonical
             // regardless of which spelling the label used.
-            RoastLevel: FindEarliest(text, RoastLevels)?.Replace(' ', '-'),
+            RoastLevel: FindKeyword(lines, RoastLevels)?.Replace(' ', '-'),
             Weight: FindWeight(text));
     }
 
-    // The keyword that appears EARLIEST in the text (by position, not array order),
-    // matched on whole-word boundaries. Plain index scanning avoids compiling a
-    // throwaway regex per keyword on every call. Ties go to the earlier array entry,
-    // so a longer canonical roast ("Medium-Dark") beats its substring ("Medium").
-    private static string? FindEarliest(string text, string[] keywords)
+    // Picks the keyword that looks most like a *label* rather than prose: it prefers
+    // a match on the shortest line (fewest words — a labelled "Ethiopia" / "Medium
+    // Roast" line beats a country/roast word buried in a tasting-note sentence like
+    // "notes of brazil nut, dark chocolate"). Ties break by earliest line, then
+    // earliest position, then array order — so a longer canonical roast
+    // ("Medium-Dark") still beats its substring ("Medium") at the same spot.
+    // Whole-word matching is plain index scanning (no per-keyword regex compile).
+    private static string? FindKeyword(IReadOnlyList<string> lines, string[] keywords)
     {
         string? best = null;
-        var bestIndex = int.MaxValue;
+        var bestScore = (Words: int.MaxValue, Line: int.MaxValue, Pos: int.MaxValue);
         foreach (var keyword in keywords)
         {
-            var index = IndexOfWord(text, keyword);
-            if (index >= 0 && index < bestIndex)
+            for (var lineIndex = 0; lineIndex < lines.Count; lineIndex++)
             {
-                bestIndex = index;
-                best = keyword;
+                var pos = IndexOfWord(lines[lineIndex], keyword);
+                if (pos < 0)
+                {
+                    continue;
+                }
+
+                var score = (WordCount(lines[lineIndex]), lineIndex, pos);
+                if (score.CompareTo(bestScore) < 0)
+                {
+                    bestScore = score;
+                    best = keyword;
+                }
             }
         }
         return best;
     }
+
+    private static int WordCount(string line) =>
+        line.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries).Length;
 
     // Case-insensitive whole-word IndexOf: the match must not be flanked by letters
     // or digits (so "Java" doesn't match inside "JavaScript", "India" not "Indiana").

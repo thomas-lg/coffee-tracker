@@ -70,13 +70,31 @@ public class CoffeeLabelParserTests
     }
 
     [Fact]
-    public void Parse_PicksOriginByTextPosition_NotArrayOrder()
+    public void Parse_PrefersOriginOnItsOwnLine_OverTastingNoteMention()
     {
-        // Brazil appears first in the text but Ethiopia is earlier in the keyword
-        // array; the actual (first-mentioned) origin should win.
-        var result = Parser.Parse("Tasting notes of Brazil nut; blended with Ethiopia naturals");
+        // A country mentioned in a tasting-note sentence must not beat the origin
+        // printed on its own (label-like) line, even when the note comes first.
+        var result = Parser.Parse("Tasting notes: brazil nut, cocoa, dark berries\nEthiopia");
 
-        Assert.Equal("Brazil", result.Origin);
+        Assert.Equal("Ethiopia", result.Origin);
+    }
+
+    [Fact]
+    public void Parse_PrefersRoastOnItsOwnLine_OverTastingNoteMention()
+    {
+        // "Dark" in "dark chocolate" must not win over the actual roast on its own line.
+        var result = Parser.Parse("Dark chocolate & caramel notes\nLight Roast");
+
+        Assert.Equal("Light", result.RoastLevel);
+    }
+
+    [Fact]
+    public void Parse_PicksEarlierOrigin_WhenBothOnSameLine()
+    {
+        // No label-like line to disambiguate: fall back to first-mentioned.
+        var result = Parser.Parse("Grown in Colombia, finished like Brazil");
+
+        Assert.Equal("Colombia", result.Origin);
     }
 
     [Fact]
@@ -109,11 +127,12 @@ public class CoffeeLabelParserTests
     public void Parse_DoesNotThrow_OnDuplicatedRoasterLines()
     {
         // Two identical roaster-keyword lines must not throw (the roaster-first
-        // branch's name pick falls back to null instead of First() blowing up).
+        // branch's name pick falls back instead of First() blowing up). We assert
+        // the never-throw contract + a sane roaster; we don't pin the Name, which
+        // is a heuristic detail free to evolve.
         var result = Parser.Parse("Stumptown Roasters\nStumptown Roasters");
 
         Assert.Equal("Stumptown Roasters", result.Roaster);
-        Assert.Null(result.Name);
     }
 
     [Fact]

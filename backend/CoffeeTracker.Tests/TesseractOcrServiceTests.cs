@@ -8,8 +8,9 @@ namespace CoffeeTracker.Tests;
 // IsAvailable + tessdata-path resolution are pure (no native libs), so they're
 // testable on CI. The actual OCR (ReadAsync → native Tesseract) is exercised in
 // the container/prod, not here.
-// Disables parallelism with any future test that reads TESSDATA_PREFIX, since one
-// case here mutates that process-global env var.
+// One case here mutates the process-global TESSDATA_PREFIX. Tagging this class into
+// a named collection serializes it against any *other* class that opts into the same
+// collection — add that tag to future tests that read TESSDATA_PREFIX to avoid races.
 [Collection("env-mutating")]
 public class TesseractOcrServiceTests : IDisposable
 {
