@@ -15,23 +15,37 @@ namespace CoffeeTracker.Infrastructure.Ocr;
 public class TesseractOcrService(IOptions<OcrOptions> options, ILogger<TesseractOcrService> logger) : IOcrService
 {
     private readonly string _tessdataPath = ResolveTessdataPath(options.Value);
+    private readonly string _languageCode = NormalizeLanguageCode(options.Value.Language);
     private readonly Language _language = MapLanguage(options.Value.Language);
 
-    // Cheap, side-effect-free check: if the tessdata directory is missing the engine
-    // can't load, so report unavailable without trying to construct it.
-    public bool IsAvailable => Directory.Exists(_tessdataPath);
+    // Cheap, side-effect-free check: the engine can only load if the language's
+    // traineddata file is actually present, so check the file (not just the dir) —
+    // a present-but-empty tessdata mount shouldn't report available and then fail
+    // after we've already stored the photo.
+    public bool IsAvailable => File.Exists(Path.Combine(_tessdataPath, $"{_languageCode}.traineddata"));
 
     public async Task<OcrResult> ReadAsync(Stream image, CancellationToken ct = default)
     {
         try
         {
-            using var buffer = new MemoryStream();
-            await image.CopyToAsync(buffer, ct);
+            // Avoid an extra copy: the caller passes a buffered MemoryStream, and
+            // Pix.Image needs a byte[]. Read it directly when we can.
+            byte[] bytes;
+            if (image is MemoryStream ms)
+            {
+                bytes = ms.ToArray();
+            }
+            else
+            {
+                using var buffer = new MemoryStream();
+                await image.CopyToAsync(buffer, ct);
+                bytes = buffer.ToArray();
+            }
 
             // The Tesseract engine isn't safe for concurrent Process calls and
             // snap-to-fill is infrequent, so build a fresh engine per request.
             using var engine = new Engine(_tessdataPath, _language, EngineMode.Default);
-            using var pix = TesseractOCR.Pix.Image.LoadFromMemory(buffer.ToArray());
+            using var pix = TesseractOCR.Pix.Image.LoadFromMemory(bytes);
             using var page = engine.Process(pix);
             return OcrResult.Read(page.Text ?? string.Empty);
         }
@@ -61,5 +75,12 @@ public class TesseractOcrService(IOptions<OcrOptions> options, ILogger<Tesseract
         "eng" or "en" or null or "" => Language.English,
         // M5 standardizes on English; other packs are a future addition.
         _ => Language.English,
+    };
+
+    // The tessdata filename stem for the configured language (matches MapLanguage).
+    private static string NormalizeLanguageCode(string? language) => language?.ToLowerInvariant() switch
+    {
+        "eng" or "en" or null or "" => "eng",
+        _ => "eng",
     };
 }

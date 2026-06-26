@@ -81,6 +81,9 @@ public class CoffeeScanServiceTests
         Assert.Equal("Ethiopia", result.Response.Parsed.Origin);
         Assert.Equal("Medium", result.Response.Parsed.RoastLevel);
         Assert.Equal("340g", result.Response.Parsed.Weight);
+        // The stored photo is RETAINED on success (reused as the coffee image),
+        // not deleted like the OCR-failure path.
+        Assert.Empty(storage.Deleted);
     }
 
     [Fact]

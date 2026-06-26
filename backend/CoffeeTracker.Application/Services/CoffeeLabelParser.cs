@@ -32,17 +32,60 @@ public partial class CoffeeLabelParser : ICoffeeLabelParser
             .Where(l => l.Length > 0)
             .ToList();
 
+        var (name, roaster) = FindNameAndRoaster(lines);
         return new ScannedCoffeeDto(
-            Name: FindName(lines),
-            Roaster: FindRoaster(lines),
-            Origin: FindFirst(text, Origins),
-            RoastLevel: FindFirst(text, RoastLevels),
+            Name: name,
+            Roaster: roaster,
+            Origin: FindEarliest(text, Origins),
+            RoastLevel: FindEarliest(text, RoastLevels),
             Weight: FindWeight(text));
     }
 
-    // First keyword (case-insensitive, whole-word) that appears anywhere in the text.
-    private static string? FindFirst(string text, string[] keywords) =>
-        keywords.FirstOrDefault(k => Regex.IsMatch(text, $@"\b{Regex.Escape(k)}\b", RegexOptions.IgnoreCase));
+    // The keyword that appears EARLIEST in the text (by position, not array order),
+    // matched on whole-word boundaries. Plain index scanning avoids compiling a
+    // throwaway regex per keyword on every call. Ties go to the earlier array entry,
+    // so a longer canonical roast ("Medium-Dark") beats its substring ("Medium").
+    private static string? FindEarliest(string text, string[] keywords)
+    {
+        string? best = null;
+        var bestIndex = int.MaxValue;
+        foreach (var keyword in keywords)
+        {
+            var index = IndexOfWord(text, keyword);
+            if (index >= 0 && index < bestIndex)
+            {
+                bestIndex = index;
+                best = keyword;
+            }
+        }
+        return best;
+    }
+
+    // Case-insensitive whole-word IndexOf: the match must not be flanked by letters
+    // or digits (so "Java" doesn't match inside "JavaScript", "India" not "Indiana").
+    private static int IndexOfWord(string text, string word)
+    {
+        var start = 0;
+        while (start <= text.Length - word.Length)
+        {
+            var index = text.IndexOf(word, start, StringComparison.OrdinalIgnoreCase);
+            if (index < 0)
+            {
+                return -1;
+            }
+
+            var leftOk = index == 0 || !char.IsLetterOrDigit(text[index - 1]);
+            var end = index + word.Length;
+            var rightOk = end == text.Length || !char.IsLetterOrDigit(text[end]);
+            if (leftOk && rightOk)
+            {
+                return index;
+            }
+
+            start = index + 1;
+        }
+        return -1;
+    }
 
     private static string? FindWeight(string text)
     {
@@ -63,29 +106,37 @@ public partial class CoffeeLabelParser : ICoffeeLabelParser
         return $"{amount}{unit}";
     }
 
-    // Name: the first "prominent" line (letters, not just a number/weight/roast word).
-    private static string? FindName(IReadOnlyList<string> lines) =>
-        lines.FirstOrDefault(IsProminent);
-
-    // Roaster: prefer a line that looks like a roaster ("... Roasters/Coffee/Roastery"),
-    // otherwise the second prominent line (bags usually lead with the coffee name).
-    private static string? FindRoaster(IReadOnlyList<string> lines)
+    // Best-effort name/roaster from the prominent lines (those with real words;
+    // weight-bearing lines stay eligible since bags often print the weight beside
+    // the name). Two layouts:
+    //  - A line looks like a roaster ("… Roasters/Coffee/Roastery") AND there's
+    //    another line to be the name → that line is the roaster, the name comes
+    //    from a different line (handles roaster-first bags like "Stumptown … / Hair Bender").
+    //  - Otherwise the first prominent line is the name and the roaster is a later
+    //    prominent line (or null) — never the same line, so a lone "Blue Bottle
+    //    Coffee" is a name, not a duplicated roaster.
+    private static (string? Name, string? Roaster) FindNameAndRoaster(IReadOnlyList<string> lines)
     {
-        var byKeyword = lines.FirstOrDefault(l => RoasterKeywordRegex().IsMatch(l));
-        if (byKeyword is not null)
+        var prominent = lines.Where(IsProminent).ToList();
+        if (prominent.Count == 0)
         {
-            return byKeyword;
+            return (null, null);
         }
 
-        return lines.Where(IsProminent).Skip(1).FirstOrDefault();
+        var roasterLine = prominent.FirstOrDefault(l => RoasterKeywordRegex().IsMatch(l));
+        if (roasterLine is not null && prominent.Count > 1)
+        {
+            var name = prominent.First(l => l != roasterLine);
+            return (name, roasterLine);
+        }
+
+        var firstName = prominent[0];
+        var roaster = prominent.Skip(1).FirstOrDefault(l => RoasterKeywordRegex().IsMatch(l))
+                      ?? prominent.Skip(1).FirstOrDefault();
+        return (firstName, roaster);
     }
 
-    private static bool IsProminent(string line)
-    {
-        var letters = line.Count(char.IsLetter);
-        // Has real words and isn't dominated by a weight/roast token.
-        return letters >= 3 && !WeightRegex().IsMatch(line);
-    }
+    private static bool IsProminent(string line) => line.Count(char.IsLetter) >= 3;
 
     [GeneratedRegex(@"(?<amount>\d+(?:[.,]\d+)?)\s*(?<unit>kg|g|gr|grams|oz|lbs|lb)\b", RegexOptions.IgnoreCase)]
     private static partial Regex WeightRegex();

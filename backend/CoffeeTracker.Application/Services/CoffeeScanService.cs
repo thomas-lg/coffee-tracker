@@ -52,6 +52,8 @@ public class CoffeeScanService(
     {
         PhotoStorageStatus.InvalidContentType => ScanStatus.InvalidContentType,
         PhotoStorageStatus.TooLarge => ScanStatus.TooLarge,
-        _ => ScanStatus.InvalidContentType,
+        // Stored isn't a rejection; any new status must be mapped deliberately
+        // rather than silently masquerading as an invalid content type.
+        _ => throw new ArgumentOutOfRangeException(nameof(status), status, "Unexpected photo storage rejection."),
     };
 }

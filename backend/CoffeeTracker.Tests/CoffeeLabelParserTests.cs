@@ -13,8 +13,9 @@ public class CoffeeLabelParserTests
     [Theory]
     [InlineData("Light Roast", "Light")]
     [InlineData("MEDIUM roast", "Medium")]
-    [InlineData("Dark roast espresso blend", "Espresso")] // Espresso ranks before Dark
-    [InlineData("Medium-Dark", "Medium-Dark")] // longest match wins over Medium/Dark
+    [InlineData("Dark roast, espresso blend", "Dark")] // earliest in the text wins
+    [InlineData("Espresso · dark", "Espresso")]        // ... and here Espresso is first
+    [InlineData("Medium-Dark", "Medium-Dark")]         // longest match wins on a tie
     public void Parse_ExtractsRoastLevel(string text, string expected) =>
         Assert.Equal(expected, Parser.Parse(text).RoastLevel);
 
@@ -66,5 +67,42 @@ public class CoffeeLabelParserTests
         Assert.Equal("Medium", result.RoastLevel);
         Assert.Equal("Ethiopia", result.Origin);
         Assert.Equal("340g", result.Weight);
+    }
+
+    [Fact]
+    public void Parse_PicksOriginByTextPosition_NotArrayOrder()
+    {
+        // Brazil appears first in the text but Ethiopia is earlier in the keyword
+        // array; the actual (first-mentioned) origin should win.
+        var result = Parser.Parse("Tasting notes of Brazil nut; blended with Ethiopia naturals");
+
+        Assert.Equal("Brazil", result.Origin);
+    }
+
+    [Fact]
+    public void Parse_PrefersLongerRoast_OnTie()
+    {
+        Assert.Equal("Medium-Dark", Parser.Parse("Roast: Medium-Dark").RoastLevel);
+    }
+
+    [Fact]
+    public void Parse_KeepsNameLine_EvenWhenItCarriesAWeight()
+    {
+        // Net weight on the same line as the name must not drop the name.
+        var result = Parser.Parse("Ethiopia Natural 250g\nSunrise Roastery");
+
+        Assert.Equal("Ethiopia Natural 250g", result.Name);
+        Assert.Equal("250g", result.Weight);
+    }
+
+    [Fact]
+    public void Parse_DoesNotDuplicateNameAsRoaster()
+    {
+        // Single prominent line that also matches the roaster keyword: it's the
+        // name; roaster stays null rather than echoing it.
+        var result = Parser.Parse("Blue Bottle Coffee");
+
+        Assert.Equal("Blue Bottle Coffee", result.Name);
+        Assert.Null(result.Roaster);
     }
 }
