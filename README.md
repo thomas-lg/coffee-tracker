@@ -92,8 +92,11 @@ Early days, but the backend foundation is now running:
   DataAnnotations validation, plus photo upload (`POST /api/coffees/{id}/photo`)
   behind an `IPhotoStorage` port — content-type allowlist, 5 MB cap, server-generated
   filenames — served read-only at `/photos`
-- ⬜ **M3–M6** — auth (Identity + JWT), reviews &
-  flavor tags, OCR snap-to-fill, Angular 22 PWA
+- ✅ **M3** — auth: ASP.NET Identity + JWT (`POST /api/auth/register` & `/login`),
+  `REGISTRATION_ENABLED` gate (first user becomes admin), password policy + lockout,
+  rate-limited auth endpoints, and **all** catalog endpoints now require a token.
+  `Jwt__Key` is required at startup (no baked default); created coffees record their owner
+- ⬜ **M4–M6** — reviews & flavor tags, OCR snap-to-fill, Angular 22 PWA
 - ⬜ **M7** — production Docker image + local compose
 
 The CI/CD workflows are intentionally scaffolding-aware: the frontend,
