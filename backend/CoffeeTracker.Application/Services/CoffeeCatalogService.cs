@@ -66,8 +66,24 @@ public class CoffeeCatalogService(
         return true;
     }
 
-    public Task<bool> DeleteAsync(int id, CancellationToken ct = default) =>
-        repository.DeleteAsync(id, ct);
+    public async Task<bool> DeleteAsync(int id, CancellationToken ct = default)
+    {
+        var coffee = await repository.GetByIdAsync(id, ct);
+        if (coffee is null)
+        {
+            return false;
+        }
+
+        await repository.DeleteAsync(id, ct);
+
+        // Remove the associated photo so deleting a coffee doesn't orphan its file.
+        if (coffee.PhotoPath is not null)
+        {
+            await photoStorage.DeleteAsync(coffee.PhotoPath, ct);
+        }
+
+        return true;
+    }
 
     public async Task<SetPhotoResult> SetPhotoAsync(int id, Stream content, string? contentType, long length, CancellationToken ct = default)
     {
@@ -83,8 +99,28 @@ public class CoffeeCatalogService(
             return new SetPhotoResult(MapRejection(stored.Status), null);
         }
 
+        var previousPath = coffee.PhotoPath;
         coffee.PhotoPath = stored.RelativePath;
-        await repository.UpdateAsync(coffee, ct);
+
+        try
+        {
+            await repository.UpdateAsync(coffee, ct);
+        }
+        catch
+        {
+            // The new file is already on disk but the path didn't get persisted;
+            // delete it so a failed update doesn't leave an unreferenced orphan.
+            await photoStorage.DeleteAsync(stored.RelativePath, ct);
+            throw;
+        }
+
+        // Replacing an existing photo: drop the previous file so it doesn't linger.
+        // (Stored names are random GUIDs, so the new path is always distinct.)
+        if (previousPath is not null)
+        {
+            await photoStorage.DeleteAsync(previousPath, ct);
+        }
+
         return new SetPhotoResult(SetPhotoStatus.Success, ToDto(coffee));
     }
 
