@@ -1,0 +1,35 @@
+namespace CoffeeTracker.Domain;
+
+/// <summary>
+/// A coffee a user has bought and wants to catalog. The domain entity is the
+/// hexagon core — it carries no persistence or framework concerns.
+/// </summary>
+public class Coffee
+{
+    public int Id { get; set; }
+
+    public required string Name { get; set; }
+
+    public required string Roaster { get; set; }
+
+    public required string Origin { get; set; }
+
+    /// <summary>Free-text roast level (e.g. "Light", "Medium", "Dark").</summary>
+    public required string RoastLevel { get; set; }
+
+    public decimal Price { get; set; }
+
+    public DateOnly DateBought { get; set; }
+
+    /// <summary>Relative path to the bag photo, set in M2; null until a photo is uploaded.</summary>
+    public string? PhotoPath { get; set; }
+
+    public string? ShopName { get; set; }
+
+    public string? PurchaseUrl { get; set; }
+
+    /// <summary>Id of the user who created the record. Populated from the auth token in M3.</summary>
+    public string? CreatedByUserId { get; set; }
+
+    public DateTimeOffset CreatedAt { get; set; }
+}
