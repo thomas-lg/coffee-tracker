@@ -12,6 +12,7 @@ public static class DependencyInjection
     {
         services.TryAddSingleton(TimeProvider.System);
         services.AddScoped<ICoffeeCatalogService, CoffeeCatalogService>();
+        services.AddScoped<IReviewService, ReviewService>();
         return services;
     }
 }

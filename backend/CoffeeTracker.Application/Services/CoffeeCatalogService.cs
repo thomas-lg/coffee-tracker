@@ -23,7 +23,7 @@ public class CoffeeCatalogService(
 
     public async Task<CoffeeResponseDto?> GetByIdAsync(int id, CancellationToken ct = default)
     {
-        var coffee = await repository.GetByIdAsync(id, ct);
+        var coffee = await repository.GetWithStatsByIdAsync(id, ct);
         return coffee is null ? null : ToDto(coffee);
     }
 
@@ -44,7 +44,8 @@ public class CoffeeCatalogService(
         };
 
         var saved = await repository.AddAsync(coffee, ct);
-        return ToDto(saved);
+        // A brand-new coffee has no reviews yet.
+        return ToDto(saved, averageRating: null, reviewCount: 0);
     }
 
     public async Task<bool> UpdateAsync(int id, CoffeeUpdateDto dto, CancellationToken ct = default)
@@ -125,7 +126,9 @@ public class CoffeeCatalogService(
             await photoStorage.DeleteAsync(previousPath, ct);
         }
 
-        return new SetPhotoResult(SetPhotoStatus.Success, ToDto(coffee));
+        // Re-read with aggregates so the response carries accurate rating stats.
+        var withStats = await repository.GetWithStatsByIdAsync(id, ct);
+        return new SetPhotoResult(SetPhotoStatus.Success, withStats is null ? ToDto(coffee, null, 0) : ToDto(withStats));
     }
 
     private static SetPhotoStatus MapRejection(PhotoStorageStatus status) => status switch
@@ -135,7 +138,9 @@ public class CoffeeCatalogService(
         _ => SetPhotoStatus.InvalidContentType,
     };
 
-    private static CoffeeResponseDto ToDto(Coffee c) => new(
+    private static CoffeeResponseDto ToDto(CoffeeWithStats s) => ToDto(s.Coffee, s.AverageRating, s.ReviewCount);
+
+    private static CoffeeResponseDto ToDto(Coffee c, double? averageRating, int reviewCount) => new(
         c.Id,
         c.Name,
         c.Roaster,
@@ -146,5 +151,7 @@ public class CoffeeCatalogService(
         c.PhotoPath,
         c.ShopName,
         c.PurchaseUrl,
-        c.CreatedAt);
+        c.CreatedAt,
+        averageRating,
+        reviewCount);
 }

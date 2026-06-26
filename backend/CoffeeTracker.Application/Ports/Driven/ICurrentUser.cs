@@ -9,4 +9,7 @@ public interface ICurrentUser
 {
     /// <summary>The authenticated user's id, or null when the request is anonymous.</summary>
     string? Id { get; }
+
+    /// <summary>Whether the authenticated user is an administrator (from the token's claim).</summary>
+    bool IsAdmin { get; }
 }

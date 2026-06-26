@@ -22,6 +22,8 @@ public static class DependencyInjection
         services.Configure<PhotoStorageOptions>(configuration.GetSection(PhotoStorageOptions.SectionName));
 
         services.AddScoped<ICoffeeRepository, EfCoffeeRepository>();
+        services.AddScoped<IReviewRepository, EfReviewRepository>();
+        services.AddScoped<IFlavorTagRepository, EfFlavorTagRepository>();
         services.AddSingleton<IPhotoStorage, FileSystemPhotoStorage>();
 
         AddAuth(services, configuration);

@@ -32,9 +32,16 @@ public class CoffeeCatalogServiceTests
             }
         }
 
-        public Task<IReadOnlyList<Coffee>> GetAllAsync(CancellationToken ct = default)
-            => Task.FromResult<IReadOnlyList<Coffee>>(
-                _store.Values.OrderByDescending(c => c.Id).ToList());
+        public Task<IReadOnlyList<CoffeeWithStats>> GetAllAsync(CancellationToken ct = default)
+            => Task.FromResult<IReadOnlyList<CoffeeWithStats>>(
+                _store.Values.OrderByDescending(c => c.Id)
+                    .Select(c => new CoffeeWithStats(c, null, 0)).ToList());
+
+        public Task<CoffeeWithStats?> GetWithStatsByIdAsync(int id, CancellationToken ct = default)
+            => Task.FromResult(_store.TryGetValue(id, out var c) ? new CoffeeWithStats(c, null, 0) : null);
+
+        public Task<bool> ExistsAsync(int id, CancellationToken ct = default)
+            => Task.FromResult(_store.ContainsKey(id));
 
         public Task<Coffee?> GetByIdAsync(int id, CancellationToken ct = default)
             => Task.FromResult(_store.TryGetValue(id, out var c) ? c : null);
@@ -84,9 +91,10 @@ public class CoffeeCatalogServiceTests
         public override DateTimeOffset GetUtcNow() => now;
     }
 
-    private sealed class FakeCurrentUser(string? id) : ICurrentUser
+    private sealed class FakeCurrentUser(string? id, bool isAdmin = false) : ICurrentUser
     {
         public string? Id { get; } = id;
+        public bool IsAdmin { get; } = isAdmin;
     }
 
     private static CoffeeCatalogService NewService(
