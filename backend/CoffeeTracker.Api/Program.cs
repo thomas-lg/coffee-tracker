@@ -1,5 +1,7 @@
 using CoffeeTracker.Application;
 using CoffeeTracker.Infrastructure;
+using Microsoft.AspNetCore.StaticFiles;
+using Microsoft.Extensions.FileProviders;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -30,6 +32,23 @@ if (app.Environment.IsDevelopment())
         options.RoutePrefix = string.Empty;
     });
 }
+
+// Serve uploaded coffee photos read-only at /photos. Resolved the same way the
+// storage adapter resolves Storage:PhotosPath, so writes and reads agree.
+var photosPath = Path.GetFullPath(
+    builder.Configuration.GetValue<string>("Storage:PhotosPath") ?? "photos");
+Directory.CreateDirectory(photosPath);
+
+// Ensure .webp is served with the right content type (older default providers omit it).
+var photoContentTypes = new FileExtensionContentTypeProvider();
+photoContentTypes.Mappings[".webp"] = "image/webp";
+
+app.UseStaticFiles(new StaticFileOptions
+{
+    FileProvider = new PhysicalFileProvider(photosPath),
+    RequestPath = "/photos",
+    ContentTypeProvider = photoContentTypes,
+});
 
 app.UseAuthorization();
 

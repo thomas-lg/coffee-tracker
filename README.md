@@ -88,7 +88,11 @@ Early days, but the backend foundation is now running:
   auto-migrate on startup), Swagger in dev, **hexagonal architecture** (Domain ←
   Application ← {Infrastructure, Api}) so controllers depend only on application
   ports, never on EF Core
-- ⬜ **M2–M6** — coffee CRUD + photo upload, auth (Identity + JWT), reviews &
+- ✅ **M2** — coffee CRUD (`GET`/`POST`/`PUT`/`DELETE /api/coffees`) with
+  DataAnnotations validation, plus photo upload (`POST /api/coffees/{id}/photo`)
+  behind an `IPhotoStorage` port — content-type allowlist, 5 MB cap, server-generated
+  filenames — served read-only at `/photos`
+- ⬜ **M3–M6** — auth (Identity + JWT), reviews &
   flavor tags, OCR snap-to-fill, Angular 22 PWA
 - ⬜ **M7** — production Docker image + local compose
 

@@ -15,4 +15,58 @@ public class CoffeesController(ICoffeeCatalogService catalog) : ControllerBase
         var coffees = await catalog.GetCatalogAsync(ct);
         return Ok(coffees);
     }
+
+    /// <summary>Returns a single coffee by id.</summary>
+    [HttpGet("{id:int}")]
+    public async Task<ActionResult<CoffeeResponseDto>> GetCoffee(int id, CancellationToken ct)
+    {
+        var coffee = await catalog.GetByIdAsync(id, ct);
+        return coffee is null ? NotFound() : Ok(coffee);
+    }
+
+    /// <summary>Creates a new coffee.</summary>
+    [HttpPost]
+    public async Task<ActionResult<CoffeeResponseDto>> CreateCoffee(CoffeeCreateDto dto, CancellationToken ct)
+    {
+        var created = await catalog.CreateAsync(dto, ct);
+        return CreatedAtAction(nameof(GetCoffee), new { id = created.Id }, created);
+    }
+
+    /// <summary>Updates an existing coffee.</summary>
+    [HttpPut("{id:int}")]
+    public async Task<IActionResult> UpdateCoffee(int id, CoffeeUpdateDto dto, CancellationToken ct)
+    {
+        var found = await catalog.UpdateAsync(id, dto, ct);
+        return found ? NoContent() : NotFound();
+    }
+
+    /// <summary>Deletes a coffee.</summary>
+    [HttpDelete("{id:int}")]
+    public async Task<IActionResult> DeleteCoffee(int id, CancellationToken ct)
+    {
+        var found = await catalog.DeleteAsync(id, ct);
+        return found ? NoContent() : NotFound();
+    }
+
+    /// <summary>Uploads a photo for a coffee and stores its relative path.</summary>
+    [HttpPost("{id:int}/photo")]
+    public async Task<ActionResult<CoffeeResponseDto>> UploadPhoto(int id, IFormFile file, CancellationToken ct)
+    {
+        if (file is null || file.Length == 0)
+        {
+            return BadRequest("A non-empty image file is required.");
+        }
+
+        await using var stream = file.OpenReadStream();
+        var result = await catalog.SetPhotoAsync(id, stream, file.ContentType, file.Length, ct);
+
+        return result.Status switch
+        {
+            SetPhotoStatus.Success => Ok(result.Coffee),
+            SetPhotoStatus.CoffeeNotFound => NotFound(),
+            SetPhotoStatus.InvalidContentType => BadRequest("Unsupported image type. Allowed: JPEG, PNG, WebP."),
+            SetPhotoStatus.TooLarge => StatusCode(StatusCodes.Status413PayloadTooLarge, "The uploaded image is too large."),
+            _ => BadRequest(),
+        };
+    }
 }
