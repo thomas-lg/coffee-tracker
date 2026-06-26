@@ -84,12 +84,19 @@ public class CoffeeCatalogServiceTests
         public override DateTimeOffset GetUtcNow() => now;
     }
 
+    private sealed class FakeCurrentUser(string? id) : ICurrentUser
+    {
+        public string? Id { get; } = id;
+    }
+
     private static CoffeeCatalogService NewService(
         ICoffeeRepository repo,
-        IPhotoStorage? storage = null)
+        IPhotoStorage? storage = null,
+        string? currentUserId = null)
         => new(
             repo,
             storage ?? new FakePhotoStorage(PhotoStorageResult.Stored("photos/x.jpg")),
+            new FakeCurrentUser(currentUserId),
             new FixedTimeProvider(FixedNow));
 
     private static Coffee SampleCoffee(int id = 7) => new()
@@ -160,6 +167,18 @@ public class CoffeeCatalogServiceTests
         Assert.Equal("Local Roastery", created.ShopName);
         Assert.Equal("https://example.com/coffee", created.PurchaseUrl);
         Assert.Null(created.PhotoPath);
+    }
+
+    [Fact]
+    public async Task CreateAsync_StampsCurrentUserAsCreator()
+    {
+        var repo = new InMemoryCoffeeRepository();
+        var service = NewService(repo, currentUserId: "user-123");
+
+        var created = await service.CreateAsync(SampleCreateDto());
+
+        var stored = await repo.GetByIdAsync(created.Id);
+        Assert.Equal("user-123", stored!.CreatedByUserId);
     }
 
     [Fact]

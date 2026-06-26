@@ -1,6 +1,9 @@
 using CoffeeTracker.Application.Ports.Driven;
+using CoffeeTracker.Application.Ports.Driving;
+using CoffeeTracker.Infrastructure.Identity;
 using CoffeeTracker.Infrastructure.Persistence;
 using CoffeeTracker.Infrastructure.Storage;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -20,7 +23,45 @@ public static class DependencyInjection
 
         services.AddScoped<ICoffeeRepository, EfCoffeeRepository>();
         services.AddSingleton<IPhotoStorage, FileSystemPhotoStorage>();
+
+        AddAuth(services, configuration);
         return services;
+    }
+
+    /// <summary>
+    /// Registers ASP.NET Identity (UserManager only — this API authenticates with
+    /// JWTs, not cookies) and the auth driving-port adapter. JWT bearer *validation*
+    /// is wired in the Api project (it owns the HTTP pipeline); token *issuance* and
+    /// user management live here.
+    /// </summary>
+    private static void AddAuth(IServiceCollection services, IConfiguration configuration)
+    {
+        services.AddIdentityCore<AppUser>(options =>
+            {
+                options.User.RequireUniqueEmail = true;
+
+                // Password policy. Length is the main lever; the character-class
+                // requirements are relaxed since a long passphrase is stronger.
+                options.Password.RequiredLength = 8;
+                options.Password.RequireNonAlphanumeric = false;
+                options.Password.RequireUppercase = false;
+                options.Password.RequireLowercase = false;
+                options.Password.RequireDigit = false;
+
+                // Lockout: throttle brute force at the account level (rate limiting
+                // throttles it at the endpoint level — see the Api project).
+                options.Lockout.MaxFailedAccessAttempts = 5;
+                options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(15);
+                options.Lockout.AllowedForNewUsers = true;
+            })
+            .AddEntityFrameworkStores<AppDbContext>();
+
+        services.Configure<JwtOptions>(configuration.GetSection(JwtOptions.SectionName));
+        // REGISTRATION_ENABLED is a flat env var / key (default off), per the deploy docs.
+        services.Configure<RegistrationOptions>(o => o.Enabled = configuration.GetValue<bool>("REGISTRATION_ENABLED"));
+
+        services.AddSingleton<TokenService>();
+        services.AddScoped<IAuthService, IdentityAuthService>();
     }
 
     /// <summary>

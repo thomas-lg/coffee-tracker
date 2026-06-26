@@ -1,10 +1,20 @@
+using System.Net;
+using System.Security.Cryptography;
+using System.Text;
+using System.Threading.RateLimiting;
+using CoffeeTracker.Api;
 using CoffeeTracker.Application;
 using CoffeeTracker.Infrastructure;
+using CoffeeTracker.Infrastructure.Identity;
 using CoffeeTracker.Infrastructure.Storage;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http.Features;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.Extensions.FileProviders;
+using Microsoft.IdentityModel.Tokens;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -17,6 +27,11 @@ builder.Services.AddOpenApi();
 // Composition root: wire the hexagon's ports to their adapters.
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
+
+// Driving-side adapter: expose the authenticated caller's id to the application
+// layer (used to stamp CreatedByUserId) without leaking HttpContext into it.
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<CoffeeTracker.Application.Ports.Driven.ICurrentUser, CoffeeTracker.Api.Auth.HttpContextCurrentUser>();
 
 // Bind the storage options once, from the same section the adapter binds, so the
 // request-boundary limit and the photos directory can't drift from the adapter.
@@ -41,7 +56,107 @@ var maxRequestBytes = storageOptions.MaxPhotoBytes <= long.MaxValue - multipartF
 builder.Services.Configure<KestrelServerOptions>(o => o.Limits.MaxRequestBodySize = maxRequestBytes);
 builder.Services.Configure<FormOptions>(o => o.MultipartBodyLengthLimit = maxRequestBytes);
 
+// --- Authentication (JWT bearer) ---
+// The signing key must come from config/env and be strong — never a baked-in
+// default (a weak/known key lets anyone forge admin tokens). In Development we
+// generate a random ephemeral key when none is configured, so there is no secret
+// in git and `dotnet run` still works locally; outside Development a missing/weak
+// key is a hard startup failure.
+var generatedDevKey = false;
+var jwtKey = builder.Configuration[$"{JwtOptions.SectionName}:Key"];
+if (string.IsNullOrWhiteSpace(jwtKey) || Encoding.UTF8.GetByteCount(jwtKey) < JwtOptions.MinKeyBytes)
+{
+    if (builder.Environment.IsDevelopment())
+    {
+        jwtKey = Convert.ToBase64String(RandomNumberGenerator.GetBytes(48));
+        // Write it back in-memory so token issuance (TokenService via IOptions)
+        // and validation below resolve the same key.
+        builder.Configuration[$"{JwtOptions.SectionName}:Key"] = jwtKey;
+        generatedDevKey = true;
+    }
+    else
+    {
+        throw new InvalidOperationException(
+            $"{JwtOptions.SectionName}:Key must be set to a strong secret of at least {JwtOptions.MinKeyBytes} bytes. " +
+            "Provide it via the Jwt__Key environment variable (e.g. `openssl rand -base64 48`).");
+    }
+}
+
+var jwtOptions = builder.Configuration.GetSection(JwtOptions.SectionName).Get<JwtOptions>() ?? new JwtOptions();
+builder.Services
+    .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidIssuer = jwtOptions.Issuer,
+            ValidateAudience = true,
+            ValidAudience = jwtOptions.Audience,
+            ValidateIssuerSigningKey = true,
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtOptions.Key)),
+            // Pin the algorithm so the key can only ever be used for HS256 — closes
+            // any algorithm-substitution ambiguity as defense-in-depth.
+            ValidAlgorithms = [SecurityAlgorithms.HmacSha256],
+            ValidateLifetime = true,
+            ClockSkew = TimeSpan.FromMinutes(1),
+        };
+    });
+
+// Account mandatory: every endpoint requires an authenticated user unless it
+// explicitly opts out with [AllowAnonymous] (the auth endpoints + dev OpenAPI doc).
+// A fallback policy enforces this centrally so a future endpoint can't be left
+// public by forgetting [Authorize].
+builder.Services.AddAuthorization(options =>
+    options.FallbackPolicy = new AuthorizationPolicyBuilder().RequireAuthenticatedUser().Build());
+
+// Trust the reverse proxy's forwarded client IP/scheme when configured, so the
+// rate limiter partitions by the real client rather than the proxy's single IP
+// (behind SWAG/Authelia, RemoteIpAddress is otherwise always the proxy). Proxies
+// must be listed in ForwardedHeaders:KnownProxies; absent that, headers are
+// ignored (secure default).
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+    options.KnownIPNetworks.Clear();
+    options.KnownProxies.Clear();
+    var knownProxies = builder.Configuration["ForwardedHeaders:KnownProxies"];
+    foreach (var proxy in (knownProxies ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+    {
+        if (IPAddress.TryParse(proxy, out var address))
+        {
+            options.KnownProxies.Add(address);
+        }
+    }
+});
+
+// Throttle the auth endpoints against brute-force/credential-stuffing, keyed by
+// client IP. Account-level lockout (Identity) is the second layer.
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    options.AddPolicy(RateLimiterPolicies.Auth, httpContext =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            factory: _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 10,
+                Window = TimeSpan.FromMinutes(1),
+            }));
+});
+
 var app = builder.Build();
+
+if (generatedDevKey)
+{
+    app.Logger.LogWarning(
+        "No {Section}:Key configured — generated a random ephemeral signing key for Development. " +
+        "Tokens will be invalidated on restart. Set Jwt__Key for a stable key.", JwtOptions.SectionName);
+}
+
+// Honour proxy-forwarded client IP/scheme before anything inspects the connection
+// (rate limiter, auth). Must run first in the pipeline.
+app.UseForwardedHeaders();
 
 // Apply pending migrations on startup (single-instance, self-hosted app).
 await app.Services.InitializeDatabaseAsync();
@@ -49,8 +164,9 @@ await app.Services.InitializeDatabaseAsync();
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
-    // Serves the OpenAPI document at /openapi/v1.json ...
-    app.MapOpenApi();
+    // Serves the OpenAPI document at /openapi/v1.json (anonymous so the Swagger UI
+    // can fetch it under the global auth fallback policy) ...
+    app.MapOpenApi().AllowAnonymous();
     // ... and a Swagger UI at the app root that reads it.
     app.UseSwaggerUI(options =>
     {
@@ -79,6 +195,9 @@ app.UseStaticFiles(new StaticFileOptions
         ctx.Context.Response.Headers["X-Content-Type-Options"] = "nosniff",
 });
 
+app.UseRateLimiter();
+
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
