@@ -10,9 +10,11 @@ The catalog is currently world-writable: anyone who can reach the API can create
 - **Registration is gated by `REGISTRATION_ENABLED` (default off).** When enabled and the registration succeeds, the **first** user created becomes admin (`IsAdmin = true`); subsequent users do not.
 - **JWT signing key comes only from configuration/env (`Jwt:Key`); the app fails fast at startup if it is missing or too weak** — no baked-in default.
 - Apply an Identity **password policy + account lockout**, and **rate-limit** `register`/`login` with the built-in rate limiter.
-- Protect catalog **write** endpoints (`POST`/`PUT`/`DELETE /api/coffees`, `POST /api/coffees/{id}/photo`) with `[Authorize]`; reads stay public. On create, stamp `CreatedByUserId` from the caller's token via an `ICurrentUser` port.
+- **Require authentication on all catalog endpoints** (reads included): an account is mandatory to use the app, so `GET`/`POST`/`PUT`/`DELETE /api/coffees` and `POST /api/coffees/{id}/photo` all require a valid token (`[Authorize]` at the controller). Only `register`/`login` are anonymous. On create, stamp `CreatedByUserId` from the caller's token via an `ICurrentUser` port.
 
-Out of scope (deferred): reverse-proxy concerns — `UseForwardedHeaders`/HSTS (M7); CORS (no prod CORS; dev CORS arrives with the frontend, M6); roles beyond a single `IsAdmin` flag; refresh tokens / token revocation; email confirmation / password reset.
+**Deployment context:** the app is self-hosted on a NAS and internet-exposed via a SWAG reverse proxy with Authelia in front. Even with Authelia at the edge, the app keeps its **own** login (defense-in-depth). M3 ships app-native Identity + JWT; the design keeps a future **Authelia SSO (OIDC)** path open but does not implement it.
+
+Out of scope (deferred): Authelia/OIDC SSO integration (future); reverse-proxy concerns — `UseForwardedHeaders`/HSTS (M7); CORS (no prod CORS; dev CORS arrives with the frontend, M6); roles beyond a single `IsAdmin` flag; ownership-based edit/delete authorization (M4, with per-user reviews); refresh tokens / token revocation; email confirmation / password reset.
 
 ## Capabilities
 

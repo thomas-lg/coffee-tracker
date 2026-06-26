@@ -19,7 +19,7 @@
 - [ ] 3.2 Fail-fast startup check: throw if `Jwt:Key` missing or < 32 bytes
 - [ ] 3.3 `Program.cs`: `AddAuthentication().AddJwtBearer(...)` with validation params; ensure `UseAuthentication` precedes `UseAuthorization`
 - [ ] 3.4 Add rate limiter; apply a named policy to the auth endpoints (429 when tripped)
-- [ ] 3.5 Add `[Authorize]` to catalog write actions (POST/PUT/DELETE + photo); leave GETs anonymous
+- [ ] 3.5 Add `[Authorize]` at the `CoffeesController` level so all catalog endpoints (reads + writes) require a token; only auth endpoints stay anonymous
 
 ## 4. Owner stamping
 

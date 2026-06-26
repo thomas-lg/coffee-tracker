@@ -56,10 +56,17 @@ user-count check happens just before create.)
 
 ## 6. Which endpoints require auth
 
-**Decision:** only **writes** are protected (`POST`/`PUT`/`DELETE /api/coffees`,
-`POST .../photo`). `GET` catalog endpoints stay **public** — browsing the catalog
-without an account matches the "shared" intent, and per-user data (reviews) is
-M4. `register`/`login` are obviously anonymous.
+**Decision:** an account is mandatory to use the app, so **all** catalog
+endpoints require a valid token — reads (`GET`) included, not just writes. Apply
+`[Authorize]` at the `CoffeesController` level; only `register`/`login` are
+anonymous (and the dev-only Swagger/OpenAPI middleware).
+
+This is driven by the deployment: the app is internet-exposed via a SWAG reverse
+proxy with **Authelia** forward-auth in front. The app deliberately keeps its
+**own** login behind Authelia (defense-in-depth) rather than trusting the edge
+alone. A future option is to make the app's login **Authelia SSO (OIDC)** — the
+`IAuthService`/JWT-bearer boundary keeps that swap open, but M3 implements only
+native credentials.
 
 ## 7. Stamping the owner — `ICurrentUser` driven port
 
