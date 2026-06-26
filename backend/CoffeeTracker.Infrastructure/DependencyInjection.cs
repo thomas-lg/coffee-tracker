@@ -1,5 +1,6 @@
 using CoffeeTracker.Application.Ports.Driven;
 using CoffeeTracker.Infrastructure.Persistence;
+using CoffeeTracker.Infrastructure.Storage;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -15,7 +16,10 @@ public static class DependencyInjection
         services.AddDbContext<AppDbContext>(options =>
             options.UseSqlite(configuration.GetConnectionString("Default")));
 
+        services.Configure<PhotoStorageOptions>(configuration.GetSection(PhotoStorageOptions.SectionName));
+
         services.AddScoped<ICoffeeRepository, EfCoffeeRepository>();
+        services.AddSingleton<IPhotoStorage, FileSystemPhotoStorage>();
         return services;
     }
 
