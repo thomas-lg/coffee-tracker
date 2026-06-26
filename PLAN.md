@@ -56,18 +56,32 @@ coffee-tracker/                 (repo root; dev-container workspace at /workspac
 ├─ .devcontainer/               devcontainer.json, Dockerfile (DEV image), post-create.sh
 ├─ .github/workflows/           ci.yml, release.yml
 ├─ .dockerignore                keeps node_modules/bin/obj/.git/*.db/photos out of the build context
-├─ CoffeeTracker.sln            solution covering the API + Tests
-├─ backend/CoffeeTracker.Api/   ASP.NET Core Web API (.NET 10)
-│  ├─ Program.cs                DI, EF, Identity/JWT, forwarded headers, static files, routing
-│  ├─ Models/                   AppUser, Coffee, Review, FlavorTag, ReviewTag
-│  ├─ Data/                     AppDbContext, Migrations/, DbSeeder
-│  ├─ Dtos/                     request/response records (separate from entities)
-│  ├─ Controllers/             CoffeesController, ReviewsController, AuthController
-│  ├─ Services/                 TokenService, PhotoStorage, IOcrService,
-│  │                            TesseractOcr, CoffeeLabelParser
-│  ├─ appsettings.json          + appsettings.Development.json
-│  └─ tessdata/                 (gitignored; only used for the optional bare-metal fallback)
-├─ backend/CoffeeTracker.Tests/ xUnit (CoffeeLabelParser, auth/ownership, DTO validation)
+├─ CoffeeTracker.sln            solution covering the 4 backend projects + Tests
+│
+│  Backend uses HEXAGONAL (ports & adapters) architecture, multi-project.
+│  Dependency rule: Domain ← Application ← {Infrastructure, Api}.
+│  (Diverges from the original single-project plan — see "Architecture" note below.)
+│
+├─ backend/CoffeeTracker.Domain/         the hexagon core (no framework deps)
+│  └─ Coffee.cs                          entities: Coffee (+ AppUser, Review, FlavorTag, ReviewTag later)
+├─ backend/CoffeeTracker.Application/    use cases + ports + DTOs
+│  ├─ Ports/Driving/                     input ports (e.g. ICoffeeCatalogService)
+│  ├─ Ports/Driven/                      output ports (e.g. ICoffeeRepository)
+│  ├─ Services/                          port implementations (CoffeeCatalogService;
+│  │                                     later TokenService, CoffeeLabelParser, IOcrService)
+│  ├─ Dtos/                              request/response records (separate from entities)
+│  └─ DependencyInjection.cs             AddApplication()
+├─ backend/CoffeeTracker.Infrastructure/ driven adapters
+│  ├─ Persistence/                       AppDbContext, EfCoffeeRepository,
+│  │                                     AppDbContextFactory (design-time), Migrations/
+│  └─ DependencyInjection.cs             AddInfrastructure(config) + InitializeDatabaseAsync()
+├─ backend/CoffeeTracker.Api/            driving adapter + composition root (no EF refs)
+│  ├─ Program.cs                         AddApplication + AddInfrastructure, migrate on startup, routing
+│  ├─ Controllers/                       CoffeesController, ReviewsController, AuthController
+│  ├─ appsettings.json                   + appsettings.Development.json (connection string)
+│  └─ tessdata/                          (gitignored; only used for the optional bare-metal fallback)
+├─ backend/CoffeeTracker.Tests/ xUnit — unit tests against Application/Domain with fake ports
+│                                (CoffeeLabelParser, auth/ownership, DTO validation)
 ├─ frontend/                    Angular 22 PWA
 │  └─ src/app/{core,features,shared}/
 ├─ scripts/                     get-tessdata (OPTIONAL — see M5)
@@ -76,6 +90,15 @@ coffee-tracker/                 (repo root; dev-container workspace at /workspac
 ├─ deploy/unraid/coffee-tracker.xml   Unraid container template
 └─ README.md
 ```
+
+**Architecture (hexagonal / ports & adapters):** the backend is split into four
+projects enforcing the dependency rule `Domain ← Application ← {Infrastructure,
+Api}` so controllers depend only on application-layer ports and never touch EF
+Core. Data access is a driven adapter (`EfCoffeeRepository`) behind a port
+(`ICoffeeRepository`); the Api project is the composition root + HTTP driving
+adapter and carries no EF dependency. EF migrations live in Infrastructure
+(design-time `IDesignTimeDbContextFactory`); the app applies pending migrations
+on startup. This supersedes the earlier single-project `CoffeeTracker.Api` layout.
 
 **Two distinct Dockerfiles, no collision:** root `Dockerfile` = **production**
 image; `.devcontainer/Dockerfile` = **dev** image. Dev runs inside the container:
@@ -285,7 +308,9 @@ opens on a phone.
    `X-Forwarded-Proto`, set `KnownProxies`/`KnownNetworks`) so auth redirects /
    Secure cookies behave behind the reverse proxy; enable **HSTS**. Run
    `db.Database.Migrate()` on startup **scoped to single-instance prod** — note the
-   SQLite write-lock and no-rollback hazard (back up first; see Security).
+   SQLite write-lock and no-rollback hazard (back up first; see Security). The DB
+   runs in **WAL journal mode** (set once via `PRAGMA journal_mode=WAL;` right after
+   migrate in `InitializeDatabaseAsync`) so reads don't block on the single writer.
 3. **`docker-compose.yml`** — one service, named volumes for `coffee.db`
    (`/config`) and `/photos`; documents the env vars (JWT key, connection string,
    `REGISTRATION_ENABLED`). This is **local dev/test + reference only** and is
@@ -361,7 +386,9 @@ Because instances may be **internet-exposed and shared**:
   step in CI.
 - **Backups:** `coffee.db` + `photos/` (Unraid `/config` + `/photos`) should be
   backed up **before pulling a new image**, since a bad startup auto-migration has
-  no rollback.
+  no rollback. In WAL mode the live DB is **three files** (`coffee.db`, `-wal`,
+  `-shm`); for a consistent single-file snapshot use
+  `sqlite3 coffee.db ".backup backup.db"` rather than copying `coffee.db` alone.
 
 ---
 
@@ -403,7 +430,8 @@ Because instances may be **internet-exposed and shared**:
 - **Floating `1-10.0` dev-container tag** can drift; pin a digest if reproducibility
   matters later.
 - **EF auto-migrate on prod startup** has no rollback and assumes a single
-  instance — back up `coffee.db` before updating the image.
+  instance — back up `coffee.db` before updating the image. WAL journal mode eases
+  the single-writer contention but does not change the single-instance assumption.
 - **Public-instance abuse surface** — mitigated by the registration flag,
   rate-limiting, HTTPS-at-proxy, and non-root/least-writable container.
 - **Bleeding-edge versions** (.NET 10 / Angular 22 / Signal Forms): pin exact

@@ -7,10 +7,16 @@
 # Fallback tag if 1-10.0 ever fails: 1-10.0-noble.
 FROM mcr.microsoft.com/devcontainers/dotnet:1-10.0
 
+# The base image ships a yarn apt source whose GPG signing key has rotated,
+# so `apt-get update` hard-fails on dl.yarnpkg.com ("NO_PUBKEY ... repository
+# is not signed"). We don't use that repo — Node/yarn come from the Node
+# devcontainer feature — so remove the source before updating.
+#
 # Native OCR deps (M5). Keep the -dev packages: the TesseractOCR NuGet P/Invokes
 # the UNVERSIONED libtesseract.so / liblept.so soname, which -dev provides.
 # tesseract-ocr-eng bundles eng.traineddata.
-RUN apt-get update \
+RUN rm -f /etc/apt/sources.list.d/yarn.list \
+    && apt-get update \
     && export DEBIAN_FRONTEND=noninteractive \
     && apt-get install -y --no-install-recommends \
         tesseract-ocr tesseract-ocr-eng libtesseract-dev libleptonica-dev \

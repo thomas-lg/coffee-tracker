@@ -23,3 +23,7 @@ Thumbs.db
 .vs/
 .idea/
 *.swp
+
+
+# APM dependencies
+apm_modules/

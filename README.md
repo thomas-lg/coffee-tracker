@@ -11,8 +11,8 @@ to learn modern C#/.NET (and enjoy good coffee) on my own schedule. No roadmap
 commitments, no SLAs, no deadlines.
 
 ## Stack
-- **Backend:** ASP.NET Core Web API (.NET 10), EF Core + SQLite, ASP.NET Core
-  Identity + JWT.
+- **Backend:** ASP.NET Core Web API (.NET 10), EF Core + SQLite (WAL mode),
+  ASP.NET Core Identity + JWT.
 - **Frontend:** Angular 22 (standalone components, signals, Signal Forms),
   shipped as an installable PWA.
 - **Snap-to-fill:** photograph a coffee bag → open-source OCR (Tesseract first,
@@ -52,7 +52,9 @@ port directly to the internet.
 | `/photos`      | Uploaded coffee photos           |
 
 > Back up `/config` and `/photos` **before pulling a new image** — startup runs EF
-> migrations automatically and there is no rollback.
+> migrations automatically and there is no rollback. The database uses WAL mode, so
+> `/config` holds three files (`coffee.db`, `coffee.db-wal`, `coffee.db-shm`); for a
+> consistent single-file backup run `sqlite3 coffee.db ".backup backup.db"`.
 
 ### Environment variables
 
@@ -77,17 +79,23 @@ is gated by a flag, login/register are rate-limited, uploads are validated, and 
 container runs as a non-root user. See the Security section in [PLAN.md](./PLAN.md).
 
 ## Status
-Early days — no application code yet, but the groundwork is in place:
+Early days, but the backend foundation is now running:
 
 - ✅ **M0** — dev container (reproducible .NET 10 + Node 22 + Tesseract toolchain)
 - ✅ **Scaffolding & CI/CD** — `ci.yml` (build/test) + `release.yml` (GHCR publish),
   solution + xUnit test skeleton, `.dockerignore`, Unraid template
-- ⬜ **M1–M6** — backend, auth, reviews, OCR, Angular 22 PWA (application code)
+- ✅ **M1** — backend skeleton: `GET /api/coffees` over EF Core + SQLite (WAL mode,
+  auto-migrate on startup), Swagger in dev, **hexagonal architecture** (Domain ←
+  Application ← {Infrastructure, Api}) so controllers depend only on application
+  ports, never on EF Core
+- ⬜ **M2–M6** — coffee CRUD + photo upload, auth (Identity + JWT), reviews &
+  flavor tags, OCR snap-to-fill, Angular 22 PWA
 - ⬜ **M7** — production Docker image + local compose
 
 The CI/CD workflows are intentionally scaffolding-aware: the frontend,
 docker-build, and image-publish steps are no-ops until their code lands (M6/M7).
 
 ## Built with Claude
+
 I use [Claude](https://claude.ai) (via Claude Code) to help design and build this
 project.

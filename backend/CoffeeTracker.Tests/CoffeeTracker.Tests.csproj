@@ -13,11 +13,11 @@
     <PackageReference Include="xunit.runner.visualstudio" Version="2.*" />
   </ItemGroup>
 
-  <!--
-    Added in M1 once the API project exists:
-    <ItemGroup>
-      <ProjectReference Include="..\CoffeeTracker.Api\CoffeeTracker.Api.csproj" />
-    </ItemGroup>
-  -->
+  <ItemGroup>
+    <!-- Unit tests target the inner hexagon (Application + Domain). Add an
+         Api reference here when integration tests arrive. -->
+    <ProjectReference Include="..\CoffeeTracker.Application\CoffeeTracker.Application.csproj" />
+    <ProjectReference Include="..\CoffeeTracker.Domain\CoffeeTracker.Domain.csproj" />
+  </ItemGroup>
 
 </Project>
