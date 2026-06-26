@@ -1,6 +1,7 @@
 using CoffeeTracker.Application.Ports.Driven;
 using CoffeeTracker.Application.Ports.Driving;
 using CoffeeTracker.Infrastructure.Identity;
+using CoffeeTracker.Infrastructure.Ocr;
 using CoffeeTracker.Infrastructure.Persistence;
 using CoffeeTracker.Infrastructure.Storage;
 using Microsoft.AspNetCore.Identity;
@@ -26,8 +27,28 @@ public static class DependencyInjection
         services.AddScoped<IFlavorTagRepository, EfFlavorTagRepository>();
         services.AddSingleton<IPhotoStorage, FileSystemPhotoStorage>();
 
+        AddOcr(services, configuration);
         AddAuth(services, configuration);
         return services;
+    }
+
+    /// <summary>
+    /// Registers the OCR adapter selected by <c>Ocr:Engine</c>: <c>tesseract</c>
+    /// (default, native libs) or <c>none</c> (disabled — for hosts without the libs).
+    /// </summary>
+    private static void AddOcr(IServiceCollection services, IConfiguration configuration)
+    {
+        services.Configure<OcrOptions>(configuration.GetSection(OcrOptions.SectionName));
+
+        var engine = configuration.GetValue<string>($"{OcrOptions.SectionName}:{nameof(OcrOptions.Engine)}");
+        if (string.Equals(engine, "none", StringComparison.OrdinalIgnoreCase))
+        {
+            services.AddSingleton<IOcrService, DisabledOcrService>();
+        }
+        else
+        {
+            services.AddSingleton<IOcrService, TesseractOcrService>();
+        }
     }
 
     /// <summary>
