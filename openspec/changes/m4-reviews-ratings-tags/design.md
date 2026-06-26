@@ -30,10 +30,11 @@ is top-level.
 
 ## 4. Ownership authorization (the M3 deferral)
 
-Edit/delete require `review.UserId == currentUser.Id`; otherwise `403`. This is the
-ownership check we deferred from M3. **Default: owner-only, no admin override** —
-admins cannot edit/delete others' reviews in M4 (moderation is out of scope). Flag if
-you want admins to be able to delete others' reviews for moderation.
+Editing requires `review.UserId == currentUser.Id`; otherwise `403` (owner-only).
+**Deleting is allowed for the owner OR an admin** (moderation) — admins cannot *edit*
+others' reviews, only delete them. This needs the caller's admin status, so
+`ICurrentUser` gains an `IsAdmin` flag (read from the `isAdmin` JWT claim). This is
+the ownership authorization deferred from M3.
 
 ## 5. Average rating & review count on `CoffeeResponseDto`
 

@@ -42,9 +42,9 @@ The system SHALL return all reviews for a coffee via `GET /api/coffees/{coffeeId
 - **WHEN** a user requests reviews for a coffee id that does not exist
 - **THEN** the system SHALL respond with `404`
 
-### Requirement: A user can edit and delete only their own review
+### Requirement: A user can edit only their own review; owners and admins can delete
 
-The system SHALL allow updating (`PUT /api/coffees/{coffeeId}/reviews/{id}`) and deleting (`DELETE /api/coffees/{coffeeId}/reviews/{id}`) a review only by the user who owns it. An attempt to modify another user's review SHALL be rejected with `403` and SHALL NOT change any data.
+The system SHALL allow updating (`PUT /api/coffees/{coffeeId}/reviews/{id}`) a review only by the user who owns it. Deleting (`DELETE /api/coffees/{coffeeId}/reviews/{id}`) SHALL be allowed for the owner OR an administrator (moderation). An attempt to edit another user's review — or to delete one as a non-owner, non-admin — SHALL be rejected with `403` and SHALL NOT change any data.
 
 #### Scenario: Updating your own review
 
@@ -54,15 +54,27 @@ The system SHALL allow updating (`PUT /api/coffees/{coffeeId}/reviews/{id}`) and
 
 #### Scenario: Editing another user's review is rejected
 
-- **WHEN** a user attempts to update or delete a review they do not own
+- **WHEN** a user attempts to update a review they do not own
 - **THEN** the system SHALL respond with `403`
-- **AND** SHALL NOT change or remove the review
+- **AND** SHALL NOT change the review
 
 #### Scenario: Deleting your own review
 
 - **WHEN** the owning user deletes their review
 - **THEN** the system SHALL remove it
 - **AND** SHALL respond with `204`
+
+#### Scenario: An admin can delete another user's review
+
+- **WHEN** an administrator deletes a review they do not own
+- **THEN** the system SHALL remove it
+- **AND** SHALL respond with `204`
+
+#### Scenario: A non-owner non-admin cannot delete a review
+
+- **WHEN** a non-admin user attempts to delete a review they do not own
+- **THEN** the system SHALL respond with `403`
+- **AND** SHALL NOT remove the review
 
 ### Requirement: Flavor tags are available to attach to reviews
 
