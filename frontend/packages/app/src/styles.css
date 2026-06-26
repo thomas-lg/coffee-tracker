@@ -1,0 +1,77 @@
+/* Self-hosted variable fonts (Fraunces + Inter) are loaded via angular.json's
+   "styles" array — no CDN, works offline / in the PWA. */
+@import 'tailwindcss';
+
+/* Manual + OS dark mode: `dark:` utilities apply under [data-theme="dark"]. */
+@custom-variant dark (&:where([data-theme='dark'], [data-theme='dark'] *));
+
+/* Coffee palette — light (default). Warm, chosen neutrals. */
+:root {
+  --ink: #241813;        /* deep roasted espresso */
+  --cocoa: #6f4e37;      /* primary brown */
+  --crema: #cc8b43;      /* gold accent — the single bold note */
+  --crema-deep: #a8692b;
+  --latte: #f3e9db;      /* page ground */
+  --foam: #fffcf6;       /* card surface */
+  --line: #e6d6bf;       /* warm hairline */
+  --muted: #8a7561;      /* warm grey text */
+  --moss: #5c7a52;       /* semantic good (not the accent) */
+  color-scheme: light;
+}
+
+/* Dark roast. */
+[data-theme='dark'] {
+  --ink: #f2e7d6;
+  --cocoa: #cda878;
+  --crema: #e0a559;
+  --crema-deep: #f0bd74;
+  --latte: #1a120c;
+  --foam: #251a11;
+  --line: #3b2c1d;
+  --muted: #b69e80;
+  --moss: #8aa878;
+  color-scheme: dark;
+}
+
+/* Map the palette + fonts into Tailwind tokens. `inline` so utilities resolve the
+   live CSS variable, which means bg-foam/text-ink flip automatically with the theme. */
+@theme inline {
+  --color-ink: var(--ink);
+  --color-cocoa: var(--cocoa);
+  --color-crema: var(--crema);
+  --color-crema-deep: var(--crema-deep);
+  --color-latte: var(--latte);
+  --color-foam: var(--foam);
+  --color-line: var(--line);
+  --color-muted: var(--muted);
+  --color-moss: var(--moss);
+
+  --font-display: 'Fraunces Variable', Georgia, 'Times New Roman', serif;
+  --font-sans: 'Inter Variable', system-ui, -apple-system, sans-serif;
+}
+
+@layer base {
+  html {
+    background: var(--latte);
+    color: var(--ink);
+    font-family: var(--font-sans);
+    -webkit-text-size-adjust: 100%;
+  }
+  body {
+    margin: 0;
+    min-height: 100dvh;
+    -webkit-font-smoothing: antialiased;
+  }
+  h1, h2, h3 {
+    font-family: var(--font-display);
+    text-wrap: balance;
+  }
+  /* Honor reduced-motion globally; component motion opts in on top of this. */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.001ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.001ms !important;
+    }
+  }
+}
