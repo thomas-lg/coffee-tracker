@@ -21,10 +21,12 @@ public class AuthController(IAuthService auth) : ControllerBase
         return result.Status switch
         {
             AuthStatus.Success => Ok(result.Response),
-            AuthStatus.RegistrationDisabled => StatusCode(StatusCodes.Status403Forbidden, "Registration is disabled."),
-            AuthStatus.DuplicateUser => Conflict("An account with that email already exists."),
-            AuthStatus.WeakPassword => ValidationProblem(BuildErrors(result.Errors)),
-            _ => BadRequest(),
+            AuthStatus.RegistrationDisabled => Problem(statusCode: StatusCodes.Status403Forbidden, detail: "Registration is disabled."),
+            AuthStatus.DuplicateUser => Problem(statusCode: StatusCodes.Status409Conflict, detail: "An account with that email already exists."),
+            AuthStatus.WeakPassword => ValidationProblem(BuildErrors("Password", result.Errors)),
+            AuthStatus.InvalidInput => ValidationProblem(BuildErrors(string.Empty, result.Errors)),
+            // Login-only statuses can't occur here; fail loudly rather than mis-mapping.
+            _ => throw new InvalidOperationException($"Unexpected register status: {result.Status}"),
         };
     }
 
@@ -36,18 +38,18 @@ public class AuthController(IAuthService auth) : ControllerBase
         return result.Status switch
         {
             AuthStatus.Success => Ok(result.Response),
-            AuthStatus.LockedOut => StatusCode(StatusCodes.Status423Locked, "Account locked due to repeated failed logins. Try again later."),
-            AuthStatus.InvalidCredentials => Unauthorized("Invalid email or password."),
-            _ => Unauthorized(),
+            AuthStatus.LockedOut => Problem(statusCode: StatusCodes.Status423Locked, detail: "Account locked due to repeated failed logins. Try again later."),
+            AuthStatus.InvalidCredentials => Problem(statusCode: StatusCodes.Status401Unauthorized, detail: "Invalid email or password."),
+            _ => throw new InvalidOperationException($"Unexpected login status: {result.Status}"),
         };
     }
 
-    private static ModelStateDictionary BuildErrors(IReadOnlyList<string>? errors)
+    private static ModelStateDictionary BuildErrors(string key, IReadOnlyList<string>? errors)
     {
         var modelState = new ModelStateDictionary();
         foreach (var error in errors ?? [])
         {
-            modelState.AddModelError("Password", error);
+            modelState.AddModelError(key, error);
         }
         return modelState;
     }

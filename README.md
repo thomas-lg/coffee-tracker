@@ -64,7 +64,7 @@ port directly to the internet.
 | `Jwt__Issuer`                     | no       | `coffee-tracker` | JWT issuer claim.                                                           |
 | `Jwt__Audience`                   | no       | `coffee-tracker` | JWT audience claim.                                                         |
 | `REGISTRATION_ENABLED`            | no       | `false`          | When `false`, new signups are blocked (safe default for a public instance). Set `true` to allow registration; the first user becomes admin. |
-| `ForwardedHeaders__KnownProxies`  | no       | —                | IP(s) of your reverse proxy, so the app trusts `X-Forwarded-*` headers.     |
+| `ForwardedHeaders__KnownProxies`  | recommended | —             | Comma-separated IP(s) of your reverse proxy (SWAG/Authelia), so the app trusts `X-Forwarded-For`/`-Proto`. **Set this** behind a proxy — otherwise auth rate-limiting keys off the proxy's single IP and throttles all clients together. |
 
 ## Updating
 

@@ -23,6 +23,8 @@ public enum AuthStatus
     RegistrationDisabled,
     DuplicateUser,
     WeakPassword,
+    /// <summary>Registration rejected for a reason other than duplicate or weak password (e.g. invalid email/username).</summary>
+    InvalidInput,
     InvalidCredentials,
     LockedOut,
 }

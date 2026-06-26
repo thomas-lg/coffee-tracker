@@ -14,10 +14,12 @@
   </ItemGroup>
 
   <ItemGroup>
-    <!-- Unit tests target the inner hexagon (Application + Domain). Add an
-         Api reference here when integration tests arrive. -->
+    <!-- Unit tests target the inner hexagon (Application + Domain) plus
+         Infrastructure adapters that are unit-testable in isolation (e.g.
+         TokenService). Add an Api reference when integration tests arrive. -->
     <ProjectReference Include="..\CoffeeTracker.Application\CoffeeTracker.Application.csproj" />
     <ProjectReference Include="..\CoffeeTracker.Domain\CoffeeTracker.Domain.csproj" />
+    <ProjectReference Include="..\CoffeeTracker.Infrastructure\CoffeeTracker.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>

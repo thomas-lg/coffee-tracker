@@ -14,7 +14,9 @@ The catalog is currently world-writable: anyone who can reach the API can create
 
 **Deployment context:** the app is self-hosted on a NAS and internet-exposed via a SWAG reverse proxy with Authelia in front. Even with Authelia at the edge, the app keeps its **own** login (defense-in-depth). M3 ships app-native Identity + JWT; the design keeps a future **Authelia SSO (OIDC)** path open but does not implement it.
 
-Out of scope (deferred): Authelia/OIDC SSO integration (future); reverse-proxy concerns — `UseForwardedHeaders`/HSTS (M7); CORS (no prod CORS; dev CORS arrives with the frontend, M6); roles beyond a single `IsAdmin` flag; ownership-based edit/delete authorization (M4, with per-user reviews); refresh tokens / token revocation; email confirmation / password reset.
+Note: `UseForwardedHeaders` (X-Forwarded-For/-Proto, with config-driven `KnownProxies`) is included here — the IP-keyed auth rate limiter needs the real client IP behind the proxy, not the proxy's single IP.
+
+Out of scope (deferred): Authelia/OIDC SSO integration (future); HSTS and other reverse-proxy hardening (M7); CORS (no prod CORS; dev CORS arrives with the frontend, M6); roles beyond a single `IsAdmin` flag; ownership-based edit/delete authorization (M4, with per-user reviews); refresh tokens / token revocation; email confirmation / password reset.
 
 ## Capabilities
 

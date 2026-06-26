@@ -14,9 +14,15 @@ namespace CoffeeTracker.Infrastructure.Identity;
 /// </summary>
 public class IdentityAuthService(
     UserManager<AppUser> userManager,
+    IPasswordHasher<AppUser> passwordHasher,
     TokenService tokenService,
     IOptions<RegistrationOptions> registrationOptions) : IAuthService
 {
+    // A precomputed hash to verify against when the email is unknown, so a login
+    // for a non-existent user spends comparable time to a real password check and
+    // doesn't leak account existence through response latency.
+    private readonly string _decoyPasswordHash = passwordHasher.HashPassword(new AppUser(), "decoy-for-timing-equalization");
+
     public async Task<AuthResult> RegisterAsync(RegisterDto dto, CancellationToken ct = default)
     {
         if (!registrationOptions.Value.Enabled)
@@ -38,10 +44,20 @@ public class IdentityAuthService(
         var result = await userManager.CreateAsync(user, dto.Password);
         if (!result.Succeeded)
         {
-            var isDuplicate = result.Errors.Any(e => e.Code.Contains("Duplicate", StringComparison.OrdinalIgnoreCase));
-            return AuthResult.Fail(
-                isDuplicate ? AuthStatus.DuplicateUser : AuthStatus.WeakPassword,
-                result.Errors.Select(e => e.Description).ToList());
+            var errors = result.Errors.Select(e => e.Description).ToList();
+            // Classify by Identity's error codes so the caller maps to the right
+            // status — a duplicate email, a weak password, or some other invalid
+            // input (e.g. InvalidUserName/InvalidEmail) are distinct outcomes and
+            // must not all masquerade as "weak password".
+            if (result.Errors.Any(e => e.Code.Contains("Duplicate", StringComparison.OrdinalIgnoreCase)))
+            {
+                return AuthResult.Fail(AuthStatus.DuplicateUser, errors);
+            }
+            if (result.Errors.Any(e => e.Code.StartsWith("Password", StringComparison.OrdinalIgnoreCase)))
+            {
+                return AuthResult.Fail(AuthStatus.WeakPassword, errors);
+            }
+            return AuthResult.Fail(AuthStatus.InvalidInput, errors);
         }
 
         return AuthResult.Success(BuildResponse(user));
@@ -51,10 +67,11 @@ public class IdentityAuthService(
     {
         var user = await userManager.FindByEmailAsync(dto.Email);
 
-        // Same response whether the user is unknown or the password is wrong, so we
-        // don't reveal which emails are registered.
+        // Same response — and comparable latency — whether the user is unknown or
+        // the password is wrong, so we don't reveal which emails are registered.
         if (user is null)
         {
+            passwordHasher.VerifyHashedPassword(new AppUser(), _decoyPasswordHash, dto.Password);
             return AuthResult.Fail(AuthStatus.InvalidCredentials);
         }
 
