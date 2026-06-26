@@ -1,5 +1,6 @@
 using CoffeeTracker.Application;
 using CoffeeTracker.Infrastructure;
+using CoffeeTracker.Infrastructure.Storage;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.AspNetCore.StaticFiles;
@@ -17,11 +18,26 @@ builder.Services.AddOpenApi();
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
 
-// Refuse oversized uploads at the request boundary rather than after buffering the
-// whole body. The storage adapter still enforces the exact MaxPhotoBytes cap; this
-// just bounds what the server will read in. Headroom covers multipart framing.
-var maxPhotoBytes = builder.Configuration.GetValue<long?>("Storage:MaxPhotoBytes") ?? 5 * 1024 * 1024;
-var maxRequestBytes = maxPhotoBytes + 64 * 1024;
+// Bind the storage options once, from the same section the adapter binds, so the
+// request-boundary limit and the photos directory can't drift from the adapter.
+var storageOptions = builder.Configuration
+    .GetSection(PhotoStorageOptions.SectionName)
+    .Get<PhotoStorageOptions>() ?? new PhotoStorageOptions();
+
+if (storageOptions.MaxPhotoBytes <= 0)
+{
+    throw new InvalidOperationException(
+        $"{PhotoStorageOptions.SectionName}:{nameof(PhotoStorageOptions.MaxPhotoBytes)} must be a positive value.");
+}
+
+// Refuse oversized uploads at the request boundary (this caps every endpoint, which
+// is fine here — all others take small JSON) rather than after buffering the whole
+// body; the adapter still enforces the exact cap. Headroom covers multipart framing,
+// clamped so an extreme configured cap can't overflow to a negative limit.
+const long multipartFramingHeadroom = 64 * 1024;
+var maxRequestBytes = storageOptions.MaxPhotoBytes <= long.MaxValue - multipartFramingHeadroom
+    ? storageOptions.MaxPhotoBytes + multipartFramingHeadroom
+    : long.MaxValue;
 builder.Services.Configure<KestrelServerOptions>(o => o.Limits.MaxRequestBodySize = maxRequestBytes);
 builder.Services.Configure<FormOptions>(o => o.MultipartBodyLengthLimit = maxRequestBytes);
 
@@ -43,10 +59,9 @@ if (app.Environment.IsDevelopment())
     });
 }
 
-// Serve uploaded coffee photos read-only at /photos. Resolved the same way the
-// storage adapter resolves Storage:PhotosPath, so writes and reads agree.
-var photosPath = Path.GetFullPath(
-    builder.Configuration.GetValue<string>("Storage:PhotosPath") ?? "photos");
+// Serve uploaded coffee photos read-only at /photos, from the same directory the
+// storage adapter writes to (both resolve the bound PhotosPath the same way).
+var photosPath = Path.GetFullPath(storageOptions.PhotosPath);
 Directory.CreateDirectory(photosPath);
 
 // Ensure .webp is served with the right content type (older default providers omit it).

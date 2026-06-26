@@ -1,4 +1,5 @@
 using CoffeeTracker.Application.Ports.Driven;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace CoffeeTracker.Infrastructure.Storage;
@@ -27,11 +28,13 @@ public class FileSystemPhotoStorage : IPhotoStorage
 
     private readonly string _directory;
     private readonly long _maxBytes;
+    private readonly ILogger<FileSystemPhotoStorage> _logger;
 
-    public FileSystemPhotoStorage(IOptions<PhotoStorageOptions> options)
+    public FileSystemPhotoStorage(IOptions<PhotoStorageOptions> options, ILogger<FileSystemPhotoStorage> logger)
     {
         _directory = Path.GetFullPath(options.Value.PhotosPath);
         _maxBytes = options.Value.MaxPhotoBytes;
+        _logger = logger;
     }
 
     public async Task<PhotoStorageResult> SaveAsync(Stream content, string? contentType, long length, CancellationToken ct = default)
@@ -78,9 +81,19 @@ public class FileSystemPhotoStorage : IPhotoStorage
         if (!string.IsNullOrEmpty(fileName))
         {
             var fullPath = Path.Combine(_directory, fileName);
-            // File.Delete is a no-op if the file is already gone, so this is
-            // idempotent and best-effort.
-            File.Delete(fullPath);
+            try
+            {
+                // File.Delete is a no-op if the file is already gone (idempotent),
+                // but it still throws for a missing directory, a locked file, or a
+                // permission problem. Cleanup is best-effort: a failure here must not
+                // turn an already-committed delete/replace into a 500, so swallow and
+                // log — an orphaned file is recoverable, a failed user operation isn't.
+                File.Delete(fullPath);
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                _logger.LogWarning(ex, "Failed to delete stored photo {RelativePath}; leaving it as an orphan.", relativePath);
+            }
         }
 
         return Task.CompletedTask;

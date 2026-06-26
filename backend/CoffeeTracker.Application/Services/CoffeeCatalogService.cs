@@ -101,10 +101,22 @@ public class CoffeeCatalogService(
 
         var previousPath = coffee.PhotoPath;
         coffee.PhotoPath = stored.RelativePath;
-        await repository.UpdateAsync(coffee, ct);
 
-        // Replacing a photo: drop the previous file so it doesn't linger as an orphan.
-        if (previousPath is not null && previousPath != stored.RelativePath)
+        try
+        {
+            await repository.UpdateAsync(coffee, ct);
+        }
+        catch
+        {
+            // The new file is already on disk but the path didn't get persisted;
+            // delete it so a failed update doesn't leave an unreferenced orphan.
+            await photoStorage.DeleteAsync(stored.RelativePath, ct);
+            throw;
+        }
+
+        // Replacing an existing photo: drop the previous file so it doesn't linger.
+        // (Stored names are random GUIDs, so the new path is always distinct.)
+        if (previousPath is not null)
         {
             await photoStorage.DeleteAsync(previousPath, ct);
         }
