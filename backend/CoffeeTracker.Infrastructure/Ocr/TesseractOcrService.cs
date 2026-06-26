@@ -15,14 +15,16 @@ namespace CoffeeTracker.Infrastructure.Ocr;
 public class TesseractOcrService(IOptions<OcrOptions> options, ILogger<TesseractOcrService> logger) : IOcrService
 {
     private readonly string _tessdataPath = ResolveTessdataPath(options.Value);
-    private readonly string _languageCode = NormalizeLanguageCode(options.Value.Language);
-    private readonly Language _language = MapLanguage(options.Value.Language);
+    // One resolution of the language so the engine's Language and the traineddata
+    // filename stem can never drift apart (a mismatch would make IsAvailable check
+    // the wrong file and then fail at load).
+    private readonly (Language Tesseract, string Code) _language = ResolveLanguage(options.Value.Language);
 
     // Cheap, side-effect-free check: the engine can only load if the language's
     // traineddata file is actually present, so check the file (not just the dir) —
     // a present-but-empty tessdata mount shouldn't report available and then fail
     // after we've already stored the photo.
-    public bool IsAvailable => File.Exists(Path.Combine(_tessdataPath, $"{_languageCode}.traineddata"));
+    public bool IsAvailable => File.Exists(Path.Combine(_tessdataPath, $"{_language.Code}.traineddata"));
 
     public async Task<OcrResult> ReadAsync(Stream image, CancellationToken ct = default)
     {
@@ -44,7 +46,7 @@ public class TesseractOcrService(IOptions<OcrOptions> options, ILogger<Tesseract
 
             // The Tesseract engine isn't safe for concurrent Process calls and
             // snap-to-fill is infrequent, so build a fresh engine per request.
-            using var engine = new Engine(_tessdataPath, _language, EngineMode.Default);
+            using var engine = new Engine(_tessdataPath, _language.Tesseract, EngineMode.Default);
             using var pix = TesseractOCR.Pix.Image.LoadFromMemory(bytes);
             using var page = engine.Process(pix);
             return OcrResult.Read(page.Text ?? string.Empty);
@@ -70,17 +72,12 @@ public class TesseractOcrService(IOptions<OcrOptions> options, ILogger<Tesseract
             : "/usr/share/tesseract-ocr/5/tessdata";
     }
 
-    private static Language MapLanguage(string? language) => language?.ToLowerInvariant() switch
+    // Single source of truth: maps the config language to BOTH the Tesseract enum
+    // and the traineddata filename stem. M5 standardizes on English; adding a pack
+    // here updates the engine language and the availability check together.
+    private static (Language Tesseract, string Code) ResolveLanguage(string? language) => language?.ToLowerInvariant() switch
     {
-        "eng" or "en" or null or "" => Language.English,
-        // M5 standardizes on English; other packs are a future addition.
-        _ => Language.English,
-    };
-
-    // The tessdata filename stem for the configured language (matches MapLanguage).
-    private static string NormalizeLanguageCode(string? language) => language?.ToLowerInvariant() switch
-    {
-        "eng" or "en" or null or "" => "eng",
-        _ => "eng",
+        "eng" or "en" or null or "" => (Language.English, "eng"),
+        _ => (Language.English, "eng"),
     };
 }

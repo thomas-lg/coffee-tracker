@@ -98,11 +98,46 @@ public class CoffeeLabelParserTests
     [Fact]
     public void Parse_DoesNotDuplicateNameAsRoaster()
     {
-        // Single prominent line that also matches the roaster keyword: it's the
-        // name; roaster stays null rather than echoing it.
+        // Single prominent line: it's the name; roaster stays null rather than echoing it.
         var result = Parser.Parse("Blue Bottle Coffee");
 
         Assert.Equal("Blue Bottle Coffee", result.Name);
+        Assert.Null(result.Roaster);
+    }
+
+    [Fact]
+    public void Parse_DoesNotThrow_OnDuplicatedRoasterLines()
+    {
+        // Two identical roaster-keyword lines must not throw (the roaster-first
+        // branch's name pick falls back to null instead of First() blowing up).
+        var result = Parser.Parse("Stumptown Roasters\nStumptown Roasters");
+
+        Assert.Equal("Stumptown Roasters", result.Roaster);
+        Assert.Null(result.Name);
+    }
+
+    [Fact]
+    public void Parse_DoesNotInvertNameAndRoaster_WhenNameLineMentionsCoffee()
+    {
+        // Bare "Coffee" on the product line must NOT make it the roaster.
+        var result = Parser.Parse("Ethiopia Coffee\nBlue Bottle Roasters");
+
+        Assert.Equal("Ethiopia Coffee", result.Name);
+        Assert.Equal("Blue Bottle Roasters", result.Roaster);
+    }
+
+    [Theory]
+    [InlineData("Roast: Medium Dark", "Medium-Dark")]
+    [InlineData("Light Medium roast", "Light-Medium")]
+    public void Parse_NormalizesSpacedRoast(string text, string expected) =>
+        Assert.Equal(expected, Parser.Parse(text).RoastLevel);
+
+    [Fact]
+    public void Parse_DoesNotPromoteWeightLineToRoaster()
+    {
+        var result = Parser.Parse("Hair Bender\nNet wt 340 grams");
+
+        Assert.Equal("Hair Bender", result.Name);
         Assert.Null(result.Roaster);
     }
 }

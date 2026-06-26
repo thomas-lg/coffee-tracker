@@ -10,9 +10,14 @@ namespace CoffeeTracker.Application.Services;
 /// </summary>
 public partial class CoffeeLabelParser : ICoffeeLabelParser
 {
-    // Canonical roast levels, longest-match first so "medium-dark" wins over "dark"/"medium".
+    // Roast keywords, longest-match first so "medium-dark" wins over "dark"/"medium".
+    // Both hyphen and space spellings are listed (bags use either); the space form is
+    // normalized to the canonical hyphenated value after matching.
     private static readonly string[] RoastLevels =
-        ["Medium-Dark", "Light-Medium", "Espresso", "Blonde", "Light", "Medium", "Dark"];
+    [
+        "Medium-Dark", "Medium Dark", "Light-Medium", "Light Medium",
+        "Espresso", "Blonde", "Light", "Medium", "Dark",
+    ];
 
     // A pragmatic set of common coffee origins (countries + a few well-known regions).
     private static readonly string[] Origins =
@@ -37,7 +42,9 @@ public partial class CoffeeLabelParser : ICoffeeLabelParser
             Name: name,
             Roaster: roaster,
             Origin: FindEarliest(text, Origins),
-            RoastLevel: FindEarliest(text, RoastLevels),
+            // Normalize "Medium Dark" → "Medium-Dark" so the value is canonical
+            // regardless of which spelling the label used.
+            RoastLevel: FindEarliest(text, RoastLevels)?.Replace(' ', '-'),
             Weight: FindWeight(text));
     }
 
@@ -109,12 +116,12 @@ public partial class CoffeeLabelParser : ICoffeeLabelParser
     // Best-effort name/roaster from the prominent lines (those with real words;
     // weight-bearing lines stay eligible since bags often print the weight beside
     // the name). Two layouts:
-    //  - A line looks like a roaster ("… Roasters/Coffee/Roastery") AND there's
-    //    another line to be the name → that line is the roaster, the name comes
-    //    from a different line (handles roaster-first bags like "Stumptown … / Hair Bender").
+    //  - A line looks like a roaster ("… Roasters / Coffee Co / Roastery") AND there's
+    //    a different line to be the name → that line is the roaster, the name comes
+    //    from another line (handles roaster-first bags like "Stumptown … / Hair Bender").
     //  - Otherwise the first prominent line is the name and the roaster is a later
-    //    prominent line (or null) — never the same line, so a lone "Blue Bottle
-    //    Coffee" is a name, not a duplicated roaster.
+    //    roaster-keyword line (or null) — never the same line, and never a weight line,
+    //    so a lone "Blue Bottle Coffee" is a name, not a duplicated/junk roaster.
     private static (string? Name, string? Roaster) FindNameAndRoaster(IReadOnlyList<string> lines)
     {
         var prominent = lines.Where(IsProminent).ToList();
@@ -126,13 +133,18 @@ public partial class CoffeeLabelParser : ICoffeeLabelParser
         var roasterLine = prominent.FirstOrDefault(l => RoasterKeywordRegex().IsMatch(l));
         if (roasterLine is not null && prominent.Count > 1)
         {
-            var name = prominent.First(l => l != roasterLine);
+            // FirstOrDefault, not First: if every other prominent line is identical to
+            // the roaster line, leave the name null rather than throwing.
+            var name = prominent.FirstOrDefault(l => l != roasterLine);
             return (name, roasterLine);
         }
 
         var firstName = prominent[0];
+        // Roaster fallback: a later line that looks like a roaster; else a later line
+        // that's neither the name nor a weight line (avoids echoing the name or
+        // promoting "Net wt 340g" to roaster).
         var roaster = prominent.Skip(1).FirstOrDefault(l => RoasterKeywordRegex().IsMatch(l))
-                      ?? prominent.Skip(1).FirstOrDefault();
+                      ?? prominent.Skip(1).FirstOrDefault(l => l != firstName && !WeightRegex().IsMatch(l));
         return (firstName, roaster);
     }
 
@@ -141,6 +153,8 @@ public partial class CoffeeLabelParser : ICoffeeLabelParser
     [GeneratedRegex(@"(?<amount>\d+(?:[.,]\d+)?)\s*(?<unit>kg|g|gr|grams|oz|lbs|lb)\b", RegexOptions.IgnoreCase)]
     private static partial Regex WeightRegex();
 
-    [GeneratedRegex(@"\b(roasters?|roastery|coffee\s*co\.?|coffee\s*roasters?|coffee)\b", RegexOptions.IgnoreCase)]
+    // Roaster-indicating phrases. Deliberately NOT bare "coffee" — that over-triggers
+    // on ordinary product lines like "Ethiopia Coffee" and inverts name/roaster.
+    [GeneratedRegex(@"\b(roasters?|roastery|coffee\s*co\.?|coffee\s*roasters?|roasting\s*co\.?)\b", RegexOptions.IgnoreCase)]
     private static partial Regex RoasterKeywordRegex();
 }
