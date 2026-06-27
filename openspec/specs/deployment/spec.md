@@ -1,7 +1,8 @@
 # deployment Specification
 
 ## Purpose
-TBD - created by archiving change m7-production-image. Update Purpose after archive.
+Package Coffee Tracker as a single self-hosted production container that serves the Angular PWA and the API same-origin on port `8080`, with OCR bundled in the image, the SQLite database and uploaded photos persisted to volumes, running as a non-root user behind a TLS-terminating reverse proxy.
+
 ## Requirements
 
 ### Requirement: A single production container serves the app same-origin

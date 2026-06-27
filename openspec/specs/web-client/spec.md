@@ -1,7 +1,8 @@
 # web-client Specification
 
 ## Purpose
-TBD - created by archiving change m6-angular-pwa. Update Purpose after archive.
+The Angular PWA front-end: authenticate (with registration when enabled), browse and search the coffee catalog, view a coffee and add ratings over time, add or edit coffees with photo upload and snap-to-fill scanning, install offline-capable to the home screen, and follow light/dark OS theming with reduced-motion support.
+
 ## Requirements
 
 ### Requirement: A visitor can authenticate through the web client
