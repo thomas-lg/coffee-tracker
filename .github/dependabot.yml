@@ -1,0 +1,57 @@
+# Keeps the four ecosystems this repo ships patched: NuGet (backend), npm
+# (frontend workspaces), Docker base images (prod + devcontainer), and the
+# Actions used in these workflows. Weekly, grouped minor+patch to keep PR noise
+# down. Targets the default branch (main); `deps` prefix feeds the conventional
+# PR-title check + label workflows.
+version: 2
+updates:
+  - package-ecosystem: nuget
+    directory: "/" # CoffeeTracker.sln lives at the repo root
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 10
+    groups:
+      dotnet-minor-patch:
+        update-types: [minor, patch]
+    labels: [dependencies, dotnet]
+    commit-message:
+      prefix: deps
+
+  - package-ecosystem: npm
+    directory: "/frontend"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 10
+    groups:
+      npm-minor-patch:
+        update-types: [minor, patch]
+    labels: [dependencies, frontend]
+    commit-message:
+      prefix: deps
+
+  - package-ecosystem: docker
+    directory: "/" # production Dockerfile + docker-compose.yml
+    schedule:
+      interval: weekly
+    labels: [dependencies, docker]
+    commit-message:
+      prefix: deps
+
+  - package-ecosystem: docker
+    directory: "/.devcontainer"
+    schedule:
+      interval: weekly
+    labels: [dependencies, docker]
+    commit-message:
+      prefix: deps
+
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+    groups:
+      actions-minor-patch:
+        update-types: [minor, patch]
+    labels: [dependencies, github-actions]
+    commit-message:
+      prefix: deps
