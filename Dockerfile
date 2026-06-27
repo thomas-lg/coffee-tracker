@@ -38,13 +38,16 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 
 # PUID/PGID default to Unraid's nobody:users. Override at runtime to match whoever
-# owns the host appdata dirs, so the bind-mounted volumes are writable.
+# owns the host appdata dirs, so the bind-mounted volumes are writable. HOME points
+# into the /config volume so the non-root user's ASP.NET Data Protection key ring
+# persists there instead of warning and falling back to ephemeral keys.
 ENV TESSDATA_PREFIX=/usr/share/tesseract-ocr/5 \
     ASPNETCORE_URLS=http://+:8080 \
     ConnectionStrings__Default="Data Source=/config/coffee.db" \
     Storage__PhotosPath=/photos \
     PUID=99 \
-    PGID=100
+    PGID=100 \
+    HOME=/config
 
 WORKDIR /app
 COPY --from=api /publish ./
