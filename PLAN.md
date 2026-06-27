@@ -87,7 +87,7 @@ coffee-tracker/                 (repo root; dev-container workspace at /workspac
 ├─ scripts/                     get-tessdata (OPTIONAL — see M5)
 ├─ Dockerfile                   PRODUCTION multi-stage (Angular build → API publish → runtime)
 ├─ docker-compose.yml           local dev/test + reference only (NOT the NAS deploy path)
-├─ deploy/unraid/coffee-tracker.xml   Unraid container template
+├─ deploy/unraid/my-coffee-tracker.xml   Unraid container template
 └─ README.md
 ```
 
@@ -302,7 +302,7 @@ opens on a phone.
      Angular `dist` (served as same-origin static files). Set
      `ENV ASPNETCORE_URLS=http://+:8080` + `EXPOSE 8080` so the container listens
      on **8080** — the port the Unraid template
-     ([`deploy/unraid/coffee-tracker.xml`](./deploy/unraid/coffee-tracker.xml))
+     ([`deploy/unraid/my-coffee-tracker.xml`](./deploy/unraid/my-coffee-tracker.xml))
      maps. **Run as a non-root user**; make only `/config` + `/photos` writable.
 2. `Program.cs` prod wiring: configure **`UseForwardedHeaders`** (honor
    `X-Forwarded-Proto`, set `KnownProxies`/`KnownNetworks`) so auth redirects /
@@ -350,7 +350,7 @@ template.
    `${{ secrets.GITHUB_TOKEN }}`) with `permissions: { contents: read, packages:
    write }`. The package is set **public** in GHCR settings.
 3. **Deploy = manual.** Install/update via the **Unraid Docker GUI** pointed at the
-   GHCR image, using **`deploy/unraid/coffee-tracker.xml`** (WebUI port, `/config` +
+   GHCR image, using **`deploy/unraid/my-coffee-tracker.xml`** (WebUI port, `/config` +
    `/photos` volumes under `/mnt/user/appdata/coffee-tracker/`, env vars with the
    required JWT key and `REGISTRATION_ENABLED`). No Watchtower/SSH/self-hosted
    runner.
