@@ -47,7 +47,7 @@ jobs:
       # Signed proof of where/how the image was built, verifiable with
       # `gh attestation verify oci://ghcr.io/thomas-lg/coffee-tracker:<tag>`.
       - name: Attest build provenance
-        uses: actions/attest-build-provenance@v2
+        uses: actions/attest-build-provenance@v4
         with:
           subject-name: ${{ env.IMAGE }}
           subject-digest: ${{ steps.build.outputs.digest }}
