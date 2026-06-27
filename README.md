@@ -89,35 +89,43 @@ is gated by a flag, login/register are rate-limited, uploads are validated, and 
 container runs as a non-root user. See the Security section in [PLAN.md](./PLAN.md).
 
 ## Status
-Early days, but the backend foundation is now running:
+
+All planned milestones (**M0–M8**) are shipped and merged:
 
 - ✅ **M0** — dev container (reproducible .NET 10 + Node 22 + Tesseract toolchain)
-- ✅ **Scaffolding & CI/CD** — `ci.yml` (build/test) + `release.yml` (GHCR publish),
-  solution + xUnit test skeleton, `.dockerignore`, Unraid template
-- ✅ **M1** — backend skeleton: `GET /api/coffees` over EF Core + SQLite (WAL mode,
-  auto-migrate on startup), Swagger in dev, **hexagonal architecture** (Domain ←
-  Application ← {Infrastructure, Api}) so controllers depend only on application
-  ports, never on EF Core
-- ✅ **M2** — coffee CRUD (`GET`/`POST`/`PUT`/`DELETE /api/coffees`) with
-  DataAnnotations validation, plus photo upload (`POST /api/coffees/{id}/photo`)
-  behind an `IPhotoStorage` port — content-type allowlist, 5 MB cap, server-generated
-  filenames — served read-only at `/photos`
-- ✅ **M3** — auth: ASP.NET Identity + JWT (`POST /api/auth/register` & `/login`),
-  `REGISTRATION_ENABLED` gate (first user becomes admin), password policy + lockout,
-  rate-limited auth endpoints, and **all** catalog endpoints now require a token.
-  `Jwt__Key` is required at startup (no baked default); created coffees record their owner
-- ✅ **M4** — reviews & ratings: one review per user per coffee (rating 1–5, tasting
-  notes, brew details, flavor tags), owner-only edit / owner-or-admin delete, a seeded
-  `GET /api/flavor-tags` set, and `averageRating`/`reviewCount` on every coffee response
-- ✅ **M5** — snap-to-fill OCR (backend): `POST /api/coffees/scan` runs an image through
-  a swappable `IOcrService` (`Ocr:Engine` — Tesseract in the container/prod, `none` on
-  hosts without the native libs → 503) and a pure `CoffeeLabelParser` to return raw text
-  + best-effort fields + the stored photo path; does not create a coffee
-- ⬜ **M6** — Angular 22 PWA + snap-to-fill UX
-- ⬜ **M7** — production Docker image + local compose
+- ✅ **M1** — backend skeleton over EF Core + SQLite (WAL, auto-migrate),
+  **hexagonal architecture** (Domain ← Application ← {Infrastructure, Api})
+- ✅ **M2** — coffee CRUD + photo upload behind an `IPhotoStorage` port
+  (content-type allowlist, 5 MB cap, server-generated names), served at `/photos`
+- ✅ **M3** — auth: ASP.NET Identity + JWT, `REGISTRATION_ENABLED` gate (first user
+  is admin), password policy + lockout, rate-limited endpoints, `Jwt__Key` required
+- ✅ **M4** — reviews, ratings & flavor tags, with `averageRating`/`reviewCount`
+- ✅ **M5** — snap-to-fill OCR (backend): `POST /api/coffees/scan` over a swappable
+  `IOcrService` + a pure `CoffeeLabelParser`
+- ✅ **M6** — Angular 22 PWA: auth, catalog (search + ratings-over-time), add/edit,
+  snap-to-fill UX, installable + light/dark theming
+- ✅ **M7** — production multi-stage Docker image + local `docker-compose.yml`
+- ✅ **M8** — CI/CD → GHCR (`latest`/`sha`/semver) + the Unraid template
 
-The CI/CD workflows are intentionally scaffolding-aware: the frontend,
-docker-build, and image-publish steps are no-ops until their code lands (M6/M7).
+**Beyond the plan:** ratings **over time** (multiple dated reviews per coffee, not
+one-per-user), **admin photo-cleanup** (reap scan-orphaned photos — backend + UI),
+a **non-root PUID/PGID** container for Unraid bind mounts, **CodeQL + Trivy** image
+scanning, **Dependabot**, build-provenance attestations, and an HTTP **integration
+test** for the admin authorization policy.
+
+## Ideas for later
+
+Nothing committed — a parking lot for when the mood strikes:
+
+- **OIDC / SSO** via Authelia (keep the app's own login as a fallback).
+- **Brew log** — per-cup extraction notes (grind, dose, yield, time) beyond a rating.
+- **Wishlist & "finished bag"** states; optional low-stock nudges.
+- **Stats & charts** — rating trends over time, favourite roasters/origins.
+- **Export / import** (JSON/CSV) and a one-click backup endpoint.
+- **OCR upgrade** — PaddleOCR/RapidOCR behind `IOcrService` if Tesseract is weak on
+  real bags.
+- **Multi-arch image** (add `linux/arm64`) for ARM NAS / Raspberry Pi.
+- **i18n** — the UI is English-only today.
 
 ## Built with Claude
 

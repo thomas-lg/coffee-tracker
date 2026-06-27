@@ -1,5 +1,11 @@
 # Coffee Tracker — Executable Build Plan (M0–M8)
 
+> **Status: ✅ complete.** All milestones M0–M8 are built and merged to `main`, plus
+> post-plan work (ratings-over-time, admin photo-cleanup, non-root PUID/PGID deploy,
+> CodeQL/Trivy, Dependabot). This document is kept as the **historical build plan**;
+> for the current state and how to run/deploy the app, see [README.md](./README.md),
+> and for live behaviour specs see [`openspec/specs/`](./openspec/specs/).
+
 ## Context
 
 `PLAN.md` is a thorough greenfield design doc for a self-hosted coffee-cataloging
@@ -14,12 +20,11 @@ the Unraid Docker GUI** — there is no Watchtower / SSH / compose-on-NAS. The r
 NAS deploy path. The target NAS is an Unraid box (UGreen DXP4800 Plus, x86-64), so
 images are built for **`linux/amd64` only**.
 
-The repo currently contains `PLAN.md`, `README.md`, `.gitignore`, the
-`.devcontainer/`, `.github/workflows/`, `.dockerignore`, `CoffeeTracker.sln`, the
-`backend/CoffeeTracker.Tests/` skeleton, and the Unraid template — but no
-application code yet. This plan turns the design into a concrete,
-milestone-by-milestone build with exact packages, commands, and files, so each
-step is independently runnable and teachable.
+This plan turned the design into a concrete, milestone-by-milestone build with
+exact packages, commands, and files, so each step was independently runnable and
+teachable. (When first written the repo held only `PLAN.md`, `README.md`, the
+`.devcontainer/`, `.github/workflows/`, `CoffeeTracker.sln`, the test skeleton, and
+the Unraid template — no application code yet. All of it now exists on `main`.)
 
 **Validated against current releases (June 2026):**
 
