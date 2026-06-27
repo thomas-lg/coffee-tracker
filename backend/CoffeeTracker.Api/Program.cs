@@ -108,7 +108,14 @@ builder.Services
 // A fallback policy enforces this centrally so a future endpoint can't be left
 // public by forgetting [Authorize].
 builder.Services.AddAuthorization(options =>
-    options.FallbackPolicy = new AuthorizationPolicyBuilder().RequireAuthenticatedUser().Build());
+{
+    options.FallbackPolicy = new AuthorizationPolicyBuilder().RequireAuthenticatedUser().Build();
+    // Admin-only endpoints (e.g. photo cleanup) require the isAdmin claim the token
+    // carries for administrators. A reusable policy so every admin endpoint enforces
+    // it the same way and non-admins get a 403 before any handler runs.
+    options.AddPolicy(AuthorizationPolicies.Admin, policy =>
+        policy.RequireClaim(TokenService.AdminClaim, "true"));
+});
 
 // Trust the reverse proxy's forwarded client IP/scheme when configured, so the
 // rate limiter partitions by the real client rather than the proxy's single IP
