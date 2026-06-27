@@ -172,6 +172,13 @@ if (generatedDevKey)
 // (rate limiter, auth). Must run first in the pipeline.
 app.UseForwardedHeaders();
 
+// Behind the NAS reverse proxy, TLS is terminated upstream; emit HSTS in prod so
+// browsers stick to HTTPS. TLS itself is the proxy's job — no HttpsRedirection here.
+if (!app.Environment.IsDevelopment())
+{
+    app.UseHsts();
+}
+
 // Apply pending migrations on startup (single-instance, self-hosted app).
 await app.Services.InitializeDatabaseAsync();
 
@@ -209,6 +216,13 @@ app.UseStaticFiles(new StaticFileOptions
         ctx.Context.Response.Headers["X-Content-Type-Options"] = "nosniff",
 });
 
+// Serve the built Angular app (same-origin) from wwwroot in production; in dev the
+// SPA is served by `ng serve`, and the root path shows Swagger UI instead.
+if (!app.Environment.IsDevelopment())
+{
+    app.UseStaticFiles();
+}
+
 // Dev-only: allow the ng-serve origin (see the policy registration above).
 if (app.Environment.IsDevelopment())
 {
@@ -221,5 +235,16 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+
+// SPA fallback: Angular client-side routes (e.g. /coffees/1) resolve to index.html.
+// API/photos/openapi are matched first, so only unknown paths fall through.
+// AllowAnonymous so the shell (and `/`) load without auth — otherwise the global
+// RequireAuthenticatedUser fallback policy gates this endpoint and unauthenticated
+// visitors get 401 instead of the app, with no way to reach the login page. API
+// endpoints keep their own auth; only the static SPA shell is public.
+if (!app.Environment.IsDevelopment())
+{
+    app.MapFallbackToFile("index.html").AllowAnonymous();
+}
 
 app.Run();

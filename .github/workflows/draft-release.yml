@@ -1,0 +1,45 @@
+# Keeps a draft GitHub Release up to date from merged PRs (categorised by their
+# conventional-commit labels — see release-drafter.yml). Pushing to main updates
+# the draft; a manual run publishes it, which creates the `v*` tag that
+# release.yml watches to build + push the versioned GHCR image.
+name: Draft Release
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Dry run (do not publish the release)"
+        required: false
+        default: "false"
+        type: choice
+        options:
+          - "false"
+          - "true"
+
+permissions:
+  contents: write
+  pull-requests: read
+
+jobs:
+  draft-release:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push'
+    steps:
+      - name: Create/Update Draft Release
+        uses: release-drafter/release-drafter@v7
+        with:
+          config-name: release-drafter.yml
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+  publish-release:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'
+    steps:
+      - name: Publish Release
+        uses: release-drafter/release-drafter@v7
+        with:
+          config-name: release-drafter.yml
+          publish: ${{ github.event.inputs.dry_run == 'false' }}
+          token: ${{ secrets.GITHUB_TOKEN }}

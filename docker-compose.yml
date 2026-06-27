@@ -1,0 +1,26 @@
+# LOCAL dev/test + reference only — NOT how the NAS runs the app (that's a manual
+# install from the GHCR image via the Unraid Docker GUI; see deploy/unraid/).
+services:
+  coffee-tracker:
+    build: .
+    image: ghcr.io/thomas-lg/coffee-tracker:local
+    ports:
+      - '8080:8080'
+    environment:
+      # REQUIRED — the app refuses to start without a strong key. Generate e.g.
+      # with: openssl rand -base64 48
+      Jwt__Key: ${JWT_KEY:?set JWT_KEY (e.g. `openssl rand -base64 48`)}
+      # Open signup is off by default; set true to allow registration.
+      REGISTRATION_ENABLED: ${REGISTRATION_ENABLED:-false}
+      # The container defaults already point these at the volumes below:
+      #   ConnectionStrings__Default=Data Source=/config/coffee.db
+      #   Storage__PhotosPath=/photos
+      #   Ocr__Engine=tesseract (native libs are baked into the image)
+    volumes:
+      - config:/config # coffee.db (+ -wal/-shm). Back up before updating the image.
+      - photos:/photos # uploaded coffee photos
+    restart: unless-stopped
+
+volumes:
+  config:
+  photos:
