@@ -1,0 +1,68 @@
+/* To learn more about Typescript configuration file: https://www.typescriptlang.org/docs/handbook/tsconfig-json.html. */
+/* To learn more about Angular compiler options: https://angular.dev/reference/configs/angular-compiler-options. */
+{
+  "compileOnSave": false,
+  "compilerOptions": {
+    "paths": {
+      "@coffee-tracker/ui": ["./packages/ui/src/public-api.ts"],
+      "@coffee-tracker/util": ["./packages/util/src/public-api.ts"],
+      "@coffee-tracker/auth": ["./packages/auth/src/public-api.ts"],
+      "@coffee-tracker/data": ["./packages/data/src/public-api.ts"],
+      "@coffee-tracker/coffees": ["./packages/coffees/src/public-api.ts"]
+    },
+    "noImplicitOverride": true,
+    "noPropertyAccessFromIndexSignature": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "skipLibCheck": true,
+    "isolatedModules": true,
+    "experimentalDecorators": true,
+    "importHelpers": true,
+    "target": "ES2022",
+    "module": "preserve"
+  },
+  "angularCompilerOptions": {
+    "enableI18nLegacyMessageIdFormat": false,
+    "strictInjectionParameters": true,
+    "strictInputAccessModifiers": true
+  },
+  "files": [],
+  "references": [
+    {
+      "path": "./packages/app/tsconfig.app.json"
+    },
+    {
+      "path": "./packages/app/tsconfig.spec.json"
+    },
+    {
+      "path": "./packages/ui/tsconfig.lib.json"
+    },
+    {
+      "path": "./packages/ui/tsconfig.spec.json"
+    },
+    {
+      "path": "./packages/util/tsconfig.lib.json"
+    },
+    {
+      "path": "./packages/util/tsconfig.spec.json"
+    },
+    {
+      "path": "./packages/auth/tsconfig.lib.json"
+    },
+    {
+      "path": "./packages/auth/tsconfig.spec.json"
+    },
+    {
+      "path": "./packages/data/tsconfig.lib.json"
+    },
+    {
+      "path": "./packages/data/tsconfig.spec.json"
+    },
+    {
+      "path": "./packages/coffees/tsconfig.lib.json"
+    },
+    {
+      "path": "./packages/coffees/tsconfig.spec.json"
+    }
+  ]
+}

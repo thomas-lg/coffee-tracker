@@ -159,6 +159,10 @@ namespace CoffeeTracker.Infrastructure.Migrations
                     b.Property<string>("Ratio")
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("Stage")
+                        .HasMaxLength(40)
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("TastingNotes")
                         .HasColumnType("TEXT");
 
@@ -171,8 +175,7 @@ namespace CoffeeTracker.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("CoffeeId", "UserId")
-                        .IsUnique();
+                    b.HasIndex("CoffeeId", "UserId");
 
                     b.ToTable("Reviews");
                 });

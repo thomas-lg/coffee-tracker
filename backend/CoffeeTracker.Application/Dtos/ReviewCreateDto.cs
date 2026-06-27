@@ -12,4 +12,5 @@ public record ReviewCreateDto(
     [StringLength(100)] string? BrewMethod,
     [StringLength(100)] string? Grind,
     [StringLength(50)] string? Ratio,
-    IReadOnlyList<int>? TagIds);
+    IReadOnlyList<int>? TagIds,
+    [StringLength(40)] string? Stage = null);

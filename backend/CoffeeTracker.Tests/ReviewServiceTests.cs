@@ -7,8 +7,8 @@ using Xunit;
 
 namespace CoffeeTracker.Tests;
 
-// Exercises the review service against fakes — enforces the one-per-user rule and
-// ownership (owner-only edit; owner-or-admin delete) with no database involved.
+// Exercises the review service against fakes — allows multiple dated entries per
+// user and ownership (owner-only edit; owner-or-admin delete) with no database involved.
 public class ReviewServiceTests
 {
     private static readonly DateTimeOffset FixedNow = new(2026, 6, 26, 10, 0, 0, TimeSpan.Zero);
@@ -69,25 +69,14 @@ public class ReviewServiceTests
 
         public int Count => _store.Count;
 
-        /// <summary>When set, AddAsync throws as if the unique index caught a race.</summary>
-        public bool ThrowDuplicateOnAdd { get; set; }
-
         public Task<IReadOnlyList<Review>> GetByCoffeeAsync(int coffeeId, CancellationToken ct = default)
             => Task.FromResult<IReadOnlyList<Review>>(_store.Values.Where(r => r.CoffeeId == coffeeId).ToList());
 
         public Task<Review?> GetByIdAsync(int id, CancellationToken ct = default)
             => Task.FromResult(_store.TryGetValue(id, out var r) ? r : null);
 
-        public Task<bool> ExistsForUserAsync(int coffeeId, string userId, CancellationToken ct = default)
-            => Task.FromResult(_store.Values.Any(r => r.CoffeeId == coffeeId && r.UserId == userId));
-
         public Task<Review> AddAsync(Review review, CancellationToken ct = default)
         {
-            if (ThrowDuplicateOnAdd)
-            {
-                throw new DuplicateReviewException();
-            }
-
             review.Id = _nextId++;
             _store[review.Id] = review;
             return Task.FromResult(review);
@@ -156,15 +145,17 @@ public class ReviewServiceTests
     }
 
     [Fact]
-    public async Task CreateAsync_ReturnsAlreadyReviewed_OnSecondReviewBySameUser()
+    public async Task CreateAsync_AllowsAnotherEntry_BySameUserOverTime_AndKeepsStage()
     {
         var repo = new FakeReviewRepo(OwnedReview(1, 42, "user-1"));
         var service = NewService(repo, currentUserId: "user-1");
 
-        var result = await service.CreateAsync(42, CreateDto());
+        var dto = new ReviewCreateDto(5, null, null, null, null, null, Stage: "Last cups");
+        var result = await service.CreateAsync(42, dto);
 
-        Assert.Equal(ReviewStatus.AlreadyReviewed, result.Status);
-        Assert.Equal(1, repo.Count);
+        Assert.Equal(ReviewStatus.Success, result.Status);
+        Assert.Equal("Last cups", result.Review!.Stage);
+        Assert.Equal(2, repo.Count); // the prior entry is kept — two dated ratings now
     }
 
     [Fact]
@@ -242,18 +233,6 @@ public class ReviewServiceTests
 
         Assert.Equal(ReviewStatus.InvalidTags, result.Status);
         Assert.Equal(0, repo.Count);
-    }
-
-    [Fact]
-    public async Task CreateAsync_ReturnsAlreadyReviewed_WhenIndexCatchesRace()
-    {
-        // Pre-check passes (empty store) but AddAsync throws as the unique index would.
-        var repo = new FakeReviewRepo { ThrowDuplicateOnAdd = true };
-        var service = NewService(repo);
-
-        var result = await service.CreateAsync(42, CreateDto());
-
-        Assert.Equal(ReviewStatus.AlreadyReviewed, result.Status);
     }
 
     [Fact]

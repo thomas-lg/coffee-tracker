@@ -11,13 +11,7 @@ public interface IReviewRepository
     /// <summary>A single review by id (with its tags), tracked for mutation; null if missing.</summary>
     Task<Review?> GetByIdAsync(int id, CancellationToken ct = default);
 
-    /// <summary>Whether the user already has a review for the coffee.</summary>
-    Task<bool> ExistsForUserAsync(int coffeeId, string userId, CancellationToken ct = default);
-
-    /// <summary>
-    /// Persists a new review. Throws <see cref="DuplicateReviewException"/> if it would
-    /// violate the one-review-per-user-per-coffee uniqueness (the race backstop).
-    /// </summary>
+    /// <summary>Persists a new dated review entry.</summary>
     Task<Review> AddAsync(Review review, CancellationToken ct = default);
 
     Task UpdateAsync(Review review, CancellationToken ct = default);

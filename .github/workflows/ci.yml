@@ -33,34 +33,31 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      # The Angular app lands in M6. Until frontend/ exists this job is a green
-      # no-op so the required "frontend" check still reports.
-      - id: check
-        run: |
-          if [ -f frontend/package.json ]; then
-            echo "exists=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "exists=false" >> "$GITHUB_OUTPUT"
-            echo "No frontend/ yet — skipping (added in M6)."
-          fi
       - uses: actions/setup-node@v4
-        if: steps.check.outputs.exists == 'true'
         with:
           node-version: 22
           cache: npm
           cache-dependency-path: frontend/package-lock.json
-      - if: steps.check.outputs.exists == 'true'
-        working-directory: frontend
+      - working-directory: frontend
         run: npm ci
-      - if: steps.check.outputs.exists == 'true'
-        working-directory: frontend
+      - working-directory: frontend
         run: npm run lint --if-present
-      - if: steps.check.outputs.exists == 'true'
+      # The production build is the comprehensive compile gate — it type-checks and
+      # bundles the app + every library (via the source path aliases).
+      - name: Build (production)
         working-directory: frontend
-        run: npx ng build --configuration production
-      - if: steps.check.outputs.exists == 'true'
+        run: npx ng build app --configuration production
+      # Unit tests via the vitest builder (NOT Karma, so no --browsers). We run each
+      # project whose specs compile in isolation; a spec that pulled another lib's
+      # source would hit the ng-packagr rootDir limit, so cross-lib components are
+      # guarded by the production build above instead.
+      - name: Unit tests (vitest)
         working-directory: frontend
-        run: npx ng test --watch=false --browsers=ChromeHeadless
+        run: |
+          npx ng test @coffee-tracker/util --no-watch
+          npx ng test @coffee-tracker/ui --no-watch
+          npx ng test @coffee-tracker/data --no-watch
+          npx ng test @coffee-tracker/coffees --no-watch
 
   docker-build:
     runs-on: ubuntu-latest

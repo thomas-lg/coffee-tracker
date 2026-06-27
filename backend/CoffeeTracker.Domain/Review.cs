@@ -1,9 +1,10 @@
 namespace CoffeeTracker.Domain;
 
 /// <summary>
-/// One user's review of a coffee: a rating plus optional tasting notes, brew
-/// details, and flavor tags. A user has at most one review per coffee (enforced
-/// by a unique index in the persistence layer).
+/// One dated rating of a coffee by a user: a rating plus optional stage, tasting
+/// notes, brew details, and flavor tags. A user MAY rate the same coffee multiple
+/// times over its life (fresh bag, mid-week, last cup) — each is a separate entry,
+/// ordered by <see cref="CreatedAt"/>.
 /// </summary>
 public class Review
 {
@@ -16,6 +17,12 @@ public class Review
 
     /// <summary>1–5; validated at the API boundary.</summary>
     public int Rating { get; set; }
+
+    /// <summary>
+    /// Optional free-text context for when this rating was taken
+    /// (e.g. "Fresh bag", "Mid-week", "Last cups").
+    /// </summary>
+    public string? Stage { get; set; }
 
     public string? TastingNotes { get; set; }
 

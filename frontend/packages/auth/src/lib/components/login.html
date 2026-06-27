@@ -1,0 +1,43 @@
+<div class="mx-auto flex min-h-[calc(100dvh-4rem)] max-w-md flex-col justify-center px-5 py-12">
+  <div class="mb-8 text-center">
+    <p class="font-mono text-xs uppercase tracking-widest text-crema-deep">Welcome back</p>
+    <h1 class="mt-1 font-display text-4xl font-semibold">Sign in</h1>
+  </div>
+
+  <form [formRoot]="f" (submit)="$event.preventDefault(); onSubmit()" class="flex flex-col gap-4">
+    <label class="flex flex-col gap-1.5">
+      <span class="text-sm font-semibold">Email</span>
+      <input
+        type="email"
+        autocomplete="email"
+        [formField]="f.email"
+        class="rounded-xl border border-line bg-foam px-4 py-3 outline-none transition focus:border-crema focus:ring-4 focus:ring-crema/20"
+      />
+      @if (f.email().touched() && f.email().invalid()) {
+        <span class="text-xs font-medium text-red-500">Enter a valid email address.</span>
+      }
+    </label>
+
+    <label class="flex flex-col gap-1.5">
+      <span class="text-sm font-semibold">Password</span>
+      <input
+        type="password"
+        autocomplete="current-password"
+        [formField]="f.password"
+        class="rounded-xl border border-line bg-foam px-4 py-3 outline-none transition focus:border-crema focus:ring-4 focus:ring-crema/20"
+      />
+      @if (f.password().touched() && f.password().invalid()) {
+        <span class="text-xs font-medium text-red-500">Password is required.</span>
+      }
+    </label>
+
+    <ct-button type="submit" [disabled]="submitting() || f().invalid()" class="mt-2">
+      {{ submitting() ? 'Signing in…' : 'Sign in' }}
+    </ct-button>
+  </form>
+
+  <p class="mt-6 text-center text-sm text-muted">
+    No account?
+    <a routerLink="/register" class="font-semibold text-crema-deep hover:underline">Create one</a>
+  </p>
+</div>

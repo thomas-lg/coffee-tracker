@@ -1,0 +1,216 @@
+{
+  "$schema": "./node_modules/@angular/cli/lib/config/schema.json",
+  "version": 1,
+  "cli": {
+    "packageManager": "npm",
+    "analytics": false
+  },
+  "newProjectRoot": "packages",
+  "projects": {
+    "app": {
+      "projectType": "application",
+      "schematics": {
+        "@schematics/angular:component": {
+          "style": "scss"
+        }
+      },
+      "root": "packages/app",
+      "sourceRoot": "packages/app/src",
+      "prefix": "app",
+      "architect": {
+        "build": {
+          "builder": "@angular/build:application",
+          "options": {
+            "browser": "packages/app/src/main.ts",
+            "tsConfig": "packages/app/tsconfig.app.json",
+            "inlineStyleLanguage": "scss",
+            "assets": [
+              {
+                "glob": "**/*",
+                "input": "packages/app/public"
+              }
+            ],
+            "styles": [
+              "@fontsource-variable/fraunces/index.css",
+              "@fontsource-variable/inter/index.css",
+              "packages/app/src/styles.css"
+            ]
+          },
+          "configurations": {
+            "production": {
+              "budgets": [
+                {
+                  "type": "initial",
+                  "maximumWarning": "500kB",
+                  "maximumError": "1MB"
+                },
+                {
+                  "type": "anyComponentStyle",
+                  "maximumWarning": "4kB",
+                  "maximumError": "8kB"
+                }
+              ],
+              "outputHashing": "all",
+              "serviceWorker": "packages/app/ngsw-config.json"
+            },
+            "development": {
+              "optimization": false,
+              "extractLicenses": false,
+              "sourceMap": true
+            }
+          },
+          "defaultConfiguration": "production"
+        },
+        "serve": {
+          "builder": "@angular/build:dev-server",
+          "options": {
+            "proxyConfig": "proxy.conf.json",
+            "host": "0.0.0.0"
+          },
+          "configurations": {
+            "production": {
+              "buildTarget": "app:build:production"
+            },
+            "development": {
+              "buildTarget": "app:build:development"
+            }
+          },
+          "defaultConfiguration": "development"
+        },
+        "test": {
+          "builder": "@angular/build:unit-test"
+        }
+      }
+    },
+    "@coffee-tracker/ui": {
+      "projectType": "library",
+      "root": "packages/ui",
+      "sourceRoot": "packages/ui/src",
+      "prefix": "ct",
+      "architect": {
+        "build": {
+          "builder": "@angular/build:ng-packagr",
+          "configurations": {
+            "production": {
+              "tsConfig": "packages/ui/tsconfig.lib.prod.json"
+            },
+            "development": {
+              "tsConfig": "packages/ui/tsconfig.lib.json"
+            }
+          },
+          "defaultConfiguration": "production"
+        },
+        "test": {
+          "builder": "@angular/build:unit-test",
+          "options": {
+            "tsConfig": "packages/ui/tsconfig.spec.json"
+          }
+        }
+      }
+    },
+    "@coffee-tracker/util": {
+      "projectType": "library",
+      "root": "packages/util",
+      "sourceRoot": "packages/util/src",
+      "prefix": "ct",
+      "architect": {
+        "build": {
+          "builder": "@angular/build:ng-packagr",
+          "configurations": {
+            "production": {
+              "tsConfig": "packages/util/tsconfig.lib.prod.json"
+            },
+            "development": {
+              "tsConfig": "packages/util/tsconfig.lib.json"
+            }
+          },
+          "defaultConfiguration": "production"
+        },
+        "test": {
+          "builder": "@angular/build:unit-test",
+          "options": {
+            "tsConfig": "packages/util/tsconfig.spec.json"
+          }
+        }
+      }
+    },
+    "@coffee-tracker/auth": {
+      "projectType": "library",
+      "root": "packages/auth",
+      "sourceRoot": "packages/auth/src",
+      "prefix": "ct",
+      "architect": {
+        "build": {
+          "builder": "@angular/build:ng-packagr",
+          "configurations": {
+            "production": {
+              "tsConfig": "packages/auth/tsconfig.lib.prod.json"
+            },
+            "development": {
+              "tsConfig": "packages/auth/tsconfig.lib.json"
+            }
+          },
+          "defaultConfiguration": "production"
+        },
+        "test": {
+          "builder": "@angular/build:unit-test",
+          "options": {
+            "tsConfig": "packages/auth/tsconfig.spec.json"
+          }
+        }
+      }
+    },
+    "@coffee-tracker/data": {
+      "projectType": "library",
+      "root": "packages/data",
+      "sourceRoot": "packages/data/src",
+      "prefix": "ct",
+      "architect": {
+        "build": {
+          "builder": "@angular/build:ng-packagr",
+          "configurations": {
+            "production": {
+              "tsConfig": "packages/data/tsconfig.lib.prod.json"
+            },
+            "development": {
+              "tsConfig": "packages/data/tsconfig.lib.json"
+            }
+          },
+          "defaultConfiguration": "production"
+        },
+        "test": {
+          "builder": "@angular/build:unit-test",
+          "options": {
+            "tsConfig": "packages/data/tsconfig.spec.json"
+          }
+        }
+      }
+    },
+    "@coffee-tracker/coffees": {
+      "projectType": "library",
+      "root": "packages/coffees",
+      "sourceRoot": "packages/coffees/src",
+      "prefix": "ct",
+      "architect": {
+        "build": {
+          "builder": "@angular/build:ng-packagr",
+          "configurations": {
+            "production": {
+              "tsConfig": "packages/coffees/tsconfig.lib.prod.json"
+            },
+            "development": {
+              "tsConfig": "packages/coffees/tsconfig.lib.json"
+            }
+          },
+          "defaultConfiguration": "production"
+        },
+        "test": {
+          "builder": "@angular/build:unit-test",
+          "options": {
+            "tsConfig": "packages/coffees/tsconfig.spec.json"
+          }
+        }
+      }
+    }
+  }
+}

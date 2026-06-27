@@ -35,7 +35,6 @@ public class ReviewsController(IReviewService reviews) : ControllerBase
         {
             ReviewStatus.Success => CreatedAtAction(nameof(GetReview), new { coffeeId, id = result.Review!.Id }, result.Review),
             ReviewStatus.CoffeeNotFound => NotFound(),
-            ReviewStatus.AlreadyReviewed => Problem(statusCode: StatusCodes.Status409Conflict, detail: "You have already reviewed this coffee."),
             ReviewStatus.InvalidTags => Problem(statusCode: StatusCodes.Status400BadRequest, detail: "One or more flavor tag ids do not exist."),
             _ => throw new InvalidOperationException($"Unexpected create-review status: {result.Status}"),
         };

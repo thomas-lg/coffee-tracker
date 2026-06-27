@@ -145,6 +145,20 @@ builder.Services.AddRateLimiter(options =>
             }));
 });
 
+// In dev the Angular dev server (ng serve, :4200) is a different origin from the
+// API (:5000). The proxy.conf.json route is the primary path (same-origin to the
+// browser, no CORS), but allow the cross-origin case too so hitting the API
+// directly from :4200 works. Prod serves the SPA same-origin, so CORS stays off.
+const string devCorsPolicy = "DevSpa";
+if (builder.Environment.IsDevelopment())
+{
+    builder.Services.AddCors(options =>
+        options.AddPolicy(devCorsPolicy, policy =>
+            policy.WithOrigins("http://localhost:4200")
+                .AllowAnyHeader()
+                .AllowAnyMethod()));
+}
+
 var app = builder.Build();
 
 if (generatedDevKey)
@@ -194,6 +208,12 @@ app.UseStaticFiles(new StaticFileOptions
     OnPrepareResponse = ctx =>
         ctx.Context.Response.Headers["X-Content-Type-Options"] = "nosniff",
 });
+
+// Dev-only: allow the ng-serve origin (see the policy registration above).
+if (app.Environment.IsDevelopment())
+{
+    app.UseCors(devCorsPolicy);
+}
 
 app.UseRateLimiter();
 

@@ -17,6 +17,9 @@ npm-debug.log*
 photos/
 tessdata/*.traineddata
 
+# --- Tooling caches ---
+dotnet/
+
 # --- OS / editor ---
 .DS_Store
 Thumbs.db
