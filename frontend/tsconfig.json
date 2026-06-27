@@ -8,7 +8,8 @@
       "@coffee-tracker/util": ["./packages/util/src/public-api.ts"],
       "@coffee-tracker/auth": ["./packages/auth/src/public-api.ts"],
       "@coffee-tracker/data": ["./packages/data/src/public-api.ts"],
-      "@coffee-tracker/coffees": ["./packages/coffees/src/public-api.ts"]
+      "@coffee-tracker/coffees": ["./packages/coffees/src/public-api.ts"],
+      "@coffee-tracker/admin": ["./packages/admin/src/public-api.ts"]
     },
     "noImplicitOverride": true,
     "noPropertyAccessFromIndexSignature": true,

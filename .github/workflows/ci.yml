@@ -78,6 +78,7 @@ jobs:
           npx ng test @coffee-tracker/ui --no-watch
           npx ng test @coffee-tracker/data --no-watch
           npx ng test @coffee-tracker/coffees --no-watch
+          npx ng test @coffee-tracker/admin --no-watch
 
   docker-build:
     runs-on: ubuntu-latest

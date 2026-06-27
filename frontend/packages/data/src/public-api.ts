@@ -13,3 +13,4 @@ export * from './lib/apis/flavor-tags.api';
 export * from './lib/apis/scan.api';
 export * from './lib/apis/config.api';
 export * from './lib/apis/auth.api';
+export * from './lib/apis/admin-photos.api';
