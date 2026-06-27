@@ -53,5 +53,9 @@
   <!-- Reverse-proxy support: honor X-Forwarded-Proto so auth redirects / Secure cookies work behind TLS termination -->
   <Config Name="Known Proxies" Target="ForwardedHeaders__KnownProxies" Default="" Mode="" Description="Comma-separated IPs of your reverse proxy (e.g. 172.17.0.1). Lets the app trust X-Forwarded-* headers." Type="Variable" Display="advanced" Required="false" Mask="false"/>
 
+  <!-- File ownership for the mounted volumes. The container chowns /config and /photos to PUID:PGID at startup, then drops to that user — fixes "unable to open database file". -->
+  <Config Name="PUID" Target="PUID" Default="99" Mode="" Description="User ID for file permissions. Set this to match your host user's UID so the container can read/write the mounted /config and /photos volumes (default: 99 for Unraid 'nobody'). NOTE: on startup the container recursively chowns /config and /photos to this owner — point them at dedicated directories, not a shared/pre-existing share. 0 (root) is refused." Type="Variable" Display="advanced" Required="false" Mask="false">99</Config>
+  <Config Name="PGID" Target="PGID" Default="100" Mode="" Description="Group ID for file permissions. Set this to match your host group's GID (default: 100 for Unraid 'users')." Type="Variable" Display="advanced" Required="false" Mask="false">100</Config>
+
   <TailscaleStateDir/>
 </Container>

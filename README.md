@@ -38,7 +38,7 @@ Development happens inside a dev container, so the only host prerequisites are
 ## Install on Unraid (or any Docker host)
 
 The published image is **public** at `ghcr.io/thomas-lg/coffee-tracker`. On Unraid,
-add the container from [`deploy/unraid/coffee-tracker.xml`](./deploy/unraid/coffee-tracker.xml)
+add the container from [`deploy/unraid/my-coffee-tracker.xml`](./deploy/unraid/my-coffee-tracker.xml)
 (or fill in the values below by hand), map the volumes, set the required env vars,
 and **put it behind a reverse proxy that terminates HTTPS** (NPM, SWAG, Traefik,
 Caddy) — the PWA and camera require a secure context. Don't expose the container
@@ -56,6 +56,11 @@ port directly to the internet.
 > `/config` holds three files (`coffee.db`, `coffee.db-wal`, `coffee.db-shm`); for a
 > consistent single-file backup run `sqlite3 coffee.db ".backup backup.db"`.
 
+> **Permissions:** the container starts as root, `chown`s `/config` and `/photos` to
+> `PUID:PGID` on startup, then drops to that user. Defaults are `99:100` (Unraid's
+> `nobody:users`). If you see `SQLite Error 14: unable to open database file`, set
+> `PUID`/`PGID` to match whoever owns your host volume directories.
+
 ### Environment variables
 
 | Variable                          | Required | Default          | Description                                                                 |
@@ -68,6 +73,8 @@ port directly to the internet.
 | `Ocr__Engine`                     | no       | `tesseract`      | OCR engine for `/api/coffees/scan`: `tesseract` (uses the bundled native libs) or `none` (disables scanning → 503). |
 | `Ocr__TessdataPath`               | no       | system path      | Override the tessdata directory; defaults to the `TESSDATA_PREFIX` system path (the image ships English data). |
 | `Ocr__Language`                   | no       | `eng`            | Tesseract language code. |
+| `PUID`                            | no       | `99`             | User ID the app runs as. Set to match your host volume owner so `/config`/`/photos` are writable (Unraid default `99` = `nobody`). |
+| `PGID`                            | no       | `100`            | Group ID the app runs as (Unraid default `100` = `users`). |
 
 ## Updating
 
