@@ -38,6 +38,14 @@ public class EfCoffeeRepository(AppDbContext db) : ICoffeeRepository
     public async Task<bool> ExistsAsync(int id, CancellationToken ct = default) =>
         await db.Coffees.AnyAsync(c => c.Id == id, ct);
 
+    public async Task<IReadOnlyList<string>> GetUsedPhotoPathsAsync(CancellationToken ct = default) =>
+        // Projection only — the non-null filter and Select push to SQL, so no Coffee
+        // entities are materialized.
+        await db.Coffees.AsNoTracking()
+            .Where(c => c.PhotoPath != null)
+            .Select(c => c.PhotoPath!)
+            .ToListAsync(ct);
+
     public async Task<Coffee> AddAsync(Coffee coffee, CancellationToken ct = default)
     {
         db.Coffees.Add(coffee);

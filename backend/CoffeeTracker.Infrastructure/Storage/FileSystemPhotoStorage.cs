@@ -98,4 +98,20 @@ public class FileSystemPhotoStorage : IPhotoStorage
 
         return Task.CompletedTask;
     }
+
+    public Task<IReadOnlyList<string>> ListAsync(CancellationToken ct = default)
+    {
+        // Storage is a flat directory of server-named files; return each as the same
+        // `photos/{name}` relative path SaveAsync hands out. No directory yet ⇒ nothing
+        // stored ⇒ empty list (not an error).
+        if (!Directory.Exists(_directory))
+        {
+            return Task.FromResult<IReadOnlyList<string>>([]);
+        }
+
+        IReadOnlyList<string> paths = Directory.EnumerateFiles(_directory)
+            .Select(f => $"{PublicPrefix}/{Path.GetFileName(f)}")
+            .ToList();
+        return Task.FromResult(paths);
+    }
 }

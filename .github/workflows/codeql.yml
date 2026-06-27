@@ -1,0 +1,40 @@
+name: CodeQL
+
+# Static security analysis for the C# backend and the TypeScript frontend. Runs on
+# PRs and main, plus a weekly scheduled scan to catch newly-published query rules
+# against unchanged code. Findings land in the repo's Security tab.
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    - cron: "30 2 * * 1" # Mondays 02:30 UTC
+
+permissions:
+  contents: read
+  security-events: write # upload analysis results to code scanning
+
+jobs:
+  analyze:
+    name: Analyze (${{ matrix.language }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # Buildless analysis for both: C# `build-mode: none` skips compiling (no .NET
+        # SDK needed on the runner), JS/TS never builds. Keeps the scan independent of
+        # the build jobs in ci.yml.
+        language: [csharp, javascript-typescript]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: ${{ matrix.language }}
+          build-mode: none
+
+      - name: Perform CodeQL analysis
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: "/language:${{ matrix.language }}"

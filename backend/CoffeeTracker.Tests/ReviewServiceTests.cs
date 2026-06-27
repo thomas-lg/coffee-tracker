@@ -33,6 +33,7 @@ public class ReviewServiceTests
         public Task<IReadOnlyList<CoffeeWithStats>> GetAllAsync(CancellationToken ct = default) => throw new NotImplementedException();
         public Task<CoffeeWithStats?> GetWithStatsByIdAsync(int id, CancellationToken ct = default) => throw new NotImplementedException();
         public Task<Coffee?> GetByIdAsync(int id, CancellationToken ct = default) => throw new NotImplementedException();
+        public Task<IReadOnlyList<string>> GetUsedPhotoPathsAsync(CancellationToken ct = default) => throw new NotImplementedException();
         public Task<Coffee> AddAsync(Coffee coffee, CancellationToken ct = default) => throw new NotImplementedException();
         public Task UpdateAsync(Coffee coffee, CancellationToken ct = default) => throw new NotImplementedException();
         public Task<bool> DeleteAsync(int id, CancellationToken ct = default) => throw new NotImplementedException();
