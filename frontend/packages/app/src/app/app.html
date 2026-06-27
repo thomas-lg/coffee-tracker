@@ -1,31 +1,55 @@
 <header class="sticky top-0 z-50 border-b border-line bg-latte/80 backdrop-blur">
   <div class="mx-auto flex h-16 max-w-5xl items-center gap-4 px-5">
-    <span class="font-display text-lg font-semibold">Coffee Tracker</span>
-    <button
-      (click)="toggleTheme()"
-      class="ml-auto grid size-9 place-items-center rounded-full border border-line bg-foam transition hover:border-cocoa"
-      [attr.aria-label]="'Switch to ' + (theme() === 'dark' ? 'light' : 'dark') + ' mode'"
-    >
-      {{ theme() === 'dark' ? '☀️' : '🌙' }}
-    </button>
+    <a routerLink="/" class="flex items-center gap-2 font-display text-lg font-semibold">Coffee Tracker</a>
+
+    @if (auth.isAuthenticated()) {
+      <nav class="ml-2 hidden gap-1 sm:flex">
+        <a
+          routerLink="/"
+          routerLinkActive="bg-crema/20 text-ink"
+          [routerLinkActiveOptions]="{ exact: true }"
+          class="rounded-full px-3 py-1.5 text-sm font-semibold text-muted hover:text-ink"
+          >Home</a
+        >
+        <a
+          routerLink="/coffees"
+          routerLinkActive="bg-crema/20 text-ink"
+          class="rounded-full px-3 py-1.5 text-sm font-semibold text-muted hover:text-ink"
+          >Browse</a
+        >
+        <a
+          routerLink="/coffees/new"
+          routerLinkActive="bg-crema/20 text-ink"
+          class="rounded-full px-3 py-1.5 text-sm font-semibold text-muted hover:text-ink"
+          >Add</a
+        >
+      </nav>
+    }
+
+    <div class="ml-auto flex items-center gap-2">
+      <button
+        (click)="toggleTheme()"
+        class="grid size-9 place-items-center rounded-full border border-line bg-foam transition hover:border-cocoa"
+        [attr.aria-label]="'Switch to ' + (theme() === 'dark' ? 'light' : 'dark') + ' mode'"
+      >
+        {{ theme() === 'dark' ? '☀️' : '🌙' }}
+      </button>
+
+      @if (auth.isAuthenticated()) {
+        <span class="hidden text-sm text-muted sm:inline">{{ auth.displayName() ?? 'You' }}</span>
+        <button
+          (click)="logout()"
+          class="rounded-full border border-line bg-foam px-3 py-1.5 text-sm font-semibold transition hover:border-cocoa"
+        >
+          Sign out
+        </button>
+      }
+    </div>
   </div>
 </header>
 
-<main class="mx-auto max-w-5xl px-5 py-16">
-  <p class="font-mono text-xs font-semibold uppercase tracking-widest text-crema-deep">
-    Your coffee shelf
-  </p>
-  <h1 class="mt-2 max-w-[13ch] font-display text-5xl font-semibold leading-[1.05]">
-    Every bag worth <em class="italic text-crema-deep">remembering.</em>
-  </h1>
-  <p class="mt-4 max-w-prose text-cocoa">
-    Catalogue the coffees you buy, rate them over time, and snap a photo of the bag to
-    fill the rest in for you.
-  </p>
-  <div class="mt-7 flex flex-wrap gap-3">
-    <ct-button>Browse the shelf →</ct-button>
-    <ct-button variant="crema">📷 Snap a new bag</ct-button>
-  </div>
+<main class="min-h-[calc(100dvh-4rem)]">
+  <router-outlet />
 </main>
 
-<router-outlet />
+<ct-toast />

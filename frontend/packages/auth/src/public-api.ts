@@ -5,3 +5,5 @@
 export * from './lib/auth.store';
 export * from './lib/auth.interceptor';
 export * from './lib/auth.guard';
+export * from './lib/login';
+export * from './lib/register';
