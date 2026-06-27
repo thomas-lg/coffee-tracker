@@ -1,4 +1,13 @@
-import { ChangeDetectionStrategy, Component, computed, effect, inject, input, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  type OnDestroy,
+  computed,
+  effect,
+  inject,
+  input,
+  signal,
+} from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { FormField, FormRoot, form, min, required } from '@angular/forms/signals';
 import { firstValueFrom } from 'rxjs';
@@ -29,7 +38,7 @@ function today(): string {
   imports: [FormField, FormRoot, RouterLink, Button],
   templateUrl: './coffee-form.html',
 })
-export class CoffeeForm {
+export class CoffeeForm implements OnDestroy {
   private readonly api = inject(CoffeesApi);
   private readonly scanApi = inject(ScanApi);
   private readonly store = inject(CoffeesStore);
@@ -104,19 +113,29 @@ export class CoffeeForm {
     }
   }
 
-  protected onPhotoSelected(event: Event): void {
-    const file = (event.target as HTMLInputElement).files?.[0];
-    if (!file) return;
+  /** Set the chosen file + preview, revoking any previous blob URL to avoid leaks. */
+  private setPhoto(file: File): void {
+    const prev = this.photoPreview();
+    if (prev?.startsWith('blob:')) URL.revokeObjectURL(prev);
     this.photoFile.set(file);
     this.photoPreview.set(URL.createObjectURL(file));
+  }
+
+  protected onPhotoSelected(event: Event): void {
+    const file = (event.target as HTMLInputElement).files?.[0];
+    if (file) this.setPhoto(file);
+  }
+
+  ngOnDestroy(): void {
+    const p = this.photoPreview();
+    if (p?.startsWith('blob:')) URL.revokeObjectURL(p);
   }
 
   /** Snap-to-fill: scan the bag, pre-fill fields, keep the file as the coffee photo. */
   protected async onSnap(event: Event): Promise<void> {
     const file = (event.target as HTMLInputElement).files?.[0];
     if (!file) return;
-    this.photoFile.set(file);
-    this.photoPreview.set(URL.createObjectURL(file));
+    this.setPhoto(file);
     this.scanning.set(true);
     try {
       const { parsed } = await firstValueFrom(this.scanApi.scan(file));

@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Coffee Tracker">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#3b2a1e" />
+      <stop offset="0.55" stop-color="#6f4e37" />
+      <stop offset="1" stop-color="#a8692b" />
+    </linearGradient>
+    <radialGradient id="glow" cx="0.32" cy="0.24" r="0.95">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.20" />
+      <stop offset="0.55" stop-color="#ffffff" stop-opacity="0" />
+    </radialGradient>
+  </defs>
+
+  <!-- Full-bleed warm ground (maskable; the OS rounds it). -->
+  <rect width="512" height="512" fill="url(#bg)" />
+  <rect width="512" height="512" fill="url(#glow)" />
+
+  <!-- Steam -->
+  <g fill="none" stroke="#f3e9db" stroke-width="15" stroke-linecap="round" opacity="0.85">
+    <path d="M214 206 q-22 -26 0 -52 q22 -26 0 -52" />
+    <path d="M256 198 q-22 -26 0 -52 q22 -26 0 -52" />
+    <path d="M298 206 q-22 -26 0 -52 q22 -26 0 -52" />
+  </g>
+
+  <!-- Saucer -->
+  <ellipse cx="256" cy="402" rx="150" ry="24" fill="#e7d6bd" />
+
+  <!-- Handle -->
+  <path d="M348 276 a42 42 0 1 1 0 64" fill="none" stroke="#f3e9db" stroke-width="24" />
+
+  <!-- Cup body -->
+  <path d="M156 252 L356 252 L344 352 Q339 382 305 382 L207 382 Q173 382 168 352 Z" fill="#f3e9db" />
+
+  <!-- Cup mouth + coffee surface -->
+  <ellipse cx="256" cy="252" rx="100" ry="22" fill="#f3e9db" />
+  <ellipse cx="256" cy="250" rx="82" ry="15" fill="#3b2a1e" />
+</svg>
