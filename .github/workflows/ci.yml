@@ -81,12 +81,37 @@ jobs:
 
   docker-build:
     runs-on: ubuntu-latest
+    # Job-level permissions REPLACE the top-level set, so re-state contents: read
+    # alongside the security-events: write needed to upload the Trivy scan.
+    permissions:
+      contents: read
+      security-events: write
     steps:
       - uses: actions/checkout@v7
       - uses: docker/setup-buildx-action@v3
-      # Validate the production Dockerfile builds for amd64. No push on CI.
+      # Validate the production Dockerfile builds for amd64, and load it into the local
+      # daemon so Trivy can scan the exact image. No push on CI.
       - uses: docker/build-push-action@v7
         with:
           context: .
           platforms: linux/amd64
           push: false
+          load: true
+          tags: coffee-tracker:ci
+      # Scan the built image for known OS/library CVEs. Report-only: results go to the
+      # Security tab, and unfixed CVEs don't fail the build so base-image noise can't
+      # block every PR (tighten to exit-code 1 later if desired).
+      - name: Scan image for vulnerabilities (Trivy)
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          image-ref: coffee-tracker:ci
+          format: sarif
+          output: trivy-results.sarif
+          severity: CRITICAL,HIGH
+          ignore-unfixed: true
+      - name: Upload Trivy results to code scanning
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: trivy-results.sarif
+          category: trivy-image
