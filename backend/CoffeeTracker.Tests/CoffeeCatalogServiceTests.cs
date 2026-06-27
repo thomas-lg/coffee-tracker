@@ -46,6 +46,10 @@ public class CoffeeCatalogServiceTests
         public Task<Coffee?> GetByIdAsync(int id, CancellationToken ct = default)
             => Task.FromResult(_store.TryGetValue(id, out var c) ? c : null);
 
+        public Task<IReadOnlyList<string>> GetUsedPhotoPathsAsync(CancellationToken ct = default)
+            => Task.FromResult<IReadOnlyList<string>>(
+                _store.Values.Where(c => c.PhotoPath != null).Select(c => c.PhotoPath!).ToList());
+
         public Task<Coffee> AddAsync(Coffee coffee, CancellationToken ct = default)
         {
             coffee.Id = _nextId++;
@@ -84,6 +88,9 @@ public class CoffeeCatalogServiceTests
             Deleted.Add(relativePath);
             return Task.CompletedTask;
         }
+
+        public Task<IReadOnlyList<string>> ListAsync(CancellationToken ct = default)
+            => Task.FromResult<IReadOnlyList<string>>([]);
     }
 
     private sealed class FixedTimeProvider(DateTimeOffset now) : TimeProvider
