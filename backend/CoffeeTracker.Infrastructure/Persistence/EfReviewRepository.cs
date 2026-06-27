@@ -1,6 +1,5 @@
 using CoffeeTracker.Application.Ports.Driven;
 using CoffeeTracker.Domain;
-using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 
 namespace CoffeeTracker.Infrastructure.Persistence;
@@ -8,6 +7,9 @@ namespace CoffeeTracker.Infrastructure.Persistence;
 /// <summary>Driven adapter: EF Core implementation of the review repository port.</summary>
 public class EfReviewRepository(AppDbContext db) : IReviewRepository
 {
+    // Newest-first: a user's ratings of a coffee form a timeline. Order by Id desc —
+    // Id is monotonic with insertion, so it tracks creation order, and (unlike
+    // DateTimeOffset, which SQLite stores as TEXT) it is orderable in SQL.
     public async Task<IReadOnlyList<Review>> GetByCoffeeAsync(int coffeeId, CancellationToken ct = default) =>
         await db.Reviews
             .AsNoTracking()
@@ -23,25 +25,10 @@ public class EfReviewRepository(AppDbContext db) : IReviewRepository
             .Include(r => r.Tags)
             .FirstOrDefaultAsync(r => r.Id == id, ct);
 
-    public async Task<bool> ExistsForUserAsync(int coffeeId, string userId, CancellationToken ct = default) =>
-        await db.Reviews.AnyAsync(r => r.CoffeeId == coffeeId && r.UserId == userId, ct);
-
     public async Task<Review> AddAsync(Review review, CancellationToken ct = default)
     {
         db.Reviews.Add(review);
-        try
-        {
-            await db.SaveChangesAsync(ct);
-        }
-        catch (DbUpdateException ex) when (IsUniqueViolation(ex))
-        {
-            // The (CoffeeId, UserId) unique index is the race backstop: two
-            // concurrent creates can both pass the service's pre-check. Translate
-            // the constraint violation into a typed result so the API returns 409
-            // rather than leaking a 500.
-            throw new DuplicateReviewException(ex);
-        }
-
+        await db.SaveChangesAsync(ct);
         return review;
     }
 
@@ -52,13 +39,6 @@ public class EfReviewRepository(AppDbContext db) : IReviewRepository
     // or EF would try to INSERT duplicate FlavorTags.
     public async Task UpdateAsync(Review review, CancellationToken ct = default) =>
         await db.SaveChangesAsync(ct);
-
-    // A UNIQUE constraint failure is SQLITE_CONSTRAINT (19) whose message names the
-    // failure as UNIQUE — distinguishing it from other code-19 violations (FK, NOT
-    // NULL, CHECK) so those still surface normally instead of as "already reviewed".
-    private static bool IsUniqueViolation(DbUpdateException ex) =>
-        ex.InnerException is SqliteException { SqliteErrorCode: 19 } sqlite
-        && sqlite.Message.Contains("UNIQUE", StringComparison.OrdinalIgnoreCase);
 
     public async Task DeleteAsync(Review review, CancellationToken ct = default)
     {

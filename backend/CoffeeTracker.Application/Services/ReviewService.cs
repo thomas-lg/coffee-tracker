@@ -6,9 +6,10 @@ using CoffeeTracker.Domain;
 namespace CoffeeTracker.Application.Services;
 
 /// <summary>
-/// Application service implementing the reviews driving port. Enforces the
-/// one-review-per-user rule and ownership (owner-only edit; owner-or-admin delete),
-/// and maps domain entities to/from DTOs.
+/// Application service implementing the reviews driving port. A user may rate the
+/// same coffee multiple times over its life (each POST is a new dated entry);
+/// enforces ownership (owner-only edit; owner-or-admin delete) and maps domain
+/// entities to/from DTOs.
 /// </summary>
 public class ReviewService(
     IReviewRepository reviews,
@@ -45,22 +46,20 @@ public class ReviewService(
             return new ReviewResult(ReviewStatus.CoffeeNotFound, null);
         }
 
-        if (await reviews.ExistsForUserAsync(coffeeId, userId, ct))
-        {
-            return new ReviewResult(ReviewStatus.AlreadyReviewed, null);
-        }
-
         var tags = await ResolveTagsAsync(dto.TagIds, ct);
         if (tags is null)
         {
             return new ReviewResult(ReviewStatus.InvalidTags, null);
         }
 
+        // A user may rate the same coffee repeatedly over its life — each POST is a
+        // new dated entry, no duplicate check.
         var review = new Review
         {
             CoffeeId = coffeeId,
             UserId = userId,
             Rating = dto.Rating,
+            Stage = dto.Stage,
             TastingNotes = dto.TastingNotes,
             BrewMethod = dto.BrewMethod,
             Grind = dto.Grind,
@@ -69,17 +68,8 @@ public class ReviewService(
             Tags = tags,
         };
 
-        try
-        {
-            var saved = await reviews.AddAsync(review, ct);
-            return new ReviewResult(ReviewStatus.Success, ToDto(saved));
-        }
-        catch (DuplicateReviewException)
-        {
-            // Lost the race against a concurrent create that passed the same
-            // pre-check; the unique index caught it — report it as already-reviewed.
-            return new ReviewResult(ReviewStatus.AlreadyReviewed, null);
-        }
+        var saved = await reviews.AddAsync(review, ct);
+        return new ReviewResult(ReviewStatus.Success, ToDto(saved));
     }
 
     public async Task<ReviewResult> UpdateAsync(int coffeeId, int reviewId, ReviewUpdateDto dto, CancellationToken ct = default)
@@ -105,6 +95,7 @@ public class ReviewService(
         }
 
         review.Rating = dto.Rating;
+        review.Stage = dto.Stage;
         review.TastingNotes = dto.TastingNotes;
         review.BrewMethod = dto.BrewMethod;
         review.Grind = dto.Grind;
@@ -174,6 +165,7 @@ public class ReviewService(
         r.CoffeeId,
         r.UserId,
         r.Rating,
+        r.Stage,
         r.TastingNotes,
         r.BrewMethod,
         r.Grind,

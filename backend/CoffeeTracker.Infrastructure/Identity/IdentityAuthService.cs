@@ -23,6 +23,8 @@ public class IdentityAuthService(
     // doesn't leak account existence through response latency.
     private readonly string _decoyPasswordHash = passwordHasher.HashPassword(new AppUser(), "decoy-for-timing-equalization");
 
+    public bool RegistrationEnabled => registrationOptions.Value.Enabled;
+
     public async Task<AuthResult> RegisterAsync(RegisterDto dto, CancellationToken ct = default)
     {
         if (!registrationOptions.Value.Enabled)

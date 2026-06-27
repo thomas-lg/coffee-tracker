@@ -1,0 +1,78 @@
+<div class="mx-auto max-w-xl px-5 py-8">
+  <a routerLink="/coffees" class="text-sm font-semibold text-muted hover:text-ink">← Back to shelf</a>
+  <h1 class="mt-2 font-display text-3xl font-semibold">
+    {{ editing() ? 'Edit coffee' : 'Add a coffee' }}
+  </h1>
+
+  <!-- Snap-to-fill -->
+  @if (!editing()) {
+    <label
+      class="mt-5 flex cursor-pointer items-center gap-3 rounded-2xl border border-dashed border-crema bg-crema/10 p-4 transition hover:bg-crema/15"
+    >
+      <span class="grid size-11 place-items-center rounded-xl bg-crema text-xl text-ink">📷</span>
+      <span class="flex-1">
+        <span class="block font-semibold">{{ scanning() ? 'Reading the label…' : 'Snap the bag' }}</span>
+        <span class="block text-xs text-muted">Photograph the bag and we’ll pre-fill the form.</span>
+      </span>
+      <input type="file" accept="image/*" capture="environment" class="hidden" (change)="onSnap($event)" />
+    </label>
+  }
+
+  <form [formRoot]="f" (submit)="$event.preventDefault(); onSubmit()" class="mt-5 flex flex-col gap-4">
+    <label class="flex flex-col gap-1.5">
+      <span class="text-sm font-semibold">Name</span>
+      <input [formField]="f.name" class="input" />
+    </label>
+
+    <div class="grid grid-cols-2 gap-3">
+      <label class="flex flex-col gap-1.5">
+        <span class="text-sm font-semibold">Roaster</span>
+        <input [formField]="f.roaster" class="input" />
+      </label>
+      <label class="flex flex-col gap-1.5">
+        <span class="text-sm font-semibold">Origin</span>
+        <input [formField]="f.origin" class="input" />
+      </label>
+    </div>
+
+    <div class="grid grid-cols-2 gap-3">
+      <label class="flex flex-col gap-1.5">
+        <span class="text-sm font-semibold">Roast level</span>
+        <input [formField]="f.roastLevel" placeholder="Light / Medium / Dark" class="input" />
+      </label>
+      <label class="flex flex-col gap-1.5">
+        <span class="text-sm font-semibold">Price</span>
+        <input type="number" step="0.01" [formField]="f.price" class="input" />
+      </label>
+    </div>
+
+    <label class="flex flex-col gap-1.5">
+      <span class="text-sm font-semibold">Date bought</span>
+      <input type="date" [formField]="f.dateBought" class="input" />
+    </label>
+
+    <div class="grid grid-cols-2 gap-3">
+      <label class="flex flex-col gap-1.5">
+        <span class="text-sm font-semibold">Shop <span class="text-muted">(optional)</span></span>
+        <input [formField]="f.shopName" class="input" />
+      </label>
+      <label class="flex flex-col gap-1.5">
+        <span class="text-sm font-semibold">Link <span class="text-muted">(optional)</span></span>
+        <input type="url" [formField]="f.purchaseUrl" class="input" />
+      </label>
+    </div>
+
+    <label class="flex flex-col gap-1.5">
+      <span class="text-sm font-semibold">Photo <span class="text-muted">(optional)</span></span>
+      <input type="file" accept="image/*" (change)="onPhotoSelected($event)" class="text-sm" />
+    </label>
+
+    @if (photoPreview()) {
+      <img [src]="photoPreview()" alt="Selected coffee" class="h-40 w-full rounded-xl object-cover" />
+    }
+
+    <ct-button type="submit" [disabled]="submitting() || f().invalid()" class="mt-2">
+      {{ submitting() ? 'Saving…' : editing() ? 'Save changes' : 'Add coffee' }}
+    </ct-button>
+  </form>
+</div>

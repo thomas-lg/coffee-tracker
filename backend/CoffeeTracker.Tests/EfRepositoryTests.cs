@@ -147,21 +147,31 @@ public class EfRepositoryTests : IDisposable
     }
 
     [Fact]
-    public async Task AddAsync_ThrowsDuplicateReviewException_OnSecondReviewBySameUser()
+    public async Task AddAsync_AllowsMultipleEntries_BySameUser_AndListsNewestFirst()
     {
         var coffeeId = await SeedCoffeeAsync();
-        await AddReviewAsync(coffeeId, "u1", 4);
 
-        await using var db = NewContext();
-        var repo = new EfReviewRepository(db);
-
-        await Assert.ThrowsAsync<DuplicateReviewException>(() => repo.AddAsync(new Review
+        await using (var db = NewContext())
         {
-            CoffeeId = coffeeId,
-            UserId = "u1",
-            Rating = 1,
-            CreatedAt = DateTimeOffset.UnixEpoch,
-        }));
+            var repo = new EfReviewRepository(db);
+            await repo.AddAsync(new Review
+            {
+                CoffeeId = coffeeId, UserId = "u1", Rating = 4, Stage = "Fresh bag",
+                CreatedAt = DateTimeOffset.UnixEpoch,
+            });
+            await repo.AddAsync(new Review
+            {
+                CoffeeId = coffeeId, UserId = "u1", Rating = 5, Stage = "Last cups",
+                CreatedAt = DateTimeOffset.UnixEpoch.AddDays(7),
+            });
+        }
+
+        await using var verify = NewContext();
+        var list = await new EfReviewRepository(verify).GetByCoffeeAsync(coffeeId);
+
+        Assert.Equal(2, list.Count);              // both dated entries are kept
+        Assert.Equal("Last cups", list[0].Stage); // newest first
+        Assert.Equal("Fresh bag", list[1].Stage);
     }
 
     [Fact]

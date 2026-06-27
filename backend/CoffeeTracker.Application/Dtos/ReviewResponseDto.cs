@@ -6,6 +6,7 @@ public record ReviewResponseDto(
     int CoffeeId,
     string UserId,
     int Rating,
+    string? Stage,
     string? TastingNotes,
     string? BrewMethod,
     string? Grind,
