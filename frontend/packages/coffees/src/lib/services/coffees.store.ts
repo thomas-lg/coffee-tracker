@@ -46,4 +46,10 @@ export class CoffeesStore {
   reload(): void {
     this.resource.reload();
   }
+
+  /** Narrows a raw <select> value to the sort union (type-safe, no `$any`). */
+  setSort(value: string): void {
+    const allowed: readonly CoffeeSort[] = ['new', 'rating', 'name'];
+    this.sort.set((allowed as readonly string[]).includes(value) ? (value as CoffeeSort) : 'new');
+  }
 }

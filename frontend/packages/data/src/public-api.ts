@@ -6,6 +6,7 @@
  */
 
 export * from './lib/models/models';
+export * from './lib/http-context';
 export * from './lib/apis/coffees.api';
 export * from './lib/apis/reviews.api';
 export * from './lib/apis/flavor-tags.api';

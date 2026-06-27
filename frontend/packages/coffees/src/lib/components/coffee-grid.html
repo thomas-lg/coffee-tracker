@@ -16,17 +16,19 @@
     >
       <span aria-hidden="true">🔍</span>
       <input
+        #searchEl
         type="search"
         placeholder="Search by name, roaster, or origin…"
         [value]="store.search()"
-        (input)="store.search.set($any($event.target).value)"
+        (input)="store.search.set(searchEl.value)"
         class="w-full min-w-32 bg-transparent text-sm outline-none"
         aria-label="Search coffees"
       />
     </label>
     <select
+      #sortEl
       [value]="store.sort()"
-      (change)="store.sort.set($any($event.target).value)"
+      (change)="store.setSort(sortEl.value)"
       class="rounded-full border border-line bg-foam px-4 py-2.5 text-sm font-semibold"
       aria-label="Sort coffees"
     >

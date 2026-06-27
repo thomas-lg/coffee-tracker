@@ -117,7 +117,10 @@ export interface ClientConfig {
 
 /* ---- compile-time drift guards: curated types must keep field-parity with the
    generated OpenAPI schemas. Each alias must resolve to `true`; a backend field
-   add/remove turns it into an error object and breaks the build until reconciled. ---- */
+   add/remove turns it into an error object and breaks the build until reconciled.
+   NOTE: this checks KEY parity only — a field whose type/nullability changes
+   (without an add/remove) is not caught, since the generated numerics are
+   `number | string`. Re-run `npm run gen:api` and re-check this file when DTOs change. ---- */
 type SameKeys<A, B> = [keyof A] extends [keyof B]
   ? [keyof B] extends [keyof A]
     ? true

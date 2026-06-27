@@ -1,9 +1,12 @@
 {
-  "name": "app",
-  "short_name": "app",
+  "name": "Coffee Tracker",
+  "short_name": "Coffee",
+  "description": "Catalogue the coffees you buy and rate them over time.",
   "display": "standalone",
   "scope": "./",
   "start_url": "./",
+  "theme_color": "#c2843f",
+  "background_color": "#241813",
   "icons": [
     {
       "src": "icons/icon-72x72.png",

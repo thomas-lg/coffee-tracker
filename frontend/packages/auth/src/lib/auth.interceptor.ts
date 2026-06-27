@@ -2,6 +2,7 @@ import { HttpErrorResponse, HttpInterceptorFn } from '@angular/common/http';
 import { inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { catchError, throwError } from 'rxjs';
+import { SKIP_AUTH_REDIRECT } from '@coffee-tracker/data';
 import { AuthStore } from './auth.store';
 
 /** Attaches the bearer token to /api requests and bounces to /login on a 401. */
@@ -18,10 +19,9 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
   return next(request).pipe(
     catchError((err: HttpErrorResponse) => {
       // A 401 on a real (already-authenticated) call means the token died — clear it
-      // and return to login. Don't hijack the login/register/config endpoints, whose
-      // 401s are the caller's to surface (e.g. "invalid credentials").
-      const isAuthEndpoint = req.url.startsWith('/api/auth') || req.url.startsWith('/api/config');
-      if (err.status === 401 && !isAuthEndpoint) {
+      // and return to login. Requests to anonymous endpoints opt out via
+      // SKIP_AUTH_REDIRECT so their 401s (e.g. "invalid credentials") reach the caller.
+      if (err.status === 401 && !req.context.get(SKIP_AUTH_REDIRECT)) {
         auth.logout();
         void router.navigateByUrl('/login');
       }
