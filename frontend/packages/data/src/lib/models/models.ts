@@ -115,6 +115,19 @@ export interface ClientConfig {
   registrationEnabled: boolean;
 }
 
+// --- Admin photo cleanup (M5-review follow-up). These endpoints post-date the last
+// `gen:api` run, so they have no api-types.ts schema yet and thus no drift guard
+// below — re-run `npm run gen:api` once the OpenAPI doc includes /api/admin/photos. ---
+export interface PhotoListItem {
+  path: string;
+  used: boolean;
+}
+
+export interface PhotoDeleteResult {
+  deleted: number;
+  skipped: number;
+}
+
 /* ---- compile-time drift guards: curated types must keep field-parity with the
    generated OpenAPI schemas. Each alias must resolve to `true`; a backend field
    add/remove turns it into an error object and breaks the build until reconciled.

@@ -211,6 +211,32 @@
           }
         }
       }
+    },
+    "@coffee-tracker/admin": {
+      "projectType": "library",
+      "root": "packages/admin",
+      "sourceRoot": "packages/admin/src",
+      "prefix": "ct",
+      "architect": {
+        "build": {
+          "builder": "@angular/build:ng-packagr",
+          "configurations": {
+            "production": {
+              "tsConfig": "packages/admin/tsconfig.lib.prod.json"
+            },
+            "development": {
+              "tsConfig": "packages/admin/tsconfig.lib.json"
+            }
+          },
+          "defaultConfiguration": "production"
+        },
+        "test": {
+          "builder": "@angular/build:unit-test",
+          "options": {
+            "tsConfig": "packages/admin/tsconfig.spec.json"
+          }
+        }
+      }
     }
   }
 }

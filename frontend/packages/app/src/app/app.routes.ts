@@ -24,5 +24,11 @@ export const routes: Routes = [
     canActivate: [authGuard],
     loadChildren: () => import('@coffee-tracker/coffees').then((m) => m.COFFEES_ROUTES),
   },
+  {
+    // adminGuard lives inside ADMIN_ROUTES so it stays lazy (not imported here).
+    path: 'admin',
+    canActivate: [authGuard],
+    loadChildren: () => import('@coffee-tracker/admin').then((m) => m.ADMIN_ROUTES),
+  },
   { path: '**', redirectTo: '' },
 ];
