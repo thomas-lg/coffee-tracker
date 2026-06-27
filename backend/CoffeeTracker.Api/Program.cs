@@ -255,3 +255,7 @@ if (!app.Environment.IsDevelopment())
 }
 
 app.Run();
+
+// Exposed so integration tests can boot the real app via WebApplicationFactory<Program>.
+// (Top-level statements compile to an internal Program; this opts it into test access.)
+public partial class Program;
