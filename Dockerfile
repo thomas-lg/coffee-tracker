@@ -29,11 +29,12 @@ RUN dotnet publish backend/CoffeeTracker.Api/CoffeeTracker.Api.csproj -c Release
 
 # --- Stage 3: runtime ---
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
-# Native OCR libs — the SAME set as dev. TESSDATA_PREFIX is the PARENT of tessdata
-# (Tesseract appends /tessdata at runtime). gosu drops privileges in the entrypoint.
+# OCR via the tesseract CLI (the app shells out to it). The tesseract-ocr package
+# pulls its own runtime libs; tesseract-ocr-eng ships eng.traineddata. gosu drops
+# privileges in the entrypoint. TESSDATA_PREFIX is the parent of the tessdata dir.
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
-        tesseract-ocr tesseract-ocr-eng libtesseract-dev libleptonica-dev \
+        tesseract-ocr tesseract-ocr-eng \
         gosu \
     && rm -rf /var/lib/apt/lists/*
 

@@ -16,6 +16,12 @@
   "mounts": [
     "source=${localEnv:USERPROFILE}/.claude,target=/home/vscode/.claude,type=bind"
   ],
+  // This container ships the tesseract CLI (see .devcontainer/Dockerfile), so turn the
+  // real OCR engine on here. Overrides appsettings.Development.json's Ocr:Engine=none —
+  // that exists only so the bare macOS host (no tesseract) doesn't 503 on /scan.
+  "containerEnv": {
+    "Ocr__Engine": "tesseract"
+  },
   // Dev runs the API HTTP-only on localhost:5000 (http://localhost is a secure
   // context, so PWA service worker + camera still work) and ng serve on 4200.
   // No 5001/HTTPS in the container — see the dev-HTTPS note in PLAN.md (M0).

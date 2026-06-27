@@ -5,14 +5,14 @@ using Xunit;
 
 namespace CoffeeTracker.Tests;
 
-// IsAvailable + tessdata-path resolution are pure (no native libs), so they're
-// testable on CI. The actual OCR (ReadAsync → native Tesseract) is exercised in
-// the container/prod, not here.
-// One case here mutates the process-global TESSDATA_PREFIX. Tagging this class into
-// a named collection serializes it against any *other* class that opts into the same
+// IsAvailable + tessdata-path resolution are pure (no engine call), so they're
+// testable on CI. Real OCR (ReadAsync → the tesseract CLI) runs in the container/prod;
+// here we only assert it degrades gracefully when the binary is absent.
+// One case mutates the process-global TESSDATA_PREFIX. Tagging this class into a named
+// collection serializes it against any *other* class that opts into the same
 // collection — add that tag to future tests that read TESSDATA_PREFIX to avoid races.
 [Collection("env-mutating")]
-public class TesseractOcrServiceTests : IDisposable
+public class TesseractCliOcrServiceTests : IDisposable
 {
     private readonly string _tempDir = Path.Combine(Path.GetTempPath(), "ct-ocr-" + Guid.NewGuid().ToString("N"));
 
@@ -24,8 +24,26 @@ public class TesseractOcrServiceTests : IDisposable
         }
     }
 
-    private static TesseractOcrService NewService(OcrOptions options) =>
-        new(Options.Create(options), NullLogger<TesseractOcrService>.Instance);
+    private static TesseractCliOcrService NewService(OcrOptions options) =>
+        new(Options.Create(options), NullLogger<TesseractCliOcrService>.Instance);
+
+    [Fact]
+    public async Task ReadAsync_ReportsUnavailable_WhenExecutableMissing()
+    {
+        // traineddata present (IsAvailable true) but a bogus binary path — ReadAsync
+        // must degrade to unavailable rather than throw, so the endpoint returns 503.
+        Directory.CreateDirectory(_tempDir);
+        File.WriteAllText(Path.Combine(_tempDir, "eng.traineddata"), "x");
+        var service = NewService(new OcrOptions
+        {
+            TessdataPath = _tempDir,
+            ExecutablePath = "/nonexistent/tesseract-not-here",
+        });
+
+        Assert.True(service.IsAvailable);
+        var result = await service.ReadAsync(new MemoryStream([1, 2, 3]));
+        Assert.False(result.Available);
+    }
 
     [Fact]
     public void IsAvailable_True_WhenLanguageTraineddataPresent()

@@ -9,6 +9,12 @@ public class OcrOptions
     public string Engine { get; set; } = "tesseract";
 
     /// <summary>
+    /// Path to the <c>tesseract</c> CLI. When unset, it is resolved from <c>PATH</c>
+    /// (the apt package installs it at <c>/usr/bin/tesseract</c>).
+    /// </summary>
+    public string? ExecutablePath { get; set; }
+
+    /// <summary>
     /// Path to the tessdata directory. When unset, resolved from the
     /// <c>TESSDATA_PREFIX</c> env var (+ <c>/tessdata</c>), then a system default.
     /// </summary>
