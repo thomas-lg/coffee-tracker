@@ -1,88 +1,75 @@
 # Next steps & handoff
 
-Working notes to resume on another machine. Backend is complete through the
-plan's API milestones; what's left is one small backend follow-up, the frontend,
-and the production image.
+Working notes to resume on another machine. The **M0–M8 build is complete and
+merged**; what remains is operational setup, a couple of optional follow-ups, and a
+parking lot of ideas (see the README's "Ideas for later").
 
-## Where things stand (as of M5 merge)
+## Where things stand
 
-- **Done on `main`:** M0, scaffolding/CI-CD, **M1** (catalog + hexagonal + SQLite WAL),
-  **M2** (CRUD + photo upload), **M3** (auth: Identity + JWT, hardened), **M4**
-  (reviews/ratings/flavor-tags + moderation), **M5** (snap-to-fill OCR backend).
+- **Done on `main`:** M0 + CI/CD, M1 (catalog + hexagonal + SQLite WAL), M2 (CRUD +
+  photo upload), M3 (auth: Identity + JWT, hardened), M4 (reviews/ratings/tags),
+  M5 (snap-to-fill OCR backend), **M6** (Angular 22 PWA), **M7** (production image +
+  compose), **M8** (CI/CD → GHCR + Unraid template).
+- **Beyond the plan, also merged:** ratings **over time** (multiple dated reviews per
+  coffee — overturned M4's one-per-user model), **admin photo-cleanup** (backend
+  `GET`/`DELETE /api/admin/photos` + the Angular admin table), **non-root PUID/PGID**
+  container for Unraid bind mounts, **CodeQL + Trivy** scanning, **Dependabot**,
+  build-provenance attestation, and an HTTP **integration test** for the admin
+  authorization policy.
 - **OpenSpec specs (live):** `auth`, `coffee-catalog`, `label-scan`, `photo-storage`,
-  `reviews`. No active changes; `openspec validate --specs` is green.
-- **Workflow:** OpenSpec change per milestone → feature branch → PR → CI green →
-  squash-merge → separate PR archiving the change into `openspec/specs/`.
+  `reviews`, `web-client`, `deployment`. Workflow: change per feature → PR → CI green
+  → squash-merge → separate PR archiving the change into `openspec/specs/`.
 
-## Proposed order
+## What's left
 
-### 1. Admin photo-cleanup (small, backend-only) — do first
-Closes the scan-orphan gap from the M5 review (we keep storing the scan photo, but
-unused ones need cleanup). Agreed design:
-- `IPhotoStorage.ListAsync()` → stored photo relative paths.
-- A service that diffs stored photos against `Coffee.PhotoPath` to mark **used /
-  unused**.
-- `GET /api/admin/photos` → list with the used flag; `DELETE /api/admin/photos` →
-  **delete by selected paths** (admin reviews first — not "delete all unused").
-- **Admin-only** (`IsAdmin` claim) + `[Authorize]`. The bulk-select **table UI is
-  M6**.
-- Start with an OpenSpec change (extend `photo-storage` or a new `photo-admin`
-  capability).
+### Operational (GitHub / NAS — no code)
+- **GHCR package public** — flip the `coffee-tracker` package visibility to public so
+  the NAS can pull without auth.
+- **Branch protection on `main`** — PR required; `backend`/`frontend`/`docker-build`
+  checks green + up to date; linear history (squash/rebase only); block force-push +
+  deletion; 0 required approvals (solo); not enforced for admins. (Needs a public repo
+  or GitHub Pro.)
+- **Unraid install** — add the container from `deploy/unraid/my-coffee-tracker.xml`
+  via the Docker GUI, behind the SWAG/Authelia reverse proxy; set `Jwt__Key`,
+  `REGISTRATION_ENABLED` (briefly, to create the admin), `ForwardedHeaders__KnownProxies`,
+  and `PUID`/`PGID` to match the host appdata owner.
 
-### 2. M6 — Angular 22 PWA (big, frontend) — see PLAN.md "M6"
-- `ng new` (Angular 22, standalone, signals) in `frontend/`; add `@angular/pwa`.
-- `core/`: `auth.service` (signals + localStorage token), `auth.interceptor`
-  (attach JWT), `auth.guard`, typed models.
-- `features/auth` (login/register via Signal Forms; hide register when
-  `REGISTRATION_ENABLED` is off — needs a small config endpoint), `features/coffees`
-  (list w/ search + avg rating, detail w/ reviews, add/edit Signal Forms, photo).
-- **Snap-to-fill UX:** `<input type="file" accept="image/*" capture="environment">`
-  → `POST /api/coffees/scan` → pre-fill the add form → user edits → save (reuse the
-  returned `photoPath` as the coffee image).
-- Admin **photo-cleanup table** (from step 1): used/unused list + bulk-select delete.
-- Dev: `proxy.conf.json` so `ng serve` (:4200) talks to the API; add matching CORS
-  in the API **dev** config only.
-- CI cleanup: drop the `frontend/package.json` no-op guard now that `frontend/` exists.
-
-### 3. M7 — production image + compose — see PLAN.md "M7"
-- Multi-stage root `Dockerfile`: node build Angular → dotnet publish API → ASP.NET
-  runtime on Ubuntu Noble with `apt-get install tesseract-ocr tesseract-ocr-eng
-  libtesseract-dev libleptonica-dev`, `TESSDATA_PREFIX=/usr/share/tesseract-ocr/5`,
-  serve Angular `dist` same-origin, `ASPNETCORE_URLS=http://+:8080`, non-root, only
-  `/config`+`/photos` writable.
-- `Program.cs` prod wiring: `UseForwardedHeaders` (already added in M3 for rate
-  limiting — extend KnownProxies) + **HSTS**.
-- `docker-compose.yml` (local/reference only), `.dockerignore`, CI drop the
-  Dockerfile no-op guard. **This is where the real Tesseract OCR path runs.**
+### Optional follow-ups
+- **Dependabot `node:26-slim` PR** — open; the project is standardised on Node 22
+  (devcontainer + CI + build stage). Either close it or bump Node project-wide
+  deliberately; don't merge the lone image bump.
+- **Deferred Angular upgrades** — see the section below.
+- **Feature ideas** — parked in the README's "Ideas for later".
 
 ## Context / gotchas to remember
 
-- **Local smoke tests: do NOT use port 5000** — macOS AirPlay/ControlCenter squats
-  it and stale backgrounded `dotnet run` processes serve old binaries (cost real
-  debugging time). Run with `ASPNETCORE_URLS=http://localhost:5099 dotnet run
-  --no-launch-profile --no-build`; suspect the port/stale process before the code.
-- **OCR on the host:** `Ocr:Engine=none` in `appsettings.Development.json` so the
-  host app runs without native libs; `/api/coffees/scan` returns **503** there. Real
-  OCR runs in the dev container / prod image (M7). To test locally: `brew install
-  tesseract` + `Ocr__Engine=tesseract`.
+- **Local smoke tests: do NOT use port 5000** — macOS AirPlay squats it and stale
+  backgrounded `dotnet run` processes serve old binaries. Run with
+  `ASPNETCORE_URLS=http://localhost:5099 dotnet run --no-launch-profile --no-build`.
+- **OCR on the host:** `Ocr:Engine=none` in `appsettings.Development.json` so the host
+  runs without native libs (`/api/coffees/scan` → 503). Real OCR runs in the dev
+  container / prod image. Locally: `brew install tesseract` + `Ocr__Engine=tesseract`.
 - **Commit email** for this repo is `tom.legougaud@gmail.com` (not the work email).
-- **Deployment:** NAS, internet-exposed via SWAG + Authelia. The app keeps its **own**
-  login (all endpoints require a token, reads included). Future option: Authelia
-  SSO/OIDC. Set `ForwardedHeaders__KnownProxies` behind the proxy or auth
-  rate-limiting keys off the proxy's single IP.
+- **Git over HTTPS in the dev container:** the remote is HTTPS and auth is forwarded by
+  the VS Code Dev Containers credential helper (no SSH key in the container). `gh` is
+  not installed — PRs/merges are done via the GitHub REST API with that token.
+- **Deployment:** Unraid, internet-exposed via SWAG + Authelia. The app keeps its
+  **own** login (all endpoints require a token). The prod container runs **non-root**:
+  it starts as root, chowns `/config` + `/photos` to `PUID:PGID`, then drops via gosu.
 - **Conventions:** hexagonal (controllers depend only on application ports, never EF);
-  DTOs at the boundary (entities never serialized); JWT signing key from env only
-  (no baked default; app fails fast); concept-note comments inline.
+  DTOs at the boundary; JWT signing key from env only (fail-fast, no baked default);
+  concept-note comments inline; squash-merge with a Conventional-Commit PR title.
 
 ## Deferred frontend upgrades (Angular 22 ahead of the ecosystem)
 
-These are wanted but blocked by libraries lagging Angular 22 — revisit when
-compatible releases land:
+Wanted but blocked by libraries lagging Angular 22 — revisit when compatible releases
+land:
 
-- **NgRx SignalStore (`@ngrx/signals`)** for the stateful stores (`AuthStore`, the
-  `CoffeesStore`). Today it peers on `@angular/core@^21`; we ship native-signals
-  stores with the same surface, so the swap is low-risk later.
+- **NgRx SignalStore (`@ngrx/signals`)** for the stateful stores (`AuthStore`,
+  `CoffeesStore`, `PhotoCleanupStore`). Today it peers on `@angular/core@^21`; we ship
+  native-signals stores with the same surface, so the swap is low-risk later.
 - **`lucide-angular`** to replace the custom `ct-icon` lucide-core wrapper, once it
-  supports Angular 22 (currently caps at `@angular/common 13.x–21.x`).
+  supports Angular 22.
 - Minor: `openapi-typescript` runs via `npx` (peers on TS 5 vs our TS 6) — fine to
-  leave; revisit if it bumps its peer range.
+  leave. Also re-run `npm run gen:api` so the admin photo DTOs gain their `api-types`
+  drift guards once the OpenAPI doc includes `/api/admin/photos`.
