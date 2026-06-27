@@ -12,14 +12,14 @@ FROM mcr.microsoft.com/devcontainers/dotnet:10.0
 # is not signed"). We don't use that repo — Node/yarn come from the Node
 # devcontainer feature — so remove the source before updating.
 #
-# Native OCR deps (M5). Keep the -dev packages: the TesseractOCR NuGet P/Invokes
-# the UNVERSIONED libtesseract.so / liblept.so soname, which -dev provides.
-# tesseract-ocr-eng bundles eng.traineddata.
+# OCR (M5): the app shells out to the tesseract CLI, so we just need the binary
+# (tesseract-ocr) + the English data (tesseract-ocr-eng). No -dev packages — those
+# were only for the old P/Invoke NuGet, which we dropped for the CLI.
 RUN rm -f /etc/apt/sources.list.d/yarn.list \
     && apt-get update \
     && export DEBIAN_FRONTEND=noninteractive \
     && apt-get install -y --no-install-recommends \
-        tesseract-ocr tesseract-ocr-eng libtesseract-dev libleptonica-dev \
+        tesseract-ocr tesseract-ocr-eng \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # TESSDATA_PREFIX must be the PARENT of the tessdata dir (Tesseract appends

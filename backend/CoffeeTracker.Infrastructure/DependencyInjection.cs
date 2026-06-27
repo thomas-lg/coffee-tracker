@@ -34,7 +34,8 @@ public static class DependencyInjection
 
     /// <summary>
     /// Registers the OCR adapter selected by <c>Ocr:Engine</c>: <c>tesseract</c>
-    /// (default, native libs) or <c>none</c> (disabled — for hosts without the libs).
+    /// (default — shells out to the system <c>tesseract</c> CLI) or <c>none</c>
+    /// (disabled — for hosts without it).
     /// </summary>
     private static void AddOcr(IServiceCollection services, IConfiguration configuration)
     {
@@ -47,7 +48,7 @@ public static class DependencyInjection
         }
         else
         {
-            services.AddSingleton<IOcrService, TesseractOcrService>();
+            services.AddSingleton<IOcrService, TesseractCliOcrService>();
         }
     }
 
