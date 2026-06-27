@@ -52,7 +52,7 @@
 
         <div class="mt-3 flex items-center gap-3">
           <span class="font-display text-3xl">{{ formatRating(c.averageRating) }}</span>
-          <ct-rating [value]="c.averageRating ?? 0" />
+          <ct-rating [value]="c.averageRating ?? 0" size="lg" />
           <span class="text-sm text-muted">{{ c.reviewCount }} {{ c.reviewCount === 1 ? 'rating' : 'ratings' }}</span>
         </div>
 
@@ -137,6 +137,13 @@
           </div>
         }
       </div>
+    </div>
+  } @else {
+    <div class="mt-10 rounded-2xl border border-dashed border-line bg-foam/60 p-10 text-center">
+      <p class="font-display text-xl">Coffee not found.</p>
+      <a routerLink="/coffees" class="mt-3 inline-block font-semibold text-crema-deep hover:underline"
+        >Back to the shelf</a
+      >
     </div>
   }
 </div>

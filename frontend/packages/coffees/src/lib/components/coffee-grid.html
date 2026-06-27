@@ -99,7 +99,7 @@
               <h3 class="truncate font-display text-lg font-semibold">{{ c.name }}</h3>
               <p class="truncate text-xs text-muted">{{ c.roaster }}</p>
               <div class="mt-2 flex items-center gap-2">
-                <ct-rating [value]="c.averageRating ?? 0" />
+                <ct-rating [value]="c.averageRating ?? 0" size="sm" />
                 <span class="font-mono text-xs font-semibold">{{ formatRating(c.averageRating) }}</span>
                 <span class="text-xs text-muted">· {{ c.reviewCount }}</span>
               </div>

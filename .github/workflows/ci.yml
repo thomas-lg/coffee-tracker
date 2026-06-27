@@ -47,13 +47,17 @@ jobs:
       - name: Build (production)
         working-directory: frontend
         run: npx ng build app --configuration production
-      # Unit tests run via the Microsoft Testing Platform / vitest builder (NOT Karma,
-      # so no --browsers). `util` is a dependency-free leaf; libs that import another
-      # lib's source can't be unit-tested in isolation (ng-packagr rootDir), so the
-      # build above is what guards them.
+      # Unit tests via the vitest builder (NOT Karma, so no --browsers). We run each
+      # project whose specs compile in isolation; a spec that pulled another lib's
+      # source would hit the ng-packagr rootDir limit, so cross-lib components are
+      # guarded by the production build above instead.
       - name: Unit tests (vitest)
         working-directory: frontend
-        run: npx ng test @coffee-tracker/util --no-watch
+        run: |
+          npx ng test @coffee-tracker/util --no-watch
+          npx ng test @coffee-tracker/ui --no-watch
+          npx ng test @coffee-tracker/data --no-watch
+          npx ng test @coffee-tracker/coffees --no-watch
 
   docker-build:
     runs-on: ubuntu-latest
