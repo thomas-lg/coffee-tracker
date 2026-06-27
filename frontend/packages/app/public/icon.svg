@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Coffee Tracker">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#3b2a1e" />
+      <stop offset="0.55" stop-color="#6f4e37" />
+      <stop offset="1" stop-color="#a8692b" />
+    </linearGradient>
+    <radialGradient id="glow" cx="0.3" cy="0.25" r="0.9">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.18" />
+      <stop offset="0.5" stop-color="#ffffff" stop-opacity="0" />
+    </radialGradient>
+  </defs>
+
+  <!-- Full-bleed warm ground (works as a maskable icon; the OS rounds it). -->
+  <rect width="512" height="512" fill="url(#bg)" />
+  <rect width="512" height="512" fill="url(#glow)" />
+
+  <!-- Cream coffee bean with its signature S-crease, centred in the maskable safe zone. -->
+  <g transform="translate(256 256) rotate(-18)">
+    <ellipse rx="118" ry="168" fill="#f3e9db" />
+    <ellipse rx="118" ry="168" fill="none" stroke="#caa46f" stroke-width="6" opacity="0.6" />
+    <path d="M0,-150 C 64,-78 -64,78 0,150" fill="none" stroke="#5a3a22" stroke-width="24" stroke-linecap="round" />
+  </g>
+</svg>
