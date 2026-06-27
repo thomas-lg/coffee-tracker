@@ -1,27 +1,39 @@
 <?xml version="1.0"?>
 <!--
   Unraid container template for Coffee Tracker.
-  Install via the Unraid Docker GUI ("Add Container" -> paste this template, or
-  drop it in /boot/config/plugins/dockerMan/templates-user/). Pulls the public
-  GHCR image; all secrets/config are injected here at runtime (never baked in).
-  Put the container behind your reverse proxy for HTTPS — do not expose the port
-  directly to the internet.
+  Install via the Unraid Docker GUI: copy this file to
+  /boot/config/plugins/dockerMan/templates-user/my-coffee-tracker.xml on the NAS,
+  then Add Container -> Template: User templates -> coffee-tracker. Pulls the
+  public GHCR image; all secrets/config are injected here at runtime (never baked
+  in). Put the container behind your reverse proxy for HTTPS — do not expose the
+  port directly to the internet.
 -->
 <Container version="2">
   <Name>coffee-tracker</Name>
   <Repository>ghcr.io/thomas-lg/coffee-tracker:latest</Repository>
   <Registry>https://github.com/thomas-lg/coffee-tracker/pkgs/container/coffee-tracker</Registry>
   <Network>bridge</Network>
+  <MyIP/>
+  <Shell>sh</Shell>
   <Privileged>false</Privileged>
-  <Support/>
+  <Support>https://github.com/thomas-lg/coffee-tracker/issues</Support>
   <Project>https://github.com/thomas-lg/coffee-tracker</Project>
+  <ReadMe>https://github.com/thomas-lg/coffee-tracker/blob/main/README.md</ReadMe>
   <Overview>
-    Self-hosted coffee catalog: rate coffees, snap a bag photo to auto-fill the
-    form (OCR), multi-user. Place behind a reverse proxy that terminates HTTPS.
+    Self-hosted coffee catalog: rate coffees over time, snap a bag photo to
+    auto-fill the form (OCR), multi-user. Serves the Angular PWA and the API
+    same-origin on port 8080. Place behind a reverse proxy that terminates HTTPS.
   </Overview>
   <Category>Tools: Productivity:</Category>
   <WebUI>http://[IP]:[PORT:8080]/</WebUI>
-  <Icon>https://raw.githubusercontent.com/thomas-lg/coffee-tracker/main/frontend/src/assets/icons/icon-192x192.png</Icon>
+  <TemplateURL/>
+  <Icon>https://raw.githubusercontent.com/thomas-lg/coffee-tracker/main/frontend/packages/app/public/icons/icon-192x192.png</Icon>
+  <ExtraParams/>
+  <PostArgs/>
+  <CPUset/>
+  <DonateText/>
+  <DonateLink/>
+  <Requires>Set a strong Jwt__Key (e.g. `openssl rand -base64 48`) — the app refuses to start without one. To create the first account, set REGISTRATION_ENABLED=true, register (the first user to sign up becomes admin), then set it back to false. Put the container behind a TLS-terminating reverse proxy and set ForwardedHeaders__KnownProxies to the proxy IP.</Requires>
 
   <!-- WebUI / app port (container listens on 8080) -->
   <Config Name="WebUI Port" Target="8080" Default="8080" Mode="tcp" Description="HTTP port the app listens on. Map your reverse proxy to this." Type="Port" Display="always" Required="true" Mask="false">8080</Config>
@@ -40,4 +52,6 @@
 
   <!-- Reverse-proxy support: honor X-Forwarded-Proto so auth redirects / Secure cookies work behind TLS termination -->
   <Config Name="Known Proxies" Target="ForwardedHeaders__KnownProxies" Default="" Mode="" Description="Comma-separated IPs of your reverse proxy (e.g. 172.17.0.1). Lets the app trust X-Forwarded-* headers." Type="Variable" Display="advanced" Required="false" Mask="false"/>
+
+  <TailscaleStateDir/>
 </Container>
