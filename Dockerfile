@@ -30,25 +30,30 @@ RUN dotnet publish backend/CoffeeTracker.Api/CoffeeTracker.Api.csproj -c Release
 # --- Stage 3: runtime ---
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
 # Native OCR libs — the SAME set as dev. TESSDATA_PREFIX is the PARENT of tessdata
-# (Tesseract appends /tessdata at runtime).
+# (Tesseract appends /tessdata at runtime). gosu drops privileges in the entrypoint.
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
         tesseract-ocr tesseract-ocr-eng libtesseract-dev libleptonica-dev \
+        gosu \
     && rm -rf /var/lib/apt/lists/*
 
+# PUID/PGID default to Unraid's nobody:users. Override at runtime to match whoever
+# owns the host appdata dirs, so the bind-mounted volumes are writable.
 ENV TESSDATA_PREFIX=/usr/share/tesseract-ocr/5 \
     ASPNETCORE_URLS=http://+:8080 \
     ConnectionStrings__Default="Data Source=/config/coffee.db" \
-    Storage__PhotosPath=/photos
+    Storage__PhotosPath=/photos \
+    PUID=99 \
+    PGID=100
 
 WORKDIR /app
 COPY --from=api /publish ./
 COPY --from=web /web/dist/app/browser ./wwwroot
+COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
-# Persisted, writable data dirs owned by the image's non-root `app` user. Everything
-# else stays read-only.
-RUN mkdir -p /config /photos && chown -R app:app /config /photos
-USER app
-
+# The entrypoint starts as root to re-own the volumes for PUID/PGID, then uses gosu
+# to run the app as that (non-root) user. Don't set USER here — the entrypoint drops
+# privileges itself after fixing ownership.
 EXPOSE 8080
-ENTRYPOINT ["dotnet", "CoffeeTracker.Api.dll"]
+ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]

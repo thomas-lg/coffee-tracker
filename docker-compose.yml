@@ -12,6 +12,11 @@ services:
       Jwt__Key: ${JWT_KEY:?set JWT_KEY (e.g. `openssl rand -base64 48`)}
       # Open signup is off by default; set true to allow registration.
       REGISTRATION_ENABLED: ${REGISTRATION_ENABLED:-false}
+      # The container starts as root, chowns /config + /photos to PUID:PGID, then
+      # drops to that user. Defaults match Unraid's nobody:users (99:100); override
+      # to match whoever owns your host volumes.
+      PUID: ${PUID:-99}
+      PGID: ${PGID:-100}
       # The container defaults already point these at the volumes below:
       #   ConnectionStrings__Default=Data Source=/config/coffee.db
       #   Storage__PhotosPath=/photos
