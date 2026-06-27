@@ -14,6 +14,7 @@ public static class DependencyInjection
         services.AddScoped<ICoffeeCatalogService, CoffeeCatalogService>();
         services.AddScoped<IReviewService, ReviewService>();
         services.AddScoped<ICoffeeScanService, CoffeeScanService>();
+        services.AddScoped<IPhotoAdminService, PhotoAdminService>();
         services.AddSingleton<ICoffeeLabelParser, CoffeeLabelParser>();
         return services;
     }

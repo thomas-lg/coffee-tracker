@@ -27,6 +27,13 @@ public interface ICoffeeRepository
     /// <summary>Returns whether a coffee with the given id exists.</summary>
     Task<bool> ExistsAsync(int id, CancellationToken ct = default);
 
+    /// <summary>
+    /// Returns the set of photo paths currently referenced by a coffee (non-null
+    /// <see cref="Coffee.PhotoPath"/> values), for diffing against stored files to
+    /// find orphans. Projected — no full entities are materialized.
+    /// </summary>
+    Task<IReadOnlyList<string>> GetUsedPhotoPathsAsync(CancellationToken ct = default);
+
     /// <summary>Persists a new coffee and returns it with its assigned id.</summary>
     Task<Coffee> AddAsync(Coffee coffee, CancellationToken ct = default);
 

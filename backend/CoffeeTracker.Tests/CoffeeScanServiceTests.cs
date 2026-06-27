@@ -36,6 +36,9 @@ public class CoffeeScanServiceTests
             Deleted.Add(relativePath);
             return Task.CompletedTask;
         }
+
+        public Task<IReadOnlyList<string>> ListAsync(CancellationToken ct = default)
+            => Task.FromResult<IReadOnlyList<string>>([]);
     }
 
     private static Stream Image() => new MemoryStream(Encoding.UTF8.GetBytes("fake-image-bytes"));

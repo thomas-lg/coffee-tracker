@@ -22,6 +22,13 @@ public interface IPhotoStorage
     /// coffee deleted.
     /// </summary>
     Task DeleteAsync(string relativePath, CancellationToken ct = default);
+
+    /// <summary>
+    /// Returns the relative paths of every stored photo, in the same shape
+    /// <see cref="SaveAsync"/> returns, for administrative auditing. Returns an empty
+    /// list when nothing has been stored yet.
+    /// </summary>
+    Task<IReadOnlyList<string>> ListAsync(CancellationToken ct = default);
 }
 
 /// <summary>Outcome of a <see cref="IPhotoStorage.SaveAsync"/> call.</summary>
