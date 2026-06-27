@@ -27,6 +27,9 @@ public class TesseractCliOcrService(IOptions<OcrOptions> options, ILogger<Tesser
 
     public async Task<OcrResult> ReadAsync(Stream image, CancellationToken ct = default)
     {
+        Process? process = null;
+        Task<string>? stdoutTask = null;
+        Task<string>? stderrTask = null;
         try
         {
             var psi = new ProcessStartInfo(_executable)
@@ -47,32 +50,84 @@ public class TesseractCliOcrService(IOptions<OcrOptions> options, ILogger<Tesser
             psi.ArgumentList.Add("--tessdata-dir");
             psi.ArgumentList.Add(_tessdataPath);
 
-            using var process = Process.Start(psi)
+            process = Process.Start(psi)
                 ?? throw new InvalidOperationException($"Could not start '{_executable}'.");
 
             // Start draining stdout/stderr before writing stdin so a large image can't
             // deadlock against a full output pipe.
-            var stdoutTask = process.StandardOutput.ReadToEndAsync(ct);
-            var stderrTask = process.StandardError.ReadToEndAsync(ct);
+            stdoutTask = process.StandardOutput.ReadToEndAsync(ct);
+            stderrTask = process.StandardError.ReadToEndAsync(ct);
 
             await image.CopyToAsync(process.StandardInput.BaseStream, ct);
             process.StandardInput.Close();
 
             await process.WaitForExitAsync(ct);
+            // Observe both pipes (stderr too, even on success) so neither read is left
+            // as an unobserved task.
             var text = await stdoutTask;
+            var error = await stderrTask;
 
             if (process.ExitCode != 0)
             {
-                logger.LogWarning("tesseract exited {ExitCode}: {Error}", process.ExitCode, await stderrTask);
+                logger.LogWarning("tesseract exited {ExitCode}: {Error}", process.ExitCode, error);
                 return OcrResult.Unavailable;
             }
 
             return OcrResult.Read(text);
         }
+        catch (OperationCanceledException)
+        {
+            // The caller cancelled — propagate rather than masquerading as an engine
+            // outage (which would log noise and skew availability signals).
+            throw;
+        }
         catch (Exception ex)
         {
             logger.LogWarning(ex, "tesseract CLI failed; reporting unavailable.");
             return OcrResult.Unavailable;
+        }
+        finally
+        {
+            if (process is not null)
+            {
+                // Dispose() does NOT terminate the child; on cancel/error the process
+                // (possibly blocked waiting for stdin EOF) would otherwise leak. Kill the
+                // tree, then observe the pipe reads (the kill unblocks them) before dispose.
+                try
+                {
+                    if (!process.HasExited)
+                    {
+                        process.Kill(entireProcessTree: true);
+                    }
+                }
+                catch (InvalidOperationException)
+                {
+                    // Raced with exit — nothing to kill.
+                }
+
+                await Observe(stdoutTask);
+                await Observe(stderrTask);
+                process.Dispose();
+            }
+        }
+    }
+
+    // Awaits a pipe-read to completion and discards any fault/cancellation, so a
+    // read abandoned on the error path can't resurface as an unobserved-task exception.
+    private static async Task Observe(Task? task)
+    {
+        if (task is null)
+        {
+            return;
+        }
+
+        try
+        {
+            await task;
+        }
+        catch
+        {
+            // Already handled by the caller's catch, or cancelled — ignore here.
         }
     }
 
