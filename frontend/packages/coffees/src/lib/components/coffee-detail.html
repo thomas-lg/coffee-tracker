@@ -91,14 +91,16 @@
             <ct-rating [interactive]="true" [value]="newRating()" (rated)="newRating.set($event)" />
           </div>
           <input
+            #stageEl
             [value]="newStage()"
-            (input)="newStage.set($any($event.target).value)"
+            (input)="newStage.set(stageEl.value)"
             placeholder="Stage (optional) — e.g. Fresh bag, Last cups"
             class="input mt-3 w-full"
           />
           <textarea
+            #notesEl
             [value]="newNotes()"
-            (input)="newNotes.set($any($event.target).value)"
+            (input)="newNotes.set(notesEl.value)"
             rows="2"
             placeholder="Tasting notes (optional)"
             class="input mt-2 w-full resize-none"

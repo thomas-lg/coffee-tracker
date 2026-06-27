@@ -1,11 +1,11 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
-import { httpResource } from '@angular/common/http';
+import { rxResource } from '@angular/core/rxjs-interop';
 import { Router, RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { Button, Rating, Skeleton, TagChip, ToastService } from '@coffee-tracker/ui';
 import { formatDate, formatPrice, formatRating } from '@coffee-tracker/util';
 import { AuthStore } from '@coffee-tracker/auth';
-import { CoffeesApi, ReviewsApi, type Coffee, type FlavorTag, type Review } from '@coffee-tracker/data';
+import { CoffeesApi, FlavorTagsApi, ReviewsApi } from '@coffee-tracker/data';
 import { roastGradient } from '../utils/coffee-visual';
 import { CoffeesStore } from '../services/coffees.store';
 import { BeanScene } from './bean-scene';
@@ -19,6 +19,7 @@ import { BeanScene } from './bean-scene';
 export class CoffeeDetail {
   private readonly coffeesApi = inject(CoffeesApi);
   private readonly reviewsApi = inject(ReviewsApi);
+  private readonly tagsApi = inject(FlavorTagsApi);
   private readonly store = inject(CoffeesStore);
   private readonly auth = inject(AuthStore);
   private readonly toast = inject(ToastService);
@@ -27,13 +28,20 @@ export class CoffeeDetail {
   readonly id = input.required<string>();
   protected readonly coffeeId = computed(() => Number(this.id()));
 
-  // Reactive reads — refetch automatically when the route id changes.
-  private readonly coffeeRes = httpResource<Coffee>(() => `/api/coffees/${this.coffeeId()}`);
-  private readonly reviewsRes = httpResource<Review[]>(
-    () => `/api/coffees/${this.coffeeId()}/reviews`,
-    { defaultValue: [] },
-  );
-  private readonly tagsRes = httpResource<FlavorTag[]>(() => '/api/flavor-tags', { defaultValue: [] });
+  // Reactive reads through the data-layer services — refetch when the route id changes.
+  private readonly coffeeRes = rxResource({
+    params: () => this.coffeeId(),
+    stream: ({ params }) => this.coffeesApi.get(params),
+  });
+  private readonly reviewsRes = rxResource({
+    params: () => this.coffeeId(),
+    stream: ({ params }) => this.reviewsApi.listForCoffee(params),
+    defaultValue: [],
+  });
+  private readonly tagsRes = rxResource({
+    stream: () => this.tagsApi.list(),
+    defaultValue: [],
+  });
 
   protected readonly coffee = this.coffeeRes.value;
   protected readonly reviews = this.reviewsRes.value;
@@ -46,8 +54,14 @@ export class CoffeeDetail {
   protected readonly formatDate = formatDate;
 
   private readonly myId = computed(() => this.auth.session()?.userId ?? null);
-  protected readonly myReviews = computed(() => this.reviews().filter((r) => r.userId === this.myId()));
-  protected readonly otherReviews = computed(() => this.reviews().filter((r) => r.userId !== this.myId()));
+  protected readonly myReviews = computed(() => {
+    const me = this.myId();
+    return me ? this.reviews().filter((r) => r.userId === me) : [];
+  });
+  protected readonly otherReviews = computed(() => {
+    const me = this.myId();
+    return this.reviews().filter((r) => r.userId !== me);
+  });
 
   protected readonly specs = computed<[string, string][]>(() => {
     const c = this.coffee();
@@ -100,8 +114,7 @@ export class CoffeeDetail {
       this.newNotes.set('');
       this.selectedTags.set(new Set());
       this.reviewsRes.reload();
-      this.coffeeRes.reload(); // refresh the average
-      this.store.reload(); // keep the grid's average in sync
+      this.coffeeRes.reload(); // refresh this coffee's average; the grid refreshes on its next load
     } catch {
       this.toast.show('Could not save your rating.', 'error');
     } finally {
@@ -114,7 +127,7 @@ export class CoffeeDetail {
     if (!c || !confirm(`Delete “${c.name}”? This removes its reviews too.`)) return;
     try {
       await firstValueFrom(this.coffeesApi.delete(c.id));
-      this.store.reload();
+      this.store.reload(); // a delete changes the catalog list
       this.toast.show('Coffee deleted.', 'success');
       await this.router.navigate(['/coffees']);
     } catch {
