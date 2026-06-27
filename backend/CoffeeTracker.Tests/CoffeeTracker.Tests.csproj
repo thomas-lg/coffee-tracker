@@ -11,12 +11,16 @@
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.*" />
     <PackageReference Include="xunit" Version="2.*" />
     <PackageReference Include="xunit.runner.visualstudio" Version="3.*" />
+    <!-- Boots the real API in-process for HTTP integration tests (WebApplicationFactory).
+         Pulls the ASP.NET Core shared framework so this test project can host the app. -->
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="10.*" />
   </ItemGroup>
 
   <ItemGroup>
     <!-- Unit tests target the inner hexagon (Application + Domain) plus
          Infrastructure adapters that are unit-testable in isolation (e.g.
-         TokenService). Add an Api reference when integration tests arrive. -->
+         TokenService). The Api reference enables WebApplicationFactory<Program>. -->
+    <ProjectReference Include="..\CoffeeTracker.Api\CoffeeTracker.Api.csproj" />
     <ProjectReference Include="..\CoffeeTracker.Application\CoffeeTracker.Application.csproj" />
     <ProjectReference Include="..\CoffeeTracker.Domain\CoffeeTracker.Domain.csproj" />
     <ProjectReference Include="..\CoffeeTracker.Infrastructure\CoffeeTracker.Infrastructure.csproj" />
