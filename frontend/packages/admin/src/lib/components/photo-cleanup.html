@@ -1,0 +1,134 @@
+<section class="mx-auto max-w-5xl px-5 py-8">
+  <header class="mb-6">
+    <h1 class="font-display text-2xl font-semibold text-ink">Photo cleanup</h1>
+    <p class="mt-1 text-sm text-muted">
+      @if (store.loading()) {
+        Loading stored photos…
+      } @else {
+        {{ store.storedCount() }} stored · {{ store.unusedCount() }} unused
+      }
+    </p>
+  </header>
+
+  <!-- Toolbar: filter + bulk actions -->
+  <div class="mb-5 flex flex-wrap items-center gap-3">
+    <div class="inline-flex rounded-full border border-line bg-foam p-1 text-sm font-semibold">
+      <button
+        (click)="store.setFilter('all')"
+        class="rounded-full px-3 py-1.5 transition"
+        [class]="store.filter() === 'all' ? 'bg-crema/30 text-ink' : 'text-muted hover:text-ink'"
+      >
+        All
+      </button>
+      <button
+        (click)="store.setFilter('unused')"
+        class="rounded-full px-3 py-1.5 transition"
+        [class]="store.filter() === 'unused' ? 'bg-crema/30 text-ink' : 'text-muted hover:text-ink'"
+      >
+        Unused only
+      </button>
+    </div>
+
+    <button
+      (click)="store.selectAllUnused()"
+      class="rounded-full px-3 py-1.5 text-sm font-semibold text-muted hover:text-ink"
+      [disabled]="store.unusedCount() === 0"
+    >
+      Select all unused
+    </button>
+
+    <!-- Bulk action / confirm, only when something is selected -->
+    @if (store.selectedCount() > 0) {
+      <div class="ml-auto flex items-center gap-2">
+        @if (!confirming()) {
+          <span class="text-sm text-muted">{{ store.selectedCount() }} selected</span>
+          <button (click)="store.clearSelection()" class="text-sm font-semibold text-muted hover:text-ink">
+            Clear
+          </button>
+          <ct-button variant="ghost" (click)="arm()">Delete {{ store.selectedCount() }}</ct-button>
+        } @else {
+          <span class="text-sm font-semibold text-ink">Delete {{ store.selectedCount() }} photo(s)?</span>
+          <button
+            (click)="cancel()"
+            class="rounded-full px-3 py-1.5 text-sm font-semibold text-muted hover:text-ink"
+            [disabled]="deleting()"
+          >
+            Cancel
+          </button>
+          <ct-button variant="primary" [disabled]="deleting()" (click)="confirmDelete()">
+            {{ deleting() ? 'Deleting…' : 'Confirm delete' }}
+          </ct-button>
+        }
+      </div>
+    }
+  </div>
+
+  <!-- Content states -->
+  @if (store.loading()) {
+    <div class="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
+      @for (i of [1, 2, 3, 4, 5, 6, 7, 8]; track i) {
+        <div class="aspect-square animate-pulse rounded-2xl bg-line/60"></div>
+      }
+    </div>
+  } @else if (store.error()) {
+    <div class="rounded-2xl border border-line bg-foam p-8 text-center">
+      <p class="text-sm text-muted">{{ store.error() }}</p>
+    </div>
+  } @else if (store.visible().length === 0) {
+    <div class="rounded-2xl border border-line bg-foam p-12 text-center">
+      <p class="text-2xl">🎉</p>
+      <p class="mt-2 text-sm text-muted">
+        {{ store.filter() === 'unused' ? 'No orphaned photos — nothing to clean up.' : 'No photos stored yet.' }}
+      </p>
+    </div>
+  } @else {
+    <div class="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
+      @for (p of store.visible(); track p.path) {
+        @let selected = store.isSelected(p.path);
+        <div
+          class="group relative overflow-hidden rounded-2xl border bg-foam transition"
+          [class]="selected ? 'border-ink ring-2 ring-ink' : 'border-line'"
+        >
+          <!-- Unused photos are selectable; used ones are locked (the API skips them). -->
+          <button
+            type="button"
+            class="block w-full text-left"
+            [class.cursor-default]="p.used"
+            [disabled]="p.used"
+            (click)="store.toggle(p.path)"
+          >
+            <img
+              [src]="'/' + p.path"
+              [alt]="fileName(p.path)"
+              loading="lazy"
+              class="aspect-square w-full object-cover"
+              [class.opacity-60]="p.used"
+            />
+            <!-- Selection check (unused only) -->
+            @if (!p.used) {
+              <span
+                class="absolute right-2 top-2 grid size-6 place-items-center rounded-full border text-xs font-bold transition"
+                [class]="selected ? 'border-ink bg-ink text-foam' : 'border-line bg-foam/90 text-transparent'"
+                aria-hidden="true"
+                >✓</span
+              >
+            }
+          </button>
+
+          <div class="flex items-center justify-between gap-2 px-3 py-2">
+            <span class="truncate font-mono text-xs text-muted" [title]="fileName(p.path)">
+              {{ fileName(p.path) }}
+            </span>
+            @if (p.used) {
+              <span class="shrink-0 rounded-full bg-moss/15 px-2 py-0.5 text-xs font-semibold text-moss">Used</span>
+            } @else {
+              <span class="shrink-0 rounded-full bg-amber-400/20 px-2 py-0.5 text-xs font-semibold text-amber-700"
+                >Unused</span
+              >
+            }
+          </div>
+        </div>
+      }
+    </div>
+  }
+</section>
