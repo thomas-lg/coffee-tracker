@@ -73,3 +73,16 @@ unused ones need cleanup). Agreed design:
 - **Conventions:** hexagonal (controllers depend only on application ports, never EF);
   DTOs at the boundary (entities never serialized); JWT signing key from env only
   (no baked default; app fails fast); concept-note comments inline.
+
+## Deferred frontend upgrades (Angular 22 ahead of the ecosystem)
+
+These are wanted but blocked by libraries lagging Angular 22 — revisit when
+compatible releases land:
+
+- **NgRx SignalStore (`@ngrx/signals`)** for the stateful stores (`AuthStore`, the
+  `CoffeesStore`). Today it peers on `@angular/core@^21`; we ship native-signals
+  stores with the same surface, so the swap is low-risk later.
+- **`lucide-angular`** to replace the custom `ct-icon` lucide-core wrapper, once it
+  supports Angular 22 (currently caps at `@angular/common 13.x–21.x`).
+- Minor: `openapi-typescript` runs via `npx` (peers on TS 5 vs our TS 6) — fine to
+  leave; revisit if it bumps its peer range.
