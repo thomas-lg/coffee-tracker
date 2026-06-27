@@ -114,7 +114,8 @@ export class CoffeeDetail {
       this.newNotes.set('');
       this.selectedTags.set(new Set());
       this.reviewsRes.reload();
-      this.coffeeRes.reload(); // refresh this coffee's average; the grid refreshes on its next load
+      this.coffeeRes.reload(); // refresh this coffee's average
+      this.store.reload(); // keep the grid's cached average in sync (root singleton; only refetches on reload)
     } catch {
       this.toast.show('Could not save your rating.', 'error');
     } finally {
