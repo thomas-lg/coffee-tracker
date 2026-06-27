@@ -46,9 +46,11 @@ parking lot of ideas (see the README's "Ideas for later").
 - **Local smoke tests: do NOT use port 5000** — macOS AirPlay squats it and stale
   backgrounded `dotnet run` processes serve old binaries. Run with
   `ASPNETCORE_URLS=http://localhost:5099 dotnet run --no-launch-profile --no-build`.
-- **OCR on the host:** `Ocr:Engine=none` in `appsettings.Development.json` so the host
-  runs without native libs (`/api/coffees/scan` → 503). Real OCR runs in the dev
-  container / prod image. Locally: `brew install tesseract` + `Ocr__Engine=tesseract`.
+- **OCR engine by environment:** `appsettings.Development.json` sets `Ocr:Engine=none`
+  so the bare macOS host (no native libs) doesn't 503-loop on `/api/coffees/scan`. The
+  **dev container** overrides it back to `tesseract` via `devcontainer.json`
+  `containerEnv` (it ships the libs), and **prod** uses the base `appsettings.json`
+  (`tesseract`). Running on the bare host: `brew install tesseract` + `Ocr__Engine=tesseract`.
 - **Commit email** for this repo is `tom.legougaud@gmail.com` (not the work email).
 - **Git over HTTPS in the dev container:** the remote is HTTPS and auth is forwarded by
   the VS Code Dev Containers credential helper (no SSH key in the container). `gh` is
