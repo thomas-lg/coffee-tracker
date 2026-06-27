@@ -1,22 +1,22 @@
-import { Injectable, computed, inject, signal } from '@angular/core';
-import { firstValueFrom } from 'rxjs';
-import { CoffeesApi, type Coffee } from '@coffee-tracker/data';
-import { roastBucket } from './coffee-visual';
+import { Injectable, computed, signal } from '@angular/core';
+import { httpResource } from '@angular/common/http';
+import type { Coffee } from '@coffee-tracker/data';
+import { roastBucket } from '../utils/coffee-visual';
 
 export type RoastFilter = 'all' | 'Light' | 'Medium' | 'Dark';
 export type CoffeeSort = 'new' | 'rating' | 'name';
 
 /**
- * Signal-based catalog store (native signals — same surface a SignalStore would
- * expose; see the deferred-upgrade note). Holds the list + search/filter/sort.
+ * Catalog store. The list is an `httpResource` (auto-fetches, reactive, refetchable);
+ * search/roast/sort are plain signals composed into `filtered`.
  */
 @Injectable({ providedIn: 'root' })
 export class CoffeesStore {
-  private readonly api = inject(CoffeesApi);
+  private readonly resource = httpResource<Coffee[]>(() => '/api/coffees', { defaultValue: [] });
 
-  readonly coffees = signal<Coffee[]>([]);
-  readonly loading = signal(false);
-  readonly error = signal<string | null>(null);
+  readonly coffees = this.resource.value;
+  readonly loading = this.resource.isLoading;
+  readonly error = computed(() => (this.resource.error() ? 'Could not load your coffees.' : null));
 
   readonly search = signal('');
   readonly roast = signal<RoastFilter>('all');
@@ -42,15 +42,8 @@ export class CoffeesStore {
     return list;
   });
 
-  async load(): Promise<void> {
-    this.loading.set(true);
-    this.error.set(null);
-    try {
-      this.coffees.set(await firstValueFrom(this.api.list()));
-    } catch {
-      this.error.set('Could not load your coffees.');
-    } finally {
-      this.loading.set(false);
-    }
+  /** Refetch the list (e.g. after add/delete elsewhere). */
+  reload(): void {
+    this.resource.reload();
   }
 }

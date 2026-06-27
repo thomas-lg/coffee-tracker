@@ -1,18 +1,13 @@
-import { ChangeDetectionStrategy, Component, computed, effect, inject, input, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
+import { httpResource } from '@angular/common/http';
 import { Router, RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { Button, Rating, Skeleton, TagChip, ToastService } from '@coffee-tracker/ui';
 import { formatDate, formatPrice, formatRating } from '@coffee-tracker/util';
 import { AuthStore } from '@coffee-tracker/auth';
-import {
-  CoffeesApi,
-  FlavorTagsApi,
-  ReviewsApi,
-  type Coffee,
-  type FlavorTag,
-  type Review,
-} from '@coffee-tracker/data';
-import { roastGradient } from './coffee-visual';
+import { CoffeesApi, ReviewsApi, type Coffee, type FlavorTag, type Review } from '@coffee-tracker/data';
+import { roastGradient } from '../utils/coffee-visual';
+import { CoffeesStore } from '../services/coffees.store';
 import { BeanScene } from './bean-scene';
 
 @Component({
@@ -22,9 +17,9 @@ import { BeanScene } from './bean-scene';
   templateUrl: './coffee-detail.html',
 })
 export class CoffeeDetail {
-  private readonly api = inject(CoffeesApi);
+  private readonly coffeesApi = inject(CoffeesApi);
   private readonly reviewsApi = inject(ReviewsApi);
-  private readonly tagsApi = inject(FlavorTagsApi);
+  private readonly store = inject(CoffeesStore);
   private readonly auth = inject(AuthStore);
   private readonly toast = inject(ToastService);
   private readonly router = inject(Router);
@@ -32,10 +27,18 @@ export class CoffeeDetail {
   readonly id = input.required<string>();
   protected readonly coffeeId = computed(() => Number(this.id()));
 
-  protected readonly coffee = signal<Coffee | null>(null);
-  protected readonly reviews = signal<Review[]>([]);
-  protected readonly tags = signal<FlavorTag[]>([]);
-  protected readonly loading = signal(true);
+  // Reactive reads — refetch automatically when the route id changes.
+  private readonly coffeeRes = httpResource<Coffee>(() => `/api/coffees/${this.coffeeId()}`);
+  private readonly reviewsRes = httpResource<Review[]>(
+    () => `/api/coffees/${this.coffeeId()}/reviews`,
+    { defaultValue: [] },
+  );
+  private readonly tagsRes = httpResource<FlavorTag[]>(() => '/api/flavor-tags', { defaultValue: [] });
+
+  protected readonly coffee = this.coffeeRes.value;
+  protected readonly reviews = this.reviewsRes.value;
+  protected readonly tags = this.tagsRes.value;
+  protected readonly loading = this.coffeeRes.isLoading;
 
   protected readonly roastGradient = roastGradient;
   protected readonly formatRating = formatRating;
@@ -67,29 +70,6 @@ export class CoffeeDetail {
   protected readonly selectedTags = signal<ReadonlySet<number>>(new Set());
   protected readonly saving = signal(false);
 
-  constructor() {
-    effect(() => void this.load(this.coffeeId()));
-    firstValueFrom(this.tagsApi.list())
-      .then((t) => this.tags.set(t))
-      .catch(() => undefined);
-  }
-
-  private async load(id: number): Promise<void> {
-    this.loading.set(true);
-    try {
-      const [coffee, reviews] = await Promise.all([
-        firstValueFrom(this.api.get(id)),
-        firstValueFrom(this.reviewsApi.listForCoffee(id)),
-      ]);
-      this.coffee.set(coffee);
-      this.reviews.set(reviews);
-    } catch {
-      this.toast.show('Could not load that coffee.', 'error');
-    } finally {
-      this.loading.set(false);
-    }
-  }
-
   protected isTagOn(id: number): boolean {
     return this.selectedTags().has(id);
   }
@@ -119,7 +99,9 @@ export class CoffeeDetail {
       this.newStage.set('');
       this.newNotes.set('');
       this.selectedTags.set(new Set());
-      await this.load(this.coffeeId());
+      this.reviewsRes.reload();
+      this.coffeeRes.reload(); // refresh the average
+      this.store.reload(); // keep the grid's average in sync
     } catch {
       this.toast.show('Could not save your rating.', 'error');
     } finally {
@@ -131,7 +113,8 @@ export class CoffeeDetail {
     const c = this.coffee();
     if (!c || !confirm(`Delete “${c.name}”? This removes its reviews too.`)) return;
     try {
-      await firstValueFrom(this.api.delete(c.id));
+      await firstValueFrom(this.coffeesApi.delete(c.id));
+      this.store.reload();
       this.toast.show('Coffee deleted.', 'success');
       await this.router.navigate(['/coffees']);
     } catch {

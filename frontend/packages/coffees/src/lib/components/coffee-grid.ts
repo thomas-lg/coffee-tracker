@@ -2,8 +2,8 @@ import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { Button, Card, Rating, Skeleton } from '@coffee-tracker/ui';
 import { formatRating } from '@coffee-tracker/util';
-import { CoffeesStore, type RoastFilter } from './coffees.store';
-import { roastGradient } from './coffee-visual';
+import { CoffeesStore, type RoastFilter } from '../services/coffees.store';
+import { roastGradient } from '../utils/coffee-visual';
 
 @Component({
   selector: 'ct-coffee-grid',
@@ -17,10 +17,5 @@ export class CoffeeGrid {
   protected readonly formatRating = formatRating;
   protected readonly roasts: RoastFilter[] = ['all', 'Light', 'Medium', 'Dark'];
   protected readonly skeletons = Array.from({ length: 6 });
-
-  constructor() {
-    if (this.store.coffees().length === 0) {
-      void this.store.load();
-    }
-  }
+  // The store's list is an httpResource — it fetches on first injection, no manual load.
 }

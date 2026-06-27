@@ -1,7 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
-import type { Coffee, CoffeeCreate, CoffeeUpdate } from './models';
+import type { Coffee, CoffeeCreate, CoffeeUpdate } from '../models/models';
 
 /** Thin HTTP access to the coffee catalog endpoints. */
 @Injectable({ providedIn: 'root' })

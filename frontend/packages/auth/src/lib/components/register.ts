@@ -4,7 +4,7 @@ import { FormField, FormRoot, email, form, minLength, required } from '@angular/
 import { firstValueFrom } from 'rxjs';
 import { Button, ToastService } from '@coffee-tracker/ui';
 import { ConfigApi } from '@coffee-tracker/data';
-import { AuthStore } from './auth.store';
+import { AuthStore } from '../auth.store';
 
 @Component({
   selector: 'ct-register',

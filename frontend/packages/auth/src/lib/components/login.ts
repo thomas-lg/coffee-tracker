@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/cor
 import { Router, RouterLink } from '@angular/router';
 import { FormField, FormRoot, email, form, required } from '@angular/forms/signals';
 import { Button, ToastService } from '@coffee-tracker/ui';
-import { AuthStore } from './auth.store';
+import { AuthStore } from '../auth.store';
 
 @Component({
   selector: 'ct-login',

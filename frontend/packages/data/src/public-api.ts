@@ -5,10 +5,10 @@
  * stays internal; consumers use the friendly `models` types.
  */
 
-export * from './lib/models';
-export * from './lib/coffees.api';
-export * from './lib/reviews.api';
-export * from './lib/flavor-tags.api';
-export * from './lib/scan.api';
-export * from './lib/config.api';
-export * from './lib/auth.api';
+export * from './lib/models/models';
+export * from './lib/apis/coffees.api';
+export * from './lib/apis/reviews.api';
+export * from './lib/apis/flavor-tags.api';
+export * from './lib/apis/scan.api';
+export * from './lib/apis/config.api';
+export * from './lib/apis/auth.api';

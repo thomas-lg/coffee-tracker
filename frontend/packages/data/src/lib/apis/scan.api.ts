@@ -1,7 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
-import type { ScanResult } from './models';
+import type { ScanResult } from '../models/models';
 
 /** Snap-to-fill: OCR a bag photo into best-effort fields. May 503 when OCR is off. */
 @Injectable({ providedIn: 'root' })

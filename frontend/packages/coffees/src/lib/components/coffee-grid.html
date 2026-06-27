@@ -68,7 +68,7 @@
   } @else if (store.error()) {
     <div class="rounded-2xl border border-line bg-foam p-8 text-center text-cocoa">
       {{ store.error() }}
-      <button (click)="store.load()" class="mt-3 block w-full font-semibold text-crema-deep">
+      <button (click)="store.reload()" class="mt-3 block w-full font-semibold text-crema-deep">
         Try again
       </button>
     </div>

@@ -5,6 +5,7 @@ import { firstValueFrom } from 'rxjs';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Button, ToastService } from '@coffee-tracker/ui';
 import { CoffeesApi, ScanApi, type CoffeeCreate } from '@coffee-tracker/data';
+import { CoffeesStore } from '../services/coffees.store';
 
 /** Flat, all-required editable shape (Signal Forms binds cleanly to non-optional fields). */
 interface CoffeeFormModel {
@@ -31,6 +32,7 @@ function today(): string {
 export class CoffeeForm {
   private readonly api = inject(CoffeesApi);
   private readonly scanApi = inject(ScanApi);
+  private readonly store = inject(CoffeesStore);
   private readonly router = inject(Router);
   private readonly toast = inject(ToastService);
 
@@ -153,6 +155,7 @@ export class CoffeeForm {
       }
       const file = this.photoFile();
       if (file) await firstValueFrom(this.api.uploadPhoto(savedId, file));
+      this.store.reload(); // keep the grid in sync with the new/edited coffee
       this.toast.show(existingId != null ? 'Coffee updated.' : 'Coffee added.', 'success');
       await this.router.navigate(['/coffees', savedId]);
     } catch {

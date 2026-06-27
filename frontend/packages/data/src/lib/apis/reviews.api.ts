@@ -1,7 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
-import type { Review, ReviewCreate, ReviewUpdate } from './models';
+import type { Review, ReviewCreate, ReviewUpdate } from '../models/models';
 
 /** Reviews are nested under a coffee. Each POST creates a new dated entry. */
 @Injectable({ providedIn: 'root' })
