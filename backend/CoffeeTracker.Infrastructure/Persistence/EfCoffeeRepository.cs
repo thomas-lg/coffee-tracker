@@ -73,14 +73,9 @@ public class EfCoffeeRepository(AppDbContext db) : ICoffeeRepository
             return null;
         }
 
-        var tags = await db.Reviews
-            .Where(r => r.CoffeeId == id)
-            .SelectMany(r => r.Tags)
-            .Select(t => t.Name)
-            .Distinct()
-            .OrderBy(n => n)
-            .ToListAsync(ct);
-        return new CoffeeWithStats(row.Coffee, row.AverageRating, row.ReviewCount, tags);
+        // Reuse the same tag-stitching path as the list query (one source of truth for
+        // the dedupe/order semantics).
+        return (await AttachTagsAsync([row], ct))[0];
     }
 
     // Tracked (no AsNoTracking): the returned entity is mutated and saved by the

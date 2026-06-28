@@ -637,7 +637,7 @@ export interface components {
             name: string;
             roaster: string;
             origin: string;
-            roastLevel: components["schemas"]["RoastLevel"];
+            roastLevel: null | components["schemas"]["RoastLevel"];
             /** Format: double */
             price: number | string;
             /** Format: date */
@@ -671,7 +671,7 @@ export interface components {
             name: string;
             roaster: string;
             origin: string;
-            roastLevel: components["schemas"]["RoastLevel"];
+            roastLevel: null | components["schemas"]["RoastLevel"];
             /** Format: double */
             price: number | string;
             /** Format: date */

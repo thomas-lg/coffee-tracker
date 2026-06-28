@@ -13,7 +13,7 @@ import { FormField, FormRoot, form, min, required, validate } from '@angular/for
 import { firstValueFrom } from 'rxjs';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Button, Icon, Skeleton, ToastService } from '@coffee-tracker/ui';
-import { CoffeesApi, ScanApi, type CoffeeCreate, type RoastLevel } from '@coffee-tracker/data';
+import { CoffeesApi, ScanApi, ROAST_LEVELS, type CoffeeCreate, type RoastLevel } from '@coffee-tracker/data';
 import { CoffeesStore } from '../services/coffees.store';
 import { roastBucket } from '../utils/coffee-visual';
 import { COFFEE_ORIGINS } from '../utils/coffee-origins';
@@ -78,6 +78,7 @@ export class CoffeeForm implements OnDestroy {
     [...new Set([...COFFEE_ORIGINS, ...this.store.origins()])].sort(),
   );
 
+  protected readonly roastLevels = ROAST_LEVELS;
   protected readonly today = today;
   protected readonly loading = signal(false);
   protected readonly submitting = signal(false);

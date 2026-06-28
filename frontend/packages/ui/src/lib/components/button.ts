@@ -18,7 +18,13 @@ import { RouterLink } from '@angular/router';
   template: `
     <ng-template #label><ng-content /></ng-template>
     @if (link() != null) {
-      <a [routerLink]="link()" [class]="cls()">
+      <a
+        [routerLink]="disabled() ? null : link()"
+        [class]="cls()"
+        [class.pointer-events-none]="disabled()"
+        [class.opacity-50]="disabled()"
+        [attr.aria-disabled]="disabled() ? 'true' : null"
+      >
         <ng-container [ngTemplateOutlet]="label" />
       </a>
     } @else {

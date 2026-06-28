@@ -66,9 +66,9 @@
           <span class="text-sm font-semibold">Roast level</span>
           <select [formField]="f.roastLevel" class="input">
             <option value="" disabled>Choose a roast…</option>
-            <option value="Light">Light</option>
-            <option value="Medium">Medium</option>
-            <option value="Dark">Dark</option>
+            @for (r of roastLevels; track r) {
+              <option [value]="r">{{ r }}</option>
+            }
           </select>
           @if (f.roastLevel().touched() && f.roastLevel().invalid()) {
             <span class="text-xs font-medium text-red-500">Pick a roast level.</span>

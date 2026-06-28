@@ -22,6 +22,9 @@ export interface FlavorTag {
 /** Roast band — a closed set mirrored from the backend enum. */
 export type RoastLevel = 'Light' | 'Medium' | 'Dark';
 
+/** The roast bands in display order — single source for selects/filters. */
+export const ROAST_LEVELS: readonly RoastLevel[] = ['Light', 'Medium', 'Dark'];
+
 export interface Coffee {
   id: number;
   name: string;

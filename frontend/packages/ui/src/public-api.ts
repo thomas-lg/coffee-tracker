@@ -5,6 +5,7 @@
 export * from './lib/components/button';
 export * from './lib/components/card';
 export * from './lib/components/rating';
+export * from './lib/components/select';
 export * from './lib/components/tag-chip';
 export * from './lib/components/skeleton';
 export * from './lib/components/toast';

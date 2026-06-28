@@ -18,13 +18,11 @@ using Microsoft.IdentityModel.Tokens;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container. Serialise enums as their names ("Light"/"Medium"/
-// "Dark") rather than ints, so the API contract — and the generated OpenAPI/TS types —
-// carry readable, stable values.
-builder.Services
-    .AddControllers()
-    .AddJsonOptions(o =>
-        o.JsonSerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter()));
+// Add services to the container. Enums serialise as their names (not ints) via a
+// [JsonConverter] attribute on the enum type itself — that single annotation drives
+// both the JSON wire format and the generated OpenAPI schema (a global converter would
+// fix the wire format but the OpenAPI generator wouldn't see it). See RoastLevel.
+builder.Services.AddControllers();
 
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();

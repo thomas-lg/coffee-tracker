@@ -26,61 +26,28 @@
       />
     </label>
 
-    <div class="relative inline-flex">
-      <select
-        #sortEl
-        [value]="store.sort()"
-        (change)="store.setSort(sortEl.value)"
-        class="h-11 appearance-none rounded-full border border-line bg-foam pl-4 pr-10 text-sm font-semibold"
-        aria-label="Sort coffees"
-      >
-        <option value="new">Newest first</option>
-        <option value="rating">Top rated</option>
-        <option value="name">Name A–Z</option>
-      </select>
-      <span class="pointer-events-none absolute inset-y-0 right-3 flex items-center text-muted">
-        <ct-icon name="chevron-down" [size]="14" />
-      </span>
-    </div>
+    <ct-select [value]="store.sort()" (valueChange)="store.setSort($event)" ariaLabel="Sort coffees">
+      <option value="new">Newest first</option>
+      <option value="rating">Top rated</option>
+      <option value="name">Name A–Z</option>
+    </ct-select>
 
     @if (store.origins().length > 1) {
-      <div class="relative inline-flex">
-        <select
-          #originEl
-          [value]="store.origin()"
-          (change)="store.origin.set(originEl.value)"
-          class="h-11 appearance-none rounded-full border border-line bg-foam pl-4 pr-10 text-sm font-semibold"
-          aria-label="Filter by origin"
-        >
-          <option value="all">All origins</option>
-          @for (o of store.origins(); track o) {
-            <option [value]="o">{{ o }}</option>
-          }
-        </select>
-        <span class="pointer-events-none absolute inset-y-0 right-3 flex items-center text-muted">
-          <ct-icon name="chevron-down" [size]="14" />
-        </span>
-      </div>
+      <ct-select [value]="store.origin()" (valueChange)="store.origin.set($event)" ariaLabel="Filter by origin">
+        <option value="all">All origins</option>
+        @for (o of store.origins(); track o) {
+          <option [value]="o">{{ o }}</option>
+        }
+      </ct-select>
     }
 
     @if (store.flavors().length) {
-      <div class="relative inline-flex">
-        <select
-          #flavorEl
-          [value]="store.flavor()"
-          (change)="store.flavor.set(flavorEl.value)"
-          class="h-11 appearance-none rounded-full border border-line bg-foam pl-4 pr-10 text-sm font-semibold"
-          aria-label="Filter by flavour"
-        >
-          <option value="all">All flavours</option>
-          @for (f of store.flavors(); track f) {
-            <option [value]="f">{{ f }}</option>
-          }
-        </select>
-        <span class="pointer-events-none absolute inset-y-0 right-3 flex items-center text-muted">
-          <ct-icon name="chevron-down" [size]="14" />
-        </span>
-      </div>
+      <ct-select [value]="store.flavor()" (valueChange)="store.flavor.set($event)" ariaLabel="Filter by flavour">
+        <option value="all">All flavours</option>
+        @for (f of store.flavors(); track f) {
+          <option [value]="f">{{ f }}</option>
+        }
+      </ct-select>
     }
   </div>
 
