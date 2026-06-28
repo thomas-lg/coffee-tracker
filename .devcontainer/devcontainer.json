@@ -8,7 +8,10 @@
     // Node 22 + npm, layered on top of the .NET 10 SDK base image.
     "ghcr.io/devcontainers/features/node:1": { "version": "22" },
     // Claude Code CLI (npm-based, so it needs the Node feature above).
-    "ghcr.io/anthropics/devcontainer-features/claude-code:1.0": {}
+    "ghcr.io/anthropics/devcontainer-features/claude-code:1.0": {},
+    // GitHub CLI (`gh`). Auth comes from the GH_TOKEN env var below — gh picks it
+    // up automatically, so no `gh auth login` is needed inside the container.
+    "ghcr.io/devcontainers/features/github-cli:1": {}
   },
   // Reuse the host's Claude Code credentials so the CLI is logged in inside the
   // container without re-running OAuth on every rebuild. Drop this line to log
@@ -21,6 +24,15 @@
   // that exists only so the bare macOS host (no tesseract) doesn't 503 on /scan.
   "containerEnv": {
     "Ocr__Engine": "tesseract"
+  },
+  // GitHub auth for `gh` and `git push` over HTTPS. The value is read from the
+  // HOST environment at attach time (${localEnv:...}) and is NEVER stored in this
+  // file or the image — set GH_TOKEN on your machine to a GitHub PAT. If GH_TOKEN
+  // is unset on the host this resolves to empty and gh just stays logged out.
+  // remoteEnv (not containerEnv) keeps the secret at the tooling layer, out of
+  // `docker inspect`. post-create.sh wires it into git's credential helper.
+  "remoteEnv": {
+    "GH_TOKEN": "${localEnv:GH_TOKEN}"
   },
   // Dev runs the API HTTP-only on localhost:5000 (http://localhost is a secure
   // context, so PWA service worker + camera still work) and ng serve on 4200.
