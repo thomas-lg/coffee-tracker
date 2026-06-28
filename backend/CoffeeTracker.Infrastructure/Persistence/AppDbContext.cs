@@ -21,6 +21,13 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : IdentityDbCo
         // Required: lets Identity configure its own entity mappings before ours.
         base.OnModelCreating(builder);
 
+        // Store the roast band as its name ("Light"/"Medium"/"Dark") rather than an int,
+        // so the column stays human-readable and matches the API/JSON contract.
+        builder.Entity<Coffee>()
+            .Property(c => c.RoastLevel)
+            .HasConversion<string>()
+            .HasMaxLength(10);
+
         // A user may rate a coffee many times over its life — multiple entries per
         // (CoffeeId, UserId) are allowed. Keep a non-unique index so listing a
         // coffee's reviews and a user's entries for it stay fast.

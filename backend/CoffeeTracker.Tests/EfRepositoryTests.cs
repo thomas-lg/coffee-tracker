@@ -40,7 +40,7 @@ public class EfRepositoryTests : IDisposable
             Name = "Geisha",
             Roaster = "R",
             Origin = "Panama",
-            RoastLevel = "Light",
+            RoastLevel = RoastLevel.Light,
             Price = 30m,
             DateBought = new DateOnly(2026, 6, 20),
             CreatedAt = DateTimeOffset.UnixEpoch,

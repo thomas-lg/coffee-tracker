@@ -35,10 +35,10 @@ public class CoffeeCatalogServiceTests
         public Task<IReadOnlyList<CoffeeWithStats>> GetAllAsync(CancellationToken ct = default)
             => Task.FromResult<IReadOnlyList<CoffeeWithStats>>(
                 _store.Values.OrderByDescending(c => c.Id)
-                    .Select(c => new CoffeeWithStats(c, null, 0)).ToList());
+                    .Select(c => new CoffeeWithStats(c, null, 0, [])).ToList());
 
         public Task<CoffeeWithStats?> GetWithStatsByIdAsync(int id, CancellationToken ct = default)
-            => Task.FromResult(_store.TryGetValue(id, out var c) ? new CoffeeWithStats(c, null, 0) : null);
+            => Task.FromResult(_store.TryGetValue(id, out var c) ? new CoffeeWithStats(c, null, 0, []) : null);
 
         public Task<bool> ExistsAsync(int id, CancellationToken ct = default)
             => Task.FromResult(_store.ContainsKey(id));
@@ -120,7 +120,7 @@ public class CoffeeCatalogServiceTests
         Name = "Yirgacheffe",
         Roaster = "Square Mile",
         Origin = "Ethiopia",
-        RoastLevel = "Light",
+        RoastLevel = RoastLevel.Light,
         Price = 18.5m,
         DateBought = new DateOnly(2026, 6, 20),
         CreatedAt = DateTimeOffset.UnixEpoch,
@@ -130,7 +130,7 @@ public class CoffeeCatalogServiceTests
         Name: "Yirgacheffe",
         Roaster: "Square Mile",
         Origin: "Ethiopia",
-        RoastLevel: "Light",
+        RoastLevel: RoastLevel.Light,
         Price: 18.5m,
         DateBought: new DateOnly(2026, 6, 20),
         ShopName: "Local Roastery",
@@ -219,7 +219,7 @@ public class CoffeeCatalogServiceTests
         var service = NewService(new InMemoryCoffeeRepository());
 
         var found = await service.UpdateAsync(99, new CoffeeUpdateDto(
-            "n", "r", "o", "Light", 1m, new DateOnly(2026, 1, 1), null, null));
+            "n", "r", "o", RoastLevel.Light, 1m, new DateOnly(2026, 1, 1), null, null));
 
         Assert.False(found);
     }

@@ -39,6 +39,18 @@ parking lot of ideas (see the README's "Ideas for later").
   (devcontainer + CI + build stage). Either close it or bump Node project-wide
   deliberately; don't merge the lone image bump.
 - **Deferred Angular upgrades** — see the section below.
+- **End-to-end tests (front + back)** — today we have unit tests (Vitest on the
+  frontend, the xUnit suite + a single HTTP integration test on the backend) but no
+  true e2e coverage. Add:
+  - **Backend e2e** — expand the `WebApplicationFactory<Program>` integration tests
+    beyond the admin-auth policy to cover the real flows end to end against an
+    in-memory/SQLite DB: register → login → coffee CRUD, reviews/ratings-over-time,
+    flavour-tag aggregation, and roast-enum validation (incl. the regression where an
+    omitted `roastLevel` must 400, not default to `Light`).
+  - **Frontend e2e** — Playwright browser tests driving the running PWA for the key
+    journeys: auth (register/login/guard redirect), add/edit a coffee (incl. the roast
+    `<select>` + validation + future-date block), browse search/sort/origin/flavour
+    filters, snap-to-fill, and light/dark theming. Wire it into CI as a separate job.
 - **Feature ideas** — parked in the README's "Ideas for later".
 
 ## Context / gotchas to remember

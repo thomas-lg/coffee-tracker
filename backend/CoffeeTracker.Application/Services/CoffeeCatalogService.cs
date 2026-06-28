@@ -34,7 +34,8 @@ public class CoffeeCatalogService(
             Name = dto.Name,
             Roaster = dto.Roaster,
             Origin = dto.Origin,
-            RoastLevel = dto.RoastLevel,
+            // Non-null after model validation ([Required] on the DTO → 400 if omitted).
+            RoastLevel = dto.RoastLevel!.Value,
             Price = dto.Price,
             DateBought = dto.DateBought,
             ShopName = dto.ShopName,
@@ -59,7 +60,7 @@ public class CoffeeCatalogService(
         coffee.Name = dto.Name;
         coffee.Roaster = dto.Roaster;
         coffee.Origin = dto.Origin;
-        coffee.RoastLevel = dto.RoastLevel;
+        coffee.RoastLevel = dto.RoastLevel!.Value;
         coffee.Price = dto.Price;
         coffee.DateBought = dto.DateBought;
         coffee.ShopName = dto.ShopName;
@@ -138,9 +139,14 @@ public class CoffeeCatalogService(
         _ => SetPhotoStatus.InvalidContentType,
     };
 
-    private static CoffeeResponseDto ToDto(CoffeeWithStats s) => ToDto(s.Coffee, s.AverageRating, s.ReviewCount);
+    private static CoffeeResponseDto ToDto(CoffeeWithStats s) =>
+        ToDto(s.Coffee, s.AverageRating, s.ReviewCount, s.FlavorTags);
 
-    private static CoffeeResponseDto ToDto(Coffee c, double? averageRating, int reviewCount) => new(
+    private static CoffeeResponseDto ToDto(
+        Coffee c,
+        double? averageRating,
+        int reviewCount,
+        IReadOnlyList<string>? flavorTags = null) => new(
         c.Id,
         c.Name,
         c.Roaster,
@@ -153,5 +159,6 @@ public class CoffeeCatalogService(
         c.PurchaseUrl,
         c.CreatedAt,
         averageRating,
-        reviewCount);
+        reviewCount,
+        flavorTags ?? []);
 }

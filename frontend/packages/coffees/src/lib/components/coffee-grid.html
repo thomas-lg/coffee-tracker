@@ -6,44 +6,57 @@
       </p>
       <h1 class="mt-1 font-display text-3xl font-semibold">Browse your shelf</h1>
     </div>
-    <ct-button variant="crema" routerLink="/coffees/new">Add a coffee</ct-button>
+    <ct-button variant="crema" link="/coffees/new">Add a coffee</ct-button>
   </div>
 
-  <!-- toolbar -->
-  <div class="mb-4 flex flex-wrap items-center gap-3">
+  <!-- toolbar: search + sort/origin/flavour selects, matched heights -->
+  <div class="mb-3 flex flex-wrap items-center gap-3">
     <label
-      class="flex flex-1 items-center gap-2 rounded-full border border-line bg-foam px-4 py-2.5 focus-within:border-crema"
+      class="flex h-11 flex-1 items-center gap-2 rounded-full border border-line bg-foam px-4 text-muted focus-within:border-crema"
     >
-      <span aria-hidden="true">🔍</span>
+      <ct-icon name="search" [size]="16" />
       <input
         #searchEl
         type="search"
         placeholder="Search by name, roaster, or origin…"
         [value]="store.search()"
         (input)="store.search.set(searchEl.value)"
-        class="w-full min-w-32 bg-transparent text-sm outline-none"
+        class="w-full min-w-32 bg-transparent text-sm text-ink outline-none"
         aria-label="Search coffees"
       />
     </label>
-    <select
-      #sortEl
-      [value]="store.sort()"
-      (change)="store.setSort(sortEl.value)"
-      class="rounded-full border border-line bg-foam px-4 py-2.5 text-sm font-semibold"
-      aria-label="Sort coffees"
-    >
+
+    <ct-select [value]="store.sort()" (valueChange)="store.setSort($event)" ariaLabel="Sort coffees">
       <option value="new">Newest first</option>
       <option value="rating">Top rated</option>
       <option value="name">Name A–Z</option>
-    </select>
+    </ct-select>
+
+    @if (store.origins().length > 1) {
+      <ct-select [value]="store.origin()" (valueChange)="store.origin.set($event)" ariaLabel="Filter by origin">
+        <option value="all">All origins</option>
+        @for (o of store.origins(); track o) {
+          <option [value]="o">{{ o }}</option>
+        }
+      </ct-select>
+    }
+
+    @if (store.flavors().length) {
+      <ct-select [value]="store.flavor()" (valueChange)="store.flavor.set($event)" ariaLabel="Filter by flavour">
+        <option value="all">All flavours</option>
+        @for (f of store.flavors(); track f) {
+          <option [value]="f">{{ f }}</option>
+        }
+      </ct-select>
+    }
   </div>
 
-  <!-- roast filter -->
+  <!-- roast filter: chips matched to the toolbar height -->
   <div class="mb-6 flex flex-wrap gap-2">
     @for (r of roasts; track r) {
       <button
         (click)="store.roast.set(r)"
-        class="rounded-full border px-3.5 py-1.5 text-sm font-semibold transition"
+        class="h-11 rounded-full border px-4 text-sm font-semibold transition"
         [class]="
           store.roast() === r
             ? 'border-ink bg-ink text-foam'
@@ -78,36 +91,12 @@
     <div class="rounded-2xl border border-dashed border-line bg-foam/60 p-10 text-center">
       <p class="font-display text-xl">Nothing on the shelf yet.</p>
       <p class="mt-1 text-sm text-muted">Add your first bag — or snap a photo of one.</p>
-      <ct-button variant="crema" routerLink="/coffees/new" class="mt-4 inline-flex">Add a coffee</ct-button>
+      <ct-button variant="crema" link="/coffees/new" class="mt-4 inline-flex">Add a coffee</ct-button>
     </div>
   } @else {
     <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4">
       @for (c of store.filtered(); track c.id; let i = $index) {
-        <a
-          [routerLink]="['/coffees', c.id]"
-          class="ct-rise"
-          [style.animationDelay]="(i % 12) * 40 + 'ms'"
-        >
-          <ct-card [interactive]="true">
-            <div class="relative flex h-28 items-end p-2 text-foam" [style.background]="roastGradient(c.roastLevel)">
-              @if (c.photoPath) {
-                <img [src]="'/' + c.photoPath" [alt]="c.name" class="absolute inset-0 size-full object-cover" />
-              }
-              <span class="relative rounded-md bg-black/30 px-2 py-0.5 font-mono text-[10px] uppercase tracking-wide backdrop-blur">
-                {{ c.origin }}
-              </span>
-            </div>
-            <div class="p-3">
-              <h3 class="truncate font-display text-lg font-semibold">{{ c.name }}</h3>
-              <p class="truncate text-xs text-muted">{{ c.roaster }}</p>
-              <div class="mt-2 flex items-center gap-2">
-                <ct-rating [value]="c.averageRating ?? 0" size="sm" />
-                <span class="font-mono text-xs font-semibold">{{ formatRating(c.averageRating) }}</span>
-                <span class="text-xs text-muted">· {{ c.reviewCount }}</span>
-              </div>
-            </div>
-          </ct-card>
-        </a>
+        <ct-coffee-card [coffee]="c" [index]="i" />
       }
     </div>
   }

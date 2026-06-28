@@ -1,16 +1,90 @@
-<section class="mx-auto max-w-5xl px-5 py-16">
-  <p class="font-mono text-xs font-semibold uppercase tracking-widest text-crema-deep">
-    Your coffee shelf
-  </p>
-  <h1 class="mt-2 max-w-[13ch] font-display text-5xl font-semibold leading-[1.05]">
-    Every bag worth <em class="italic text-crema-deep">remembering.</em>
-  </h1>
-  <p class="mt-4 max-w-prose text-cocoa">
-    Catalogue the coffees you buy, rate them over time, and snap a photo of the bag to
-    fill the rest in for you.
-  </p>
-  <div class="mt-7 flex flex-wrap gap-3">
-    <ct-button routerLink="/coffees">Browse the shelf →</ct-button>
-    <ct-button variant="crema" routerLink="/coffees/new">Snap a new bag</ct-button>
+<section class="relative overflow-hidden">
+  <!-- Signature ambient moment: faint beans drifting up through a warm glow + steam.
+       Full-bleed behind the hero text; decorative + non-interactive. -->
+  <ct-bean-scene
+    class="pointer-events-none absolute inset-0 [-webkit-mask-image:linear-gradient(to_bottom,black_55%,transparent)] [mask-image:linear-gradient(to_bottom,black_55%,transparent)]"
+    aria-hidden="true"
+  />
+
+  <div class="relative mx-auto max-w-5xl px-5 py-20">
+    <p class="font-mono text-xs font-semibold uppercase tracking-widest text-crema-deep">
+      Your coffee shelf@if (store.coffees().length) { · {{ store.coffees().length }} bags catalogued }
+    </p>
+    <h1 class="mt-2 max-w-[13ch] font-display text-5xl font-semibold leading-[1.05]">
+      Every bag worth <em class="italic text-crema-deep">remembering.</em>
+    </h1>
+    <p class="mt-4 max-w-prose text-cocoa">
+      Catalogue the coffees you buy, rate them over time, and snap a photo of the bag to
+      fill the rest in for you.
+    </p>
+    <div class="mt-7 flex flex-wrap gap-3">
+      <ct-button link="/coffees">Browse the shelf →</ct-button>
+      <ct-button variant="crema" link="/coffees/new"><ct-icon name="camera" [size]="16" /> Snap a new bag</ct-button>
+    </div>
+
+    @if (store.coffees().length) {
+      <div class="mt-10 flex flex-wrap gap-x-10 gap-y-4">
+        <div>
+          <div class="font-display text-3xl leading-none"><ct-count-up [value]="stats().bags" /></div>
+          <div class="mt-1 font-mono text-[11px] font-semibold uppercase tracking-wider text-muted">Bags</div>
+        </div>
+        <div>
+          <div class="font-display text-3xl leading-none"><ct-count-up [value]="stats().reviews" /></div>
+          <div class="mt-1 font-mono text-[11px] font-semibold uppercase tracking-wider text-muted">Reviews</div>
+        </div>
+        <div>
+          <div class="font-display text-3xl leading-none">
+            @if (stats().avg) {
+              <ct-count-up [value]="stats().avg" [decimals]="1" />
+            } @else {
+              —
+            }
+          </div>
+          <div class="mt-1 font-mono text-[11px] font-semibold uppercase tracking-wider text-muted">Avg rating</div>
+        </div>
+        <div>
+          <div class="font-display text-3xl leading-none"><ct-count-up [value]="stats().origins" /></div>
+          <div class="mt-1 font-mono text-[11px] font-semibold uppercase tracking-wider text-muted">Origins</div>
+        </div>
+      </div>
+    }
   </div>
+</section>
+
+<section class="mx-auto max-w-5xl px-5 pb-20 pt-12">
+  @if (store.coffees().length) {
+    <div class="mb-5 flex items-end justify-between gap-3">
+      <div>
+        <p class="font-mono text-xs font-semibold uppercase tracking-widest text-crema-deep">Recently added</p>
+        <h2 class="mt-1 font-display text-2xl font-semibold">Fresh on the shelf</h2>
+      </div>
+      <a routerLink="/coffees" class="text-sm font-semibold text-crema-deep hover:underline">View all →</a>
+    </div>
+  }
+
+  @if (store.loading()) {
+    <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4">
+      @for (s of skeletons; track $index) {
+        <div class="overflow-hidden rounded-2xl border border-line bg-foam">
+          <ct-skeleton height="7rem" width="100%" />
+          <div class="flex flex-col gap-2 p-3">
+            <ct-skeleton height="1.1rem" width="80%" />
+            <ct-skeleton height="0.8rem" width="55%" />
+          </div>
+        </div>
+      }
+    </div>
+  } @else if (store.coffees().length === 0) {
+    <div class="rounded-2xl border border-dashed border-line bg-foam/60 p-10 text-center">
+      <p class="font-display text-xl">Nothing on the shelf yet.</p>
+      <p class="mt-1 text-sm text-muted">Add your first bag — or snap a photo of one.</p>
+      <ct-button variant="crema" link="/coffees/new" class="mt-4 inline-flex">Add a coffee</ct-button>
+    </div>
+  } @else {
+    <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4">
+      @for (c of recent(); track c.id; let i = $index) {
+        <ct-coffee-card [coffee]="c" [index]="i" />
+      }
+    </div>
+  }
 </section>

@@ -1,8 +1,10 @@
 import { ChangeDetectionStrategy, Component, ElementRef, effect, inject, input } from '@angular/core';
 import {
   ArrowLeft,
+  ArrowRight,
   Camera,
   Check,
+  ChevronDown,
   Coffee,
   type IconNode,
   LogOut,
@@ -36,6 +38,8 @@ const ICONS: Record<string, IconNode> = {
   user: User,
   logout: LogOut,
   back: ArrowLeft,
+  'arrow-right': ArrowRight,
+  'chevron-down': ChevronDown,
 };
 
 export type IconName = keyof typeof ICONS;
