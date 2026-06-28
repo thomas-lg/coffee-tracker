@@ -9,19 +9,21 @@ import {
   signal,
 } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
-import { FormField, FormRoot, form, min, required } from '@angular/forms/signals';
+import { FormField, FormRoot, form, min, required, validate } from '@angular/forms/signals';
 import { firstValueFrom } from 'rxjs';
 import { HttpErrorResponse } from '@angular/common/http';
-import { Button, ToastService } from '@coffee-tracker/ui';
-import { CoffeesApi, ScanApi, type CoffeeCreate } from '@coffee-tracker/data';
+import { Button, Icon, Skeleton, ToastService } from '@coffee-tracker/ui';
+import { CoffeesApi, ScanApi, type CoffeeCreate, type RoastLevel } from '@coffee-tracker/data';
 import { CoffeesStore } from '../services/coffees.store';
+import { roastBucket } from '../utils/coffee-visual';
+import { COFFEE_ORIGINS } from '../utils/coffee-origins';
 
 /** Flat, all-required editable shape (Signal Forms binds cleanly to non-optional fields). */
 interface CoffeeFormModel {
   name: string;
   roaster: string;
   origin: string;
-  roastLevel: string;
+  roastLevel: RoastLevel | '';
   price: number;
   dateBought: string;
   shopName: string;
@@ -35,13 +37,13 @@ function today(): string {
 @Component({
   selector: 'ct-coffee-form',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormField, FormRoot, RouterLink, Button],
+  imports: [FormField, FormRoot, RouterLink, Button, Icon, Skeleton],
   templateUrl: './coffee-form.html',
 })
 export class CoffeeForm implements OnDestroy {
   private readonly api = inject(CoffeesApi);
   private readonly scanApi = inject(ScanApi);
-  private readonly store = inject(CoffeesStore);
+  protected readonly store = inject(CoffeesStore);
   private readonly router = inject(Router);
   private readonly toast = inject(ToastService);
 
@@ -67,8 +69,17 @@ export class CoffeeForm implements OnDestroy {
     required(p.roastLevel);
     min(p.price, 0);
     required(p.dateBought);
+    // ISO date strings compare lexically — block anything after today.
+    validate(p.dateBought, ({ value }) => (value() && value() > today() ? { kind: 'future' } : undefined));
   });
 
+  /** Origin suggestions: curated producing countries merged with what's on the shelf. */
+  protected readonly originSuggestions = computed(() =>
+    [...new Set([...COFFEE_ORIGINS, ...this.store.origins()])].sort(),
+  );
+
+  protected readonly today = today;
+  protected readonly loading = signal(false);
   protected readonly submitting = signal(false);
   protected readonly scanning = signal(false);
   private readonly photoFile = signal<File | null>(null);
@@ -86,7 +97,8 @@ export class CoffeeForm implements OnDestroy {
       name: m.name,
       roaster: m.roaster,
       origin: m.origin,
-      roastLevel: m.roastLevel,
+      // required() guarantees a non-empty selection before submit.
+      roastLevel: m.roastLevel as RoastLevel,
       price: m.price,
       dateBought: m.dateBought,
       shopName: m.shopName || null,
@@ -95,6 +107,7 @@ export class CoffeeForm implements OnDestroy {
   }
 
   private async loadExisting(id: number): Promise<void> {
+    this.loading.set(true);
     try {
       const c = await firstValueFrom(this.api.get(id));
       this.model.set({
@@ -110,6 +123,8 @@ export class CoffeeForm implements OnDestroy {
       if (c.photoPath) this.photoPreview.set('/' + c.photoPath);
     } catch {
       this.toast.show('Could not load that coffee.', 'error');
+    } finally {
+      this.loading.set(false);
     }
   }
 
@@ -144,7 +159,8 @@ export class CoffeeForm implements OnDestroy {
         name: parsed.name ?? m.name,
         roaster: parsed.roaster ?? m.roaster,
         origin: parsed.origin ?? m.origin,
-        roastLevel: parsed.roastLevel ?? m.roastLevel,
+        // OCR returns free text (e.g. "medium-dark"); map it onto the enum.
+        roastLevel: parsed.roastLevel ? roastBucket(parsed.roastLevel) : m.roastLevel,
       }));
       this.toast.show('Bag scanned — fields pre-filled. Check them before saving.', 'success');
     } catch (err) {

@@ -9,3 +9,4 @@ export * from './lib/components/tag-chip';
 export * from './lib/components/skeleton';
 export * from './lib/components/toast';
 export * from './lib/components/icon';
+export * from './lib/components/count-up';

@@ -9,26 +9,79 @@ namespace CoffeeTracker.Infrastructure.Persistence;
 /// </summary>
 public class EfCoffeeRepository(AppDbContext db) : ICoffeeRepository
 {
-    // Projects a coffee query to include its review aggregates. The average/count
-    // are correlated subqueries, so the whole thing is ONE SQL query (no N+1), and
-    // AVG over no rows yields null via the nullable cast.
-    private IQueryable<CoffeeWithStats> WithStats(IQueryable<Coffee> source) =>
-        source.Select(c => new CoffeeWithStats(
+    private sealed record StatRow(Coffee Coffee, double? AverageRating, int ReviewCount);
+
+    // Projects a coffee query to its scalar review aggregates. The average/count are
+    // correlated subqueries — ONE SQL query, no N+1, and AVG over no rows yields null
+    // via the nullable cast. Flavour tags are loaded separately (see AttachTagsAsync):
+    // SQLite can't translate a collection subquery nested alongside these scalars.
+    private IQueryable<StatRow> WithScalarStats(IQueryable<Coffee> source) =>
+        source.Select(c => new StatRow(
             c,
             db.Reviews.Where(r => r.CoffeeId == c.Id).Average(r => (double?)r.Rating),
             db.Reviews.Count(r => r.CoffeeId == c.Id)));
+
+    // Distinct flavour tags per coffee, fetched in a single flat join query and grouped
+    // in memory, then stitched onto the scalar rows (preserving their order).
+    private async Task<IReadOnlyList<CoffeeWithStats>> AttachTagsAsync(
+        IReadOnlyList<StatRow> rows,
+        CancellationToken ct)
+    {
+        if (rows.Count == 0)
+        {
+            return [];
+        }
+
+        var ids = rows.Select(r => r.Coffee.Id).ToList();
+        // Per-review collection projection (a LEFT JOIN, not a correlated SelectMany) so
+        // SQLite never needs APPLY; flatten + dedupe per coffee in memory below.
+        var perReview = await db.Reviews
+            .Where(r => ids.Contains(r.CoffeeId))
+            .Select(r => new { r.CoffeeId, Names = r.Tags.Select(t => t.Name).ToList() })
+            .ToListAsync(ct);
+
+        var byCoffee = perReview
+            .GroupBy(p => p.CoffeeId)
+            .ToDictionary(
+                g => g.Key,
+                g => (IReadOnlyList<string>)g.SelectMany(p => p.Names).Distinct().OrderBy(n => n).ToList());
+
+        return rows
+            .Select(r => new CoffeeWithStats(
+                r.Coffee,
+                r.AverageRating,
+                r.ReviewCount,
+                byCoffee.TryGetValue(r.Coffee.Id, out var tags) ? tags : []))
+            .ToList();
+    }
 
     public async Task<IReadOnlyList<CoffeeWithStats>> GetAllAsync(CancellationToken ct = default)
     {
         // Read-only projection: AsNoTracking, newest first (Id is monotonic with
         // insertion; SQLite cannot ORDER BY a DateTimeOffset column).
-        return await WithStats(db.Coffees.AsNoTracking().OrderByDescending(c => c.Id))
+        var rows = await WithScalarStats(db.Coffees.AsNoTracking().OrderByDescending(c => c.Id))
             .ToListAsync(ct);
+        return await AttachTagsAsync(rows, ct);
     }
 
-    public async Task<CoffeeWithStats?> GetWithStatsByIdAsync(int id, CancellationToken ct = default) =>
-        await WithStats(db.Coffees.AsNoTracking().Where(c => c.Id == id))
+    public async Task<CoffeeWithStats?> GetWithStatsByIdAsync(int id, CancellationToken ct = default)
+    {
+        var row = await WithScalarStats(db.Coffees.AsNoTracking().Where(c => c.Id == id))
             .FirstOrDefaultAsync(ct);
+        if (row is null)
+        {
+            return null;
+        }
+
+        var tags = await db.Reviews
+            .Where(r => r.CoffeeId == id)
+            .SelectMany(r => r.Tags)
+            .Select(t => t.Name)
+            .Distinct()
+            .OrderBy(n => n)
+            .ToListAsync(ct);
+        return new CoffeeWithStats(row.Coffee, row.AverageRating, row.ReviewCount, tags);
+    }
 
     // Tracked (no AsNoTracking): the returned entity is mutated and saved by the
     // update/photo paths, so it must be attached to the change tracker.

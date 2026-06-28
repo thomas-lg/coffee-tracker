@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using CoffeeTracker.Domain;
 
 namespace CoffeeTracker.Application.Dtos;
 
@@ -12,7 +13,7 @@ public record CoffeeCreateDto(
     [Required, StringLength(200, MinimumLength = 1)] string Name,
     [Required, StringLength(200, MinimumLength = 1)] string Roaster,
     [Required, StringLength(200, MinimumLength = 1)] string Origin,
-    [Required, StringLength(100, MinimumLength = 1)] string RoastLevel,
+    [EnumDataType(typeof(RoastLevel))] RoastLevel RoastLevel,
     [Range(0, 100_000)] decimal Price,
     DateOnly DateBought,
     [StringLength(200)] string? ShopName,

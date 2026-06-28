@@ -138,9 +138,14 @@ public class CoffeeCatalogService(
         _ => SetPhotoStatus.InvalidContentType,
     };
 
-    private static CoffeeResponseDto ToDto(CoffeeWithStats s) => ToDto(s.Coffee, s.AverageRating, s.ReviewCount);
+    private static CoffeeResponseDto ToDto(CoffeeWithStats s) =>
+        ToDto(s.Coffee, s.AverageRating, s.ReviewCount, s.FlavorTags);
 
-    private static CoffeeResponseDto ToDto(Coffee c, double? averageRating, int reviewCount) => new(
+    private static CoffeeResponseDto ToDto(
+        Coffee c,
+        double? averageRating,
+        int reviewCount,
+        IReadOnlyList<string>? flavorTags = null) => new(
         c.Id,
         c.Name,
         c.Roaster,
@@ -153,5 +158,6 @@ public class CoffeeCatalogService(
         c.PurchaseUrl,
         c.CreatedAt,
         averageRating,
-        reviewCount);
+        reviewCount,
+        flavorTags ?? []);
 }

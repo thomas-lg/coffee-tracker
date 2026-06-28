@@ -4,6 +4,70 @@
  */
 
 export interface paths {
+    "/api/admin/photos": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["PhotoListItemDto"][];
+                        "application/json": components["schemas"]["PhotoListItemDto"][];
+                        "text/json": components["schemas"]["PhotoListItemDto"][];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["PhotoDeleteRequestDto"];
+                    "text/json": components["schemas"]["PhotoDeleteRequestDto"];
+                    "application/*+json": components["schemas"]["PhotoDeleteRequestDto"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["PhotoDeleteResultDto"];
+                        "application/json": components["schemas"]["PhotoDeleteResultDto"];
+                        "text/json": components["schemas"]["PhotoDeleteResultDto"];
+                    };
+                };
+            };
+        };
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/Auth/register": {
         parameters: {
             query?: never;
@@ -573,7 +637,7 @@ export interface components {
             name: string;
             roaster: string;
             origin: string;
-            roastLevel: string;
+            roastLevel: components["schemas"]["RoastLevel"];
             /** Format: double */
             price: number | string;
             /** Format: date */
@@ -587,7 +651,7 @@ export interface components {
             name: string;
             roaster: string;
             origin: string;
-            roastLevel: string;
+            roastLevel: components["schemas"]["RoastLevel"];
             /** Format: double */
             price: number | string;
             /** Format: date */
@@ -601,12 +665,13 @@ export interface components {
             averageRating: null | number | string;
             /** Format: int32 */
             reviewCount: number | string;
+            flavorTags: string[];
         };
         CoffeeUpdateDto: {
             name: string;
             roaster: string;
             origin: string;
-            roastLevel: string;
+            roastLevel: components["schemas"]["RoastLevel"];
             /** Format: double */
             price: number | string;
             /** Format: date */
@@ -627,6 +692,19 @@ export interface components {
         LoginDto: {
             email: string;
             password: string;
+        };
+        PhotoDeleteRequestDto: {
+            paths: string[];
+        };
+        PhotoDeleteResultDto: {
+            /** Format: int32 */
+            deleted: number | string;
+            /** Format: int32 */
+            skipped: number | string;
+        };
+        PhotoListItemDto: {
+            path: string;
+            used: boolean;
         };
         RegisterDto: {
             email: string;
@@ -672,6 +750,8 @@ export interface components {
             tagIds: null | (number | string)[];
             stage?: null | string;
         };
+        /** @enum {unknown} */
+        RoastLevel: "Light" | "Medium" | "Dark";
         ScannedCoffeeDto: {
             name: null | string;
             roaster: null | string;

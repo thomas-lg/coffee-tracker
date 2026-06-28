@@ -16,13 +16,15 @@
       <aside class="overflow-hidden rounded-2xl border border-line bg-foam shadow-sm md:sticky md:top-20">
         <div class="relative h-56" [style.background]="roastGradient(c.roastLevel)">
           @if (c.photoPath) {
-            <img [src]="'/' + c.photoPath" [alt]="c.name" class="absolute inset-0 size-full object-cover" />
+            <img [src]="'/' + c.photoPath" [alt]="c.name" decoding="async" class="absolute inset-0 size-full object-cover" />
           } @else {
-            @defer (on viewport) {
-              <ct-bean-scene class="absolute inset-0 opacity-90" />
-            } @placeholder {
-              <div class="absolute inset-0"></div>
-            }
+            <ct-bean-scene
+              class="absolute inset-0"
+              [beanCount]="0"
+              [wispCount]="5"
+              glow="rgba(255,253,246,.12)"
+              aria-hidden="true"
+            />
           }
         </div>
         <dl class="divide-y divide-dashed divide-line">

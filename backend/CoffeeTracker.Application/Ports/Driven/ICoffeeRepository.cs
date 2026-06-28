@@ -7,7 +7,11 @@ namespace CoffeeTracker.Application.Ports.Driven;
 /// catalog can surface average rating / review count without an N+1 query and
 /// without polluting the domain entity with read-model concerns.
 /// </summary>
-public sealed record CoffeeWithStats(Coffee Coffee, double? AverageRating, int ReviewCount);
+public sealed record CoffeeWithStats(
+    Coffee Coffee,
+    double? AverageRating,
+    int ReviewCount,
+    IReadOnlyList<string> FlavorTags);
 
 /// <summary>
 /// Driven (output) port for coffee persistence. The application layer depends on

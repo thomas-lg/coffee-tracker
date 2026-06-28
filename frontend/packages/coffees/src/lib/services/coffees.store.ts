@@ -20,14 +20,32 @@ export class CoffeesStore {
 
   readonly search = signal('');
   readonly roast = signal<RoastFilter>('all');
+  readonly origin = signal('all');
+  readonly flavor = signal('all');
   readonly sort = signal<CoffeeSort>('new');
+
+  /** Distinct filter/autocomplete options derived from the loaded shelf. */
+  readonly origins = computed(() => [...new Set(this.coffees().map((c) => c.origin))].sort());
+  readonly flavors = computed(() =>
+    [...new Set(this.coffees().flatMap((c) => c.flavorTags))].sort(),
+  );
+  readonly roasters = computed(() =>
+    [...new Set(this.coffees().map((c) => c.roaster).filter(Boolean))].sort(),
+  );
+  readonly shops = computed(() =>
+    [...new Set(this.coffees().map((c) => c.shopName).filter((s): s is string => !!s))].sort(),
+  );
 
   readonly filtered = computed(() => {
     const q = this.search().toLowerCase().trim();
     const roast = this.roast();
+    const origin = this.origin();
+    const flavor = this.flavor();
     let list = this.coffees().filter(
       (c) =>
         (roast === 'all' || roastBucket(c.roastLevel) === roast) &&
+        (origin === 'all' || c.origin === origin) &&
+        (flavor === 'all' || c.flavorTags.includes(flavor)) &&
         `${c.name} ${c.roaster} ${c.origin}`.toLowerCase().includes(q),
     );
     switch (this.sort()) {

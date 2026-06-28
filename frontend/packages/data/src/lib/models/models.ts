@@ -19,12 +19,15 @@ export interface FlavorTag {
   name: string;
 }
 
+/** Roast band — a closed set mirrored from the backend enum. */
+export type RoastLevel = 'Light' | 'Medium' | 'Dark';
+
 export interface Coffee {
   id: number;
   name: string;
   roaster: string;
   origin: string;
-  roastLevel: string;
+  roastLevel: RoastLevel;
   price: number;
   /** ISO date (yyyy-MM-dd) */
   dateBought: string;
@@ -35,13 +38,15 @@ export interface Coffee {
   createdAt: string;
   averageRating: number | null;
   reviewCount: number;
+  /** Distinct flavour descriptors aggregated across this coffee's reviews. */
+  flavorTags: string[];
 }
 
 export interface CoffeeCreate {
   name: string;
   roaster: string;
   origin: string;
-  roastLevel: string;
+  roastLevel: RoastLevel;
   price: number;
   /** ISO date (yyyy-MM-dd) */
   dateBought: string;

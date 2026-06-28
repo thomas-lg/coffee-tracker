@@ -10,6 +10,91 @@
     }
   ],
   "paths": {
+    "/api/admin/photos": {
+      "get": {
+        "tags": [
+          "AdminPhotos"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PhotoListItemDto"
+                  }
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PhotoListItemDto"
+                  }
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PhotoListItemDto"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "AdminPhotos"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PhotoDeleteRequestDto"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PhotoDeleteRequestDto"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/PhotoDeleteRequestDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/PhotoDeleteResultDto"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PhotoDeleteResultDto"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PhotoDeleteResultDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/Auth/register": {
       "post": {
         "tags": [
@@ -783,7 +868,7 @@
             "type": "string"
           },
           "roastLevel": {
-            "type": "string"
+            "$ref": "#/components/schemas/RoastLevel"
           },
           "price": {
             "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
@@ -825,7 +910,8 @@
           "purchaseUrl",
           "createdAt",
           "averageRating",
-          "reviewCount"
+          "reviewCount",
+          "flavorTags"
         ],
         "type": "object",
         "properties": {
@@ -847,7 +933,7 @@
             "type": "string"
           },
           "roastLevel": {
-            "type": "string"
+            "$ref": "#/components/schemas/RoastLevel"
           },
           "price": {
             "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
@@ -899,6 +985,12 @@
               "string"
             ],
             "format": "int32"
+          },
+          "flavorTags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
           }
         }
       },
@@ -925,7 +1017,7 @@
             "type": "string"
           },
           "roastLevel": {
-            "type": "string"
+            "$ref": "#/components/schemas/RoastLevel"
           },
           "price": {
             "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
@@ -1000,6 +1092,60 @@
           },
           "password": {
             "type": "string"
+          }
+        }
+      },
+      "PhotoDeleteRequestDto": {
+        "required": [
+          "paths"
+        ],
+        "type": "object",
+        "properties": {
+          "paths": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "PhotoDeleteResultDto": {
+        "required": [
+          "deleted",
+          "skipped"
+        ],
+        "type": "object",
+        "properties": {
+          "deleted": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "skipped": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        }
+      },
+      "PhotoListItemDto": {
+        "required": [
+          "path",
+          "used"
+        ],
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string"
+          },
+          "used": {
+            "type": "boolean"
           }
         }
       },
@@ -1245,6 +1391,13 @@
           }
         }
       },
+      "RoastLevel": {
+        "enum": [
+          "Light",
+          "Medium",
+          "Dark"
+        ]
+      },
       "ScannedCoffeeDto": {
         "required": [
           "name",
@@ -1309,6 +1462,9 @@
     }
   },
   "tags": [
+    {
+      "name": "AdminPhotos"
+    },
     {
       "name": "Auth"
     },
