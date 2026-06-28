@@ -1,3 +1,5 @@
+using CoffeeTracker.Domain;
+
 namespace CoffeeTracker.Application.Dtos;
 
 /// <summary>
@@ -9,7 +11,7 @@ public record CoffeeResponseDto(
     string Name,
     string Roaster,
     string Origin,
-    string RoastLevel,
+    RoastLevel RoastLevel,
     decimal Price,
     DateOnly DateBought,
     string? PhotoPath,
@@ -17,4 +19,5 @@ public record CoffeeResponseDto(
     string? PurchaseUrl,
     DateTimeOffset CreatedAt,
     double? AverageRating,
-    int ReviewCount);
+    int ReviewCount,
+    IReadOnlyList<string> FlavorTags);

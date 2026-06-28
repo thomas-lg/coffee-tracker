@@ -71,6 +71,25 @@
   }
 }
 
+/* Brand mark — a glossy coffee-bean chip for the header (the seam is the ::after arc). */
+.ct-bean-mark {
+  position: relative;
+  width: 1.75rem;
+  height: 1.75rem;
+  flex: none;
+  border-radius: 9px;
+  background: radial-gradient(120% 120% at 30% 25%, var(--crema), var(--cocoa) 70%, var(--ink));
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.15);
+}
+.ct-bean-mark::after {
+  content: '';
+  position: absolute;
+  inset: 7px 11px;
+  border-left: 1.5px solid rgba(255, 253, 246, 0.55);
+  border-radius: 50%;
+  transform: rotate(18deg);
+}
+
 @layer base {
   html {
     background: var(--latte);
@@ -86,6 +105,10 @@
   h1, h2, h3 {
     font-family: var(--font-display);
     text-wrap: balance;
+  }
+  /* Tailwind v4 preflight no longer sets pointer on buttons — restore it. */
+  button:not(:disabled), [role='button'] {
+    cursor: pointer;
   }
   /* Honor reduced-motion globally; component motion opts in on top of this. */
   @media (prefers-reduced-motion: reduce) {

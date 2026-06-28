@@ -14,8 +14,8 @@ public class Coffee
 
     public required string Origin { get; set; }
 
-    /// <summary>Free-text roast level (e.g. "Light", "Medium", "Dark").</summary>
-    public required string RoastLevel { get; set; }
+    /// <summary>Roast band — a closed set (Light/Medium/Dark).</summary>
+    public required RoastLevel RoastLevel { get; set; }
 
     public decimal Price { get; set; }
 
