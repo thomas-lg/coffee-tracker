@@ -75,23 +75,17 @@ export default defineConfig({
     // },
   ],
 
-  /* Run your local dev server before starting the tests */
-  webServer: [
-    {
-      command: 'npm run start',
-      url: 'http://localhost:4200',
-      reuseExistingServer: !process.env['CI'],
-      timeout: 120 * 1000,
-    },
-    // Optional: start backend if running e2e tests locally without a running API
-    // Uncomment if needed and adjust the command/port to match your setup
-    // {
-    //   command: 'cd ../backend && dotnet run',
-    //   url: 'http://localhost:5000/api/health',
-    //   reuseExistingServer: !process.env['CI'],
-    //   timeout: 120 * 1000,
-    // },
-  ],
+  /* Run your local dev server before starting the tests (DISABLED locally - start manually) */
+  webServer: process.env['CI']
+    ? [
+        {
+          command: 'npm run start',
+          url: 'http://localhost:4200',
+          reuseExistingServer: false,
+          timeout: 120 * 1000,
+        },
+      ]
+    : undefined,
 
   /* Global timeout */
   timeout: 30 * 1000,
