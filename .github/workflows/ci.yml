@@ -80,6 +80,60 @@ jobs:
           npx ng test @coffee-tracker/coffees --no-watch
           npx ng test @coffee-tracker/admin --no-watch
 
+  e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      # Install frontend dependencies
+      - working-directory: frontend
+        run: npm ci
+      # Install Playwright browsers
+      - working-directory: frontend
+        run: npx playwright install --with-deps
+      # Build production frontend
+      - name: Build frontend (production)
+        working-directory: frontend
+        run: npx ng build app --configuration production
+      # Start backend in the background
+      - name: Start backend
+        run: |
+          cd backend
+          dotnet run --configuration Release &
+          BACKEND_PID=$!
+          # Wait for API to be ready
+          for i in {1..30}; do
+            if curl -f http://localhost:5000/api/health 2>/dev/null; then
+              echo "Backend is ready"
+              break
+            fi
+            echo "Waiting for backend... ($i/30)"
+            sleep 2
+          done
+          if ! curl -f http://localhost:5000/api/health 2>/dev/null; then
+            echo "Backend failed to start"
+            kill $BACKEND_PID 2>/dev/null || true
+            exit 1
+          fi
+      # Run Playwright e2e tests
+      - name: Run e2e tests (Playwright)
+        working-directory: frontend
+        run: npm run e2e
+        env:
+          CI: true
+      # Upload test artifacts on failure
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: frontend/playwright-report/
+          retention-days: 30
+
   docker-build:
     runs-on: ubuntu-latest
     # Job-level permissions REPLACE the top-level set, so re-state contents: read
