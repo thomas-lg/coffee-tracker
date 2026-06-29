@@ -6,6 +6,7 @@ using CoffeeTracker.Api;
 using CoffeeTracker.Application;
 using CoffeeTracker.Infrastructure;
 using CoffeeTracker.Infrastructure.Identity;
+using CoffeeTracker.Infrastructure.Persistence;
 using CoffeeTracker.Infrastructure.Storage;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
@@ -15,7 +16,6 @@ using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.IdentityModel.Tokens;
-
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container. Enums serialise as their names (not ints) via a
@@ -191,6 +191,14 @@ if (!app.Environment.IsDevelopment())
 
 // Apply pending migrations on startup (single-instance, self-hosted app).
 await app.Services.InitializeDatabaseAsync();
+
+// Seed test user for e2e tests and development (Development only)
+if (app.Environment.IsDevelopment())
+{
+    var logger = app.Services.GetRequiredService<ILoggerFactory>().CreateLogger("DatabaseSeed");
+    await app.Services.SeedTestUserAsync(logger);
+}
+
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
