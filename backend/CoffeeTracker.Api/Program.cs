@@ -23,6 +23,8 @@ var builder = WebApplication.CreateBuilder(args);
 // crashes can be diagnosed post-mortem after the container is recreated. The directory is
 // config-driven (FileLog:Directory) — relative `logs/` in dev, `/config/logs` in the container
 // (set via FileLog__Directory in the Dockerfile), mirroring how the DB/photos paths are wired.
+// The file sink is unbuffered (Serilog's default), so each event is flushed to the OS as it is
+// written — a crash won't lose the lines that led up to it.
 builder.Host.UseSerilog((context, services, lc) =>
 {
     var logDir = context.Configuration["FileLog:Directory"] ?? "logs";
@@ -211,8 +213,19 @@ if (!app.Environment.IsDevelopment())
     app.UseHsts();
 }
 
-// Apply pending migrations on startup (single-instance, self-hosted app).
-await app.Services.InitializeDatabaseAsync();
+// Apply pending migrations on startup (single-instance, self-hosted app). A failure here
+// (locked/corrupt DB, bad connection string, failed migration) is the most likely crash-loop
+// cause; log it through the configured Serilog logger so it lands in the persistent file — not
+// just on stderr — then rethrow so the process still exits non-zero for the orchestrator.
+try
+{
+    await app.Services.InitializeDatabaseAsync();
+}
+catch (Exception ex)
+{
+    app.Logger.LogCritical(ex, "Database initialization failed during startup — aborting.");
+    throw;
+}
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
