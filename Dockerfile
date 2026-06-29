@@ -16,6 +16,9 @@ COPY frontend/packages/coffees/package.json ./packages/coffees/
 COPY frontend/packages/data/package.json ./packages/data/
 COPY frontend/packages/ui/package.json ./packages/ui/
 COPY frontend/packages/util/package.json ./packages/util/
+# @playwright/test is a devDependency for e2e only; the image never runs it, so
+# skip its multi-hundred-MB browser download during install.
+ENV PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1
 RUN npm ci
 COPY frontend/ ./
 RUN npx ng build app --configuration production
