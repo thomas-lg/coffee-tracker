@@ -39,14 +39,17 @@ parking lot of ideas (see the README's "Ideas for later").
   (devcontainer + CI + build stage). Either close it or bump Node project-wide
   deliberately; don't merge the lone image bump.
 - **Deferred Angular upgrades** — see the section below.
-- **End-to-end tests (front + back)** — today we have unit tests (Vitest on the
-  frontend, the xUnit suite + a single HTTP integration test on the backend) but no
-  true e2e coverage. Add:
-  - **Backend e2e** — expand the `WebApplicationFactory<Program>` integration tests
-    beyond the admin-auth policy to cover the real flows end to end against an
-    in-memory/SQLite DB: register → login → coffee CRUD, reviews/ratings-over-time,
-    flavour-tag aggregation, and roast-enum validation (incl. the regression where an
-    omitted `roastLevel` must 400, not default to `Light`).
+- **End-to-end tests (front + back)** — the **backend e2e suite is done**; frontend
+  e2e (Playwright) is the remaining piece.
+  - **Backend e2e** — ✅ **Done.** `WebApplicationFactory<Program>` integration tests
+    under `CoffeeTracker.Tests/Integration/` cover the real flows end to end against a
+    throwaway SQLite DB: first-user-admin bootstrap + `REGISTRATION_ENABLED` gate +
+    login success/failure, coffee CRUD round-trip, reviews/ratings-over-time
+    (average + count), flavour-tag aggregation (distinct + sorted), tag/coffee
+    validation, review ownership (owner-only edit; owner-or-admin delete), and the
+    roast-enum regression (omitted `roastLevel` must 400, not default to `Light`).
+    A shared `ApiFactory` + `ApiClient` HTTP helpers back the suite; each test boots
+    its own app + DB for isolation. Runs in the existing `backend` CI job.
   - **Frontend e2e** — Playwright browser tests driving the running PWA for the key
     journeys: auth (register/login/guard redirect), add/edit a coffee (incl. the roast
     `<select>` + validation + future-date block), browse search/sort/origin/flavour

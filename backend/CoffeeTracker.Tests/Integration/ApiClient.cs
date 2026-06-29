@@ -1,0 +1,58 @@
+using System.Net.Http.Headers;
+using System.Net.Http.Json;
+using CoffeeTracker.Application.Dtos;
+
+namespace CoffeeTracker.Tests.Integration;
+
+// HTTP helpers for the integration suite: register/login a user and issue JSON
+// requests with an optional bearer token. Named Get/Post/Put/Delete (no *Async
+// suffix) so they don't collide with HttpClient's own instance methods, and the
+// optional token keeps anonymous-vs-authenticated calls a one-liner.
+internal static class ApiClient
+{
+    public const string DefaultPassword = "Sup3r-Secret!";
+
+    // Registers a user and returns the auth payload (token + IsAdmin flag). Throws
+    // if registration didn't succeed, so callers get a clear failure at the setup
+    // step rather than a confusing assertion later.
+    public static async Task<AuthResponseDto> RegisterAsync(
+        this HttpClient client,
+        string email,
+        string displayName,
+        string password = DefaultPassword)
+    {
+        var res = await client.PostAsJsonAsync("/api/auth/register", new RegisterDto(email, password, displayName));
+        res.EnsureSuccessStatusCode();
+        return (await res.Content.ReadFromJsonAsync<AuthResponseDto>())!;
+    }
+
+    public static Task<HttpResponseMessage> Get(this HttpClient client, string url, string? token = null) =>
+        client.SendAsync(Build(HttpMethod.Get, url, body: null, token));
+
+    public static Task<HttpResponseMessage> Post(this HttpClient client, string url, object? body = null, string? token = null) =>
+        client.SendAsync(Build(HttpMethod.Post, url, body, token));
+
+    public static Task<HttpResponseMessage> Put(this HttpClient client, string url, object? body = null, string? token = null) =>
+        client.SendAsync(Build(HttpMethod.Put, url, body, token));
+
+    public static Task<HttpResponseMessage> Delete(this HttpClient client, string url, string? token = null) =>
+        client.SendAsync(Build(HttpMethod.Delete, url, body: null, token));
+
+    private static HttpRequestMessage Build(HttpMethod method, string url, object? body, string? token)
+    {
+        var request = new HttpRequestMessage(method, url);
+        if (body is not null)
+        {
+            // Serialize by the runtime type so anonymous objects (used to omit a field,
+            // e.g. the missing-roastLevel regression) keep their properties.
+            request.Content = JsonContent.Create(body, body.GetType());
+        }
+
+        if (token is not null)
+        {
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        }
+
+        return request;
+    }
+}
