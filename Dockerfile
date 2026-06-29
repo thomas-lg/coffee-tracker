@@ -49,6 +49,7 @@ ENV TESSDATA_PREFIX=/usr/share/tesseract-ocr/5 \
     ASPNETCORE_URLS=http://+:8080 \
     ConnectionStrings__Default="Data Source=/config/coffee.db" \
     Storage__PhotosPath=/photos \
+    FileLog__Directory=/config/logs \
     PUID=99 \
     PGID=100 \
     HOME=/config

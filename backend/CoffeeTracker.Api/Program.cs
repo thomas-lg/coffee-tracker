@@ -15,8 +15,30 @@ using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.IdentityModel.Tokens;
+using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Logging: console (captured by `docker logs`) + a rolling file in the persistent volume so
+// crashes can be diagnosed post-mortem after the container is recreated. The directory is
+// config-driven (FileLog:Directory) — relative `logs/` in dev, `/config/logs` in the container
+// (set via FileLog__Directory in the Dockerfile), mirroring how the DB/photos paths are wired.
+builder.Host.UseSerilog((context, services, lc) =>
+{
+    var logDir = context.Configuration["FileLog:Directory"] ?? "logs";
+    lc.ReadFrom.Configuration(context.Configuration)   // MinimumLevel + Override (EF SQL silenced)
+      .ReadFrom.Services(services)
+      .Enrich.FromLogContext()
+      .WriteTo.Console()
+      .WriteTo.File(
+          Path.Combine(logDir, "coffee-.log"),
+          rollingInterval: RollingInterval.Day,
+          rollOnFileSizeLimit: true,
+          fileSizeLimitBytes: 10 * 1024 * 1024,   // 10 MB per file
+          retainedFileCountLimit: 5,              // keep at most 5 files (~50 MB cap)
+          outputTemplate:
+              "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] {SourceContext} {Message:lj}{NewLine}{Exception}");
+});
 
 // Add services to the container. Enums serialise as their names (not ints) via a
 // [JsonConverter] attribute on the enum type itself — that single annotation drives
