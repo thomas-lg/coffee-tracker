@@ -46,7 +46,7 @@ export class CoffeeDetail {
   protected readonly coffee = this.coffeeRes.value;
   protected readonly reviews = this.reviewsRes.value;
   protected readonly tags = this.tagsRes.value;
-  protected readonly loading = this.coffeeRes.isLoading;
+  protected readonly loading = computed(() => this.coffeeRes.isLoading() && !this.coffee());
 
   protected readonly roastGradient = roastGradient;
   protected readonly formatRating = formatRating;
