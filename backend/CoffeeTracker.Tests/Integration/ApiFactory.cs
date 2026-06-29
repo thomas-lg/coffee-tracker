@@ -14,6 +14,7 @@ public sealed class ApiFactory(bool registrationEnabled = true) : WebApplication
 {
     private readonly string _dbPath = Path.Combine(Path.GetTempPath(), $"ct-it-{Guid.NewGuid():N}.db");
     private readonly string _photosPath = Directory.CreateTempSubdirectory("ct-it-photos-").FullName;
+    private readonly string _logsPath = Directory.CreateTempSubdirectory("ct-it-logs-").FullName;
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
@@ -23,6 +24,10 @@ public sealed class ApiFactory(bool registrationEnabled = true) : WebApplication
             {
                 ["ConnectionStrings:Default"] = $"Data Source={_dbPath}",
                 ["Storage:PhotosPath"] = _photosPath,
+                // Per-factory temp dir: without it every parallel WebApplicationFactory
+                // host writes the same relative logs/coffee-<date>.log, contending on the
+                // file lock (the sink is silently dropped) and littering a logs/ folder.
+                ["FileLog:Directory"] = _logsPath,
                 ["REGISTRATION_ENABLED"] = registrationEnabled ? "true" : "false",
             }));
     }
@@ -40,6 +45,7 @@ public sealed class ApiFactory(bool registrationEnabled = true) : WebApplication
         TryDelete(() => File.Delete(_dbPath + "-wal"));
         TryDelete(() => File.Delete(_dbPath + "-shm"));
         TryDelete(() => Directory.Delete(_photosPath, recursive: true));
+        TryDelete(() => Directory.Delete(_logsPath, recursive: true));
     }
 
     private static void TryDelete(Action delete)
