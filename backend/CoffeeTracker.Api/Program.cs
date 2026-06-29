@@ -230,7 +230,26 @@ app.UseStaticFiles(new StaticFileOptions
 // SPA is served by `ng serve`, and the root path shows Swagger UI instead.
 if (!app.Environment.IsDevelopment())
 {
-    app.UseStaticFiles();
+    // Rewrite "/" to "/index.html" so the app's entry point is served by the
+    // static middleware below (and gets its no-cache header) rather than the
+    // SPA fallback, which would bypass OnPrepareResponse.
+    app.UseDefaultFiles();
+    app.UseStaticFiles(new StaticFileOptions
+    {
+        // The service worker's control files must always be revalidated, or the
+        // browser keeps serving a stale ngsw.json/worker and never learns a new
+        // version was deployed — users get stuck on the old cached app. The
+        // hashed JS/CSS bundles are safe to cache long-term (their names change
+        // every build), so only the control files get no-cache.
+        OnPrepareResponse = ctx =>
+        {
+            var name = ctx.File.Name;
+            if (name is "index.html" or "ngsw.json" or "ngsw-worker.js" or "safety-worker.js")
+            {
+                ctx.Context.Response.Headers.CacheControl = "no-cache, no-store, must-revalidate";
+            }
+        },
+    });
 }
 
 // Dev-only: allow the ng-serve origin (see the policy registration above).
