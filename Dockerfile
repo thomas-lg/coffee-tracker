@@ -3,7 +3,7 @@
 # same-origin from the API on :8080. Built for linux/amd64 (the Unraid NAS).
 
 # --- Stage 1: build the Angular PWA ---
-FROM node:22-slim AS web
+FROM node:26-slim AS web
 WORKDIR /web
 # Restore deps in their own layer (cached until a manifest changes). This is an npm
 # workspaces repo, so `npm ci` needs every member's package.json present up front —
