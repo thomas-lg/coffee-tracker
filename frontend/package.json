@@ -7,6 +7,7 @@
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
+    "e2e": "playwright test",
     "gen:api": "npx --yes openapi-typescript openapi.json -o packages/data/src/lib/models/api-types.ts"
   },
   "private": true,
@@ -33,6 +34,7 @@
     "@angular/build": "^22.0.4",
     "@angular/cli": "^22.0.4",
     "@angular/compiler-cli": "^22.0.0",
+    "@playwright/test": "^1.56.0",
     "@tailwindcss/postcss": "^4.3.1",
     "jsdom": "^28.0.0",
     "ng-packagr": "^22.0.0",
