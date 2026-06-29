@@ -17,6 +17,9 @@ npm-debug.log*
 photos/
 tessdata/*.traineddata
 
+# --- App logs (runtime data) ---
+logs/
+
 # --- Tooling caches ---
 dotnet/
 
