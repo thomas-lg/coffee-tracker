@@ -16,6 +16,7 @@ import { authInterceptor } from '@coffee-tracker/auth';
 
 import { routes } from './app.routes';
 import { provideServiceWorker } from '@angular/service-worker';
+import { provideAppUpdates } from './app-updates';
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -34,5 +35,7 @@ export const appConfig: ApplicationConfig = {
       enabled: !isDevMode(),
       registrationStrategy: 'registerWhenStable:30000',
     }),
+    // Reload onto a freshly deployed version instead of serving the cached one.
+    provideAppUpdates(),
   ],
 };
