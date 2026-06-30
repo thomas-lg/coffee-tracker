@@ -15,6 +15,9 @@ public class CoffeeCatalogServiceTests
     private static readonly DateTimeOffset FixedNow =
         new(2026, 6, 26, 10, 0, 0, TimeSpan.Zero);
 
+    /// <summary>The user who owns <see cref="SampleCoffee"/> by default.</summary>
+    private const string OwnerId = "owner-1";
+
     private sealed class InMemoryCoffeeRepository : ICoffeeRepository
     {
         private readonly Dictionary<int, Coffee> _store = new();
@@ -107,11 +110,12 @@ public class CoffeeCatalogServiceTests
     private static CoffeeCatalogService NewService(
         ICoffeeRepository repo,
         IPhotoStorage? storage = null,
-        string? currentUserId = null)
+        string? currentUserId = OwnerId,
+        bool isAdmin = false)
         => new(
             repo,
             storage ?? new FakePhotoStorage(PhotoStorageResult.Stored("photos/x.jpg")),
-            new FakeCurrentUser(currentUserId),
+            new FakeCurrentUser(currentUserId, isAdmin),
             new FixedTimeProvider(FixedNow));
 
     private static Coffee SampleCoffee(int id = 7) => new()
@@ -124,6 +128,7 @@ public class CoffeeCatalogServiceTests
         Price = 18.5m,
         DateBought = new DateOnly(2026, 6, 20),
         CreatedAt = DateTimeOffset.UnixEpoch,
+        CreatedByUserId = OwnerId,
     };
 
     private static CoffeeCreateDto SampleCreateDto() => new(
@@ -203,25 +208,50 @@ public class CoffeeCatalogServiceTests
         var service = NewService(repo);
         var dto = SampleCreateDto() with { Name = "Updated Name", Price = 22m };
 
-        var found = await service.UpdateAsync(7, new CoffeeUpdateDto(
+        var status = await service.UpdateAsync(7, new CoffeeUpdateDto(
             dto.Name, dto.Roaster, dto.Origin, dto.RoastLevel, dto.Price,
             dto.DateBought, dto.ShopName, dto.PurchaseUrl));
 
-        Assert.True(found);
+        Assert.Equal(CatalogWriteStatus.Success, status);
         var updated = await service.GetByIdAsync(7);
         Assert.Equal("Updated Name", updated!.Name);
         Assert.Equal(22m, updated.Price);
     }
 
     [Fact]
-    public async Task UpdateAsync_ReturnsFalse_WhenMissing()
+    public async Task UpdateAsync_ReturnsNotFound_WhenMissing()
     {
         var service = NewService(new InMemoryCoffeeRepository());
 
-        var found = await service.UpdateAsync(99, new CoffeeUpdateDto(
+        var status = await service.UpdateAsync(99, new CoffeeUpdateDto(
             "n", "r", "o", RoastLevel.Light, 1m, new DateOnly(2026, 1, 1), null, null));
 
-        Assert.False(found);
+        Assert.Equal(CatalogWriteStatus.NotFound, status);
+    }
+
+    [Fact]
+    public async Task UpdateAsync_ReturnsForbidden_WhenCallerIsNotOwnerOrAdmin()
+    {
+        var repo = new InMemoryCoffeeRepository(SampleCoffee());
+        var service = NewService(repo, currentUserId: "intruder");
+
+        var status = await service.UpdateAsync(7, new CoffeeUpdateDto(
+            "Hijacked", "r", "o", RoastLevel.Light, 1m, new DateOnly(2026, 1, 1), null, null));
+
+        Assert.Equal(CatalogWriteStatus.Forbidden, status);
+        var unchanged = await repo.GetByIdAsync(7);
+        Assert.Equal("Yirgacheffe", unchanged!.Name); // write was not applied
+    }
+
+    [Fact]
+    public async Task UpdateAsync_Succeeds_WhenCallerIsAdmin()
+    {
+        var service = NewService(new InMemoryCoffeeRepository(SampleCoffee()), currentUserId: "moderator", isAdmin: true);
+
+        var status = await service.UpdateAsync(7, new CoffeeUpdateDto(
+            "Edited by admin", "r", "o", RoastLevel.Light, 1m, new DateOnly(2026, 1, 1), null, null));
+
+        Assert.Equal(CatalogWriteStatus.Success, status);
     }
 
     [Fact]
@@ -229,16 +259,50 @@ public class CoffeeCatalogServiceTests
     {
         var service = NewService(new InMemoryCoffeeRepository(SampleCoffee()));
 
-        Assert.True(await service.DeleteAsync(7));
+        Assert.Equal(CatalogWriteStatus.Success, await service.DeleteAsync(7));
         Assert.Null(await service.GetByIdAsync(7));
     }
 
     [Fact]
-    public async Task DeleteAsync_ReturnsFalse_WhenMissing()
+    public async Task DeleteAsync_ReturnsNotFound_WhenMissing()
     {
         var service = NewService(new InMemoryCoffeeRepository());
 
-        Assert.False(await service.DeleteAsync(99));
+        Assert.Equal(CatalogWriteStatus.NotFound, await service.DeleteAsync(99));
+    }
+
+    [Fact]
+    public async Task DeleteAsync_ReturnsForbidden_WhenCallerIsNotOwnerOrAdmin()
+    {
+        var repo = new InMemoryCoffeeRepository(SampleCoffee());
+        var service = NewService(repo, currentUserId: "intruder");
+
+        Assert.Equal(CatalogWriteStatus.Forbidden, await service.DeleteAsync(7));
+        Assert.NotNull(await repo.GetByIdAsync(7)); // still present
+    }
+
+    [Fact]
+    public async Task DeleteAsync_Succeeds_WhenCallerIsAdmin()
+    {
+        var service = NewService(new InMemoryCoffeeRepository(SampleCoffee()), currentUserId: "moderator", isAdmin: true);
+
+        Assert.Equal(CatalogWriteStatus.Success, await service.DeleteAsync(7));
+    }
+
+    [Fact]
+    public async Task Writes_OnLegacyNullOwnerCoffee_AreAdminOnly()
+    {
+        var legacy = SampleCoffee();
+        legacy.CreatedByUserId = null; // a row created before owner-stamping
+        var repo = new InMemoryCoffeeRepository(legacy);
+
+        // A regular user cannot modify an unowned row...
+        var asUser = NewService(repo, currentUserId: "user-123");
+        Assert.Equal(CatalogWriteStatus.Forbidden, await asUser.DeleteAsync(7));
+
+        // ...but an admin can.
+        var asAdmin = NewService(repo, currentUserId: "admin", isAdmin: true);
+        Assert.Equal(CatalogWriteStatus.Success, await asAdmin.DeleteAsync(7));
     }
 
     [Fact]
@@ -276,6 +340,19 @@ public class CoffeeCatalogServiceTests
         Assert.Equal(SetPhotoStatus.CoffeeNotFound, result.Status);
         Assert.Null(result.Coffee);
         Assert.Equal(0, storage.SaveCalls);
+    }
+
+    [Fact]
+    public async Task SetPhotoAsync_ReturnsForbidden_AndSkipsStorage_WhenCallerIsNotOwnerOrAdmin()
+    {
+        var storage = new FakePhotoStorage(PhotoStorageResult.Stored("photos/x.jpg"));
+        var service = NewService(new InMemoryCoffeeRepository(SampleCoffee()), storage, currentUserId: "intruder");
+
+        var result = await service.SetPhotoAsync(7, Stream.Null, "image/jpeg", 10);
+
+        Assert.Equal(SetPhotoStatus.Forbidden, result.Status);
+        Assert.Null(result.Coffee);
+        Assert.Equal(0, storage.SaveCalls); // rejected before touching storage
     }
 
     [Fact]

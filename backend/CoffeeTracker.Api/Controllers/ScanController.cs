@@ -19,7 +19,7 @@ public class ScanController(ICoffeeScanService scan) : ControllerBase
     {
         if (file is null || file.Length == 0)
         {
-            return BadRequest("A non-empty image file is required.");
+            return Problem(statusCode: StatusCodes.Status400BadRequest, detail: "A non-empty image file is required.");
         }
 
         await using var stream = file.OpenReadStream();
@@ -28,9 +28,9 @@ public class ScanController(ICoffeeScanService scan) : ControllerBase
         return result.Status switch
         {
             ScanStatus.Success => Ok(result.Response),
-            ScanStatus.InvalidContentType => BadRequest("Unsupported image type. Allowed: JPEG, PNG, WebP."),
-            ScanStatus.TooLarge => StatusCode(StatusCodes.Status413PayloadTooLarge, "The uploaded image is too large."),
-            ScanStatus.OcrUnavailable => StatusCode(StatusCodes.Status503ServiceUnavailable, "OCR is not enabled in this environment."),
+            ScanStatus.InvalidContentType => Problem(statusCode: StatusCodes.Status400BadRequest, detail: "Unsupported image type. Allowed: JPEG, PNG, WebP."),
+            ScanStatus.TooLarge => Problem(statusCode: StatusCodes.Status413PayloadTooLarge, detail: "The uploaded image is too large."),
+            ScanStatus.OcrUnavailable => Problem(statusCode: StatusCodes.Status503ServiceUnavailable, detail: "OCR is not enabled in this environment."),
             _ => throw new InvalidOperationException($"Unexpected scan status: {result.Status}"),
         };
     }

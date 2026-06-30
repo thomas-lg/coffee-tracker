@@ -26,7 +26,7 @@ public class AdminPhotosController(IPhotoAdminService photos) : ControllerBase
     {
         if (request?.Paths is null || request.Paths.Count == 0)
         {
-            return BadRequest("At least one photo path is required.");
+            return Problem(statusCode: StatusCodes.Status400BadRequest, detail: "At least one photo path is required.");
         }
 
         return Ok(await photos.DeleteAsync(request.Paths, ct));

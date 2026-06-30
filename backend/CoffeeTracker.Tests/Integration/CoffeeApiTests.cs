@@ -73,6 +73,48 @@ public sealed class CoffeeApiTests : IntegrationTest
     }
 
     [Fact]
+    public async Task Coffee_writes_are_restricted_to_owner_or_admin()
+    {
+        // First user is the admin; alice and bob are ordinary users.
+        var admin = await Client.RegisterAsync("admin@example.com", "Admin");
+        var alice = await Client.RegisterAsync("alice@example.com", "Alice");
+        var bob = await Client.RegisterAsync("bob@example.com", "Bob");
+        Assert.True(admin.IsAdmin);
+        Assert.False(alice.IsAdmin);
+
+        // Alice creates a coffee — she owns it.
+        var createRes = await Client.Post("/api/coffees", SampleCoffee(), alice.Token);
+        var coffee = (await createRes.Content.ReadFromJsonAsync<CoffeeResponseDto>())!;
+
+        var update = SampleCoffee() with { Name = "Hijacked" };
+
+        // Bob (authenticated, but neither owner nor admin) cannot update or delete it.
+        var bobUpdate = await Client.Put($"/api/coffees/{coffee.Id}", update, bob.Token);
+        Assert.Equal(HttpStatusCode.Forbidden, bobUpdate.StatusCode);
+        var bobDelete = await Client.Delete($"/api/coffees/{coffee.Id}", bob.Token);
+        Assert.Equal(HttpStatusCode.Forbidden, bobDelete.StatusCode);
+
+        // The owner can update it.
+        var aliceUpdate = await Client.Put($"/api/coffees/{coffee.Id}", update, alice.Token);
+        Assert.Equal(HttpStatusCode.NoContent, aliceUpdate.StatusCode);
+
+        // The admin can delete it even though they don't own it (moderation).
+        var adminDelete = await Client.Delete($"/api/coffees/{coffee.Id}", admin.Token);
+        Assert.Equal(HttpStatusCode.NoContent, adminDelete.StatusCode);
+    }
+
+    [Fact]
+    public async Task Creating_a_coffee_with_a_future_date_bought_is_rejected()
+    {
+        var user = await Client.RegisterAsync("future@example.com", "Future");
+        var body = SampleCoffee() with { DateBought = new DateOnly(2999, 1, 1) };
+
+        var res = await Client.Post("/api/coffees", body, user.Token);
+
+        Assert.Equal(HttpStatusCode.BadRequest, res.StatusCode);
+    }
+
+    [Fact]
     public async Task Creating_a_coffee_without_a_roast_level_is_rejected()
     {
         // Regression guard: roastLevel is [Required]; omitting it from the JSON body
