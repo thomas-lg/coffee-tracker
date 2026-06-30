@@ -22,17 +22,17 @@ jobs:
   backend:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-dotnet@v5
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+      - uses: actions/setup-dotnet@26b0ec14cb23fa6904739307f278c14f94c95bf1 # v5
         with:
           dotnet-version: 10.0.x
-      # Cache the global NuGet package store. No packages.lock.json in this repo,
-      # so key on the project files (changes when a PackageReference is added).
+      # Cache the global NuGet package store, keyed on the committed lock files so the
+      # key changes exactly when a resolved dependency changes.
       - name: Cache NuGet packages
-        uses: actions/cache@v4
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
         with:
           path: ~/.nuget/packages
-          key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj') }}
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/packages.lock.json') }}
           restore-keys: |
             ${{ runner.os }}-nuget-
       # Native OCR deps so the Tesseract-backed tests can run on the runner.
@@ -42,7 +42,9 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
             tesseract-ocr tesseract-ocr-eng libtesseract-dev libleptonica-dev
-      - run: dotnet restore CoffeeTracker.sln
+      # --locked-mode fails the restore if packages.lock.json is out of date, so a
+      # dependency bump can't sneak in without an updated, reviewed lock file.
+      - run: dotnet restore CoffeeTracker.sln --locked-mode
       - run: dotnet build CoffeeTracker.sln --no-restore --configuration Release
       - name: Test
         env:
@@ -56,8 +58,8 @@ jobs:
     env:
       PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 1
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-node@v6
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
         with:
           node-version: 22
           cache: npm
@@ -74,24 +76,28 @@ jobs:
       # Unit tests via the vitest builder (NOT Karma, so no --browsers). We run each
       # project whose specs compile in isolation; a spec that pulled another lib's
       # source would hit the ng-packagr rootDir limit, so cross-lib components are
-      # guarded by the production build above instead.
+      # guarded by the production build above instead. @coffee-tracker/auth holds the
+      # most security-sensitive client logic (token/session/interceptor), so it — and
+      # the app shell — are tested here too, not just built.
       - name: Unit tests (vitest)
         working-directory: frontend
         run: |
           npx ng test @coffee-tracker/util --no-watch
           npx ng test @coffee-tracker/ui --no-watch
           npx ng test @coffee-tracker/data --no-watch
+          npx ng test @coffee-tracker/auth --no-watch
           npx ng test @coffee-tracker/coffees --no-watch
           npx ng test @coffee-tracker/admin --no-watch
+          npx ng test app --no-watch
 
   e2e:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-dotnet@v5
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+      - uses: actions/setup-dotnet@26b0ec14cb23fa6904739307f278c14f94c95bf1 # v5
         with:
           dotnet-version: 10.0.x
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
         with:
           node-version: 22
           cache: npm
@@ -116,6 +122,16 @@ jobs:
       - name: Install frontend deps
         working-directory: frontend
         run: npm ci
+      # Drift guard: re-derive the OpenAPI doc + typed client from the running backend
+      # and fail if they differ from what's committed, so a backend contract change that
+      # wasn't regenerated can't ship a stale frontend client that only breaks at runtime.
+      - name: Check generated API client is up to date
+        working-directory: frontend
+        run: |
+          curl -fsS http://localhost:5000/openapi/v1.json -o openapi.json
+          npm run gen:api
+          git diff --exit-code -- openapi.json packages/data/src/lib/models/api-types.ts \
+            || { echo "::error::OpenAPI client is stale — run 'npm run gen:api' and commit the result."; exit 1; }
       - name: Install Playwright browser
         working-directory: frontend
         run: npx playwright install --with-deps chromium
@@ -125,7 +141,7 @@ jobs:
         run: npx playwright test
       - name: Upload Playwright report
         if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: playwright-report
           path: frontend/playwright-report/
@@ -139,11 +155,11 @@ jobs:
       contents: read
       security-events: write
     steps:
-      - uses: actions/checkout@v7
-      - uses: docker/setup-buildx-action@v3
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+      - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
       # Validate the production Dockerfile builds for amd64, and load it into the local
       # daemon so Trivy can scan the exact image. No push on CI.
-      - uses: docker/build-push-action@v7
+      - uses: docker/build-push-action@f9f3042f7e2789586610d6e8b85c8f03e5195baf # v7
         with:
           context: .
           platforms: linux/amd64
@@ -154,7 +170,7 @@ jobs:
       # Security tab, and unfixed CVEs don't fail the build so base-image noise can't
       # block every PR (tighten to exit-code 1 later if desired).
       - name: Scan image for vulnerabilities (Trivy)
-        uses: aquasecurity/trivy-action@v0.36.0
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
           image-ref: coffee-tracker:ci
           format: sarif
@@ -163,7 +179,7 @@ jobs:
           ignore-unfixed: true
       - name: Upload Trivy results to code scanning
         if: always()
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@dd903d2e4f5405488e5ef1422510ee31c8b32357 # v3
         with:
           sarif_file: trivy-results.sarif
           category: trivy-image
