@@ -49,6 +49,18 @@ public class FileSystemPhotoStorage : IPhotoStorage
             return PhotoStorageResult.Rejected(PhotoStorageStatus.TooLarge);
         }
 
+        // The Content-Type header is client-controlled, so acceptance (and the stored
+        // extension) must not rest on it alone: read the leading bytes and confirm the
+        // file's actual magic-number signature matches the claimed type. Reading the
+        // header here also lets us reconstruct the full content below without requiring
+        // a seekable stream.
+        var header = new byte[HeaderBytes];
+        var headerLength = await content.ReadAtLeastAsync(header, header.Length, throwOnEndOfStream: false, ct);
+        if (!SignatureMatches(contentType, header.AsSpan(0, headerLength)))
+        {
+            return PhotoStorageResult.Rejected(PhotoStorageStatus.InvalidContentType);
+        }
+
         Directory.CreateDirectory(_directory);
 
         // Server-generated name: no client input contributes to the path, so
@@ -58,6 +70,8 @@ public class FileSystemPhotoStorage : IPhotoStorage
 
         await using (var file = new FileStream(fullPath, FileMode.CreateNew, FileAccess.Write, FileShare.None))
         {
+            // Write the header bytes already consumed for sniffing, then the remainder.
+            await file.WriteAsync(header.AsMemory(0, headerLength), ct);
             await content.CopyToAsync(file, ct);
 
             // Guard against a stream that lied about its length (chunked uploads
@@ -71,6 +85,39 @@ public class FileSystemPhotoStorage : IPhotoStorage
         }
 
         return PhotoStorageResult.Stored($"{PublicPrefix}/{fileName}");
+    }
+
+    /// <summary>Bytes to read for signature sniffing (WebP needs the first 12).</summary>
+    private const int HeaderBytes = 12;
+
+    /// <summary>The 8-byte PNG file signature (89 50 4E 47 0D 0A 1A 0A).</summary>
+    private static readonly byte[] PngSignature = [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A];
+
+    /// <summary>
+    /// Confirms the file-signature (magic number) of <paramref name="header"/> matches
+    /// the claimed <paramref name="contentType"/> — JPEG (FF D8 FF), PNG (89 50 4E 47
+    /// 0D 0A 1A 0A), or WebP (RIFF....WEBP).
+    /// </summary>
+    private static bool SignatureMatches(string contentType, ReadOnlySpan<byte> header)
+    {
+        if (contentType.Equals("image/jpeg", StringComparison.OrdinalIgnoreCase))
+        {
+            return header.Length >= 3 && header[0] == 0xFF && header[1] == 0xD8 && header[2] == 0xFF;
+        }
+
+        if (contentType.Equals("image/png", StringComparison.OrdinalIgnoreCase))
+        {
+            return header.Length >= 8 && header[..8].SequenceEqual(PngSignature);
+        }
+
+        if (contentType.Equals("image/webp", StringComparison.OrdinalIgnoreCase))
+        {
+            return header.Length >= 12 &&
+                header[..4].SequenceEqual("RIFF"u8) &&
+                header[8..12].SequenceEqual("WEBP"u8);
+        }
+
+        return false;
     }
 
     public Task DeleteAsync(string relativePath, CancellationToken ct = default)

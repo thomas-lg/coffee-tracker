@@ -36,16 +36,29 @@ public class CoffeeScanService(
         }
 
         buffer.Position = 0;
-        var result = await ocr.ReadAsync(buffer, ct);
-        if (!result.Available)
+        try
         {
-            // Engine reported available but failed mid-read; don't orphan the file.
-            await photoStorage.DeleteAsync(stored.RelativePath!, ct);
-            return new ScanResult(ScanStatus.OcrUnavailable, null);
-        }
+            var result = await ocr.ReadAsync(buffer, ct);
+            if (!result.Available)
+            {
+                // Engine reported available but failed mid-read; don't orphan the file.
+                await photoStorage.DeleteAsync(stored.RelativePath!, ct);
+                return new ScanResult(ScanStatus.OcrUnavailable, null);
+            }
 
-        var parsed = parser.Parse(result.RawText);
-        return new ScanResult(ScanStatus.Success, new ScanResponseDto(result.RawText, parsed, stored.RelativePath!));
+            var parsed = parser.Parse(result.RawText);
+            return new ScanResult(ScanStatus.Success, new ScanResponseDto(result.RawText, parsed, stored.RelativePath!));
+        }
+        catch
+        {
+            // OCR threw (most commonly OperationCanceledException when the caller cancels
+            // mid-read — clients often navigate away). The photo is already on disk, so
+            // delete it before propagating or it leaks as an orphan. Use
+            // CancellationToken.None: on the cancellation path the request's ct is already
+            // tripped, and the compensating cleanup must still run.
+            await photoStorage.DeleteAsync(stored.RelativePath!, CancellationToken.None);
+            throw;
+        }
     }
 
     private static ScanStatus MapRejection(PhotoStorageStatus status) => status switch
