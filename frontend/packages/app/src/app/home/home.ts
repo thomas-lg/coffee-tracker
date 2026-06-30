@@ -13,12 +13,11 @@ export class Home {
   protected readonly store = inject(CoffeesStore);
 
   /**
-   * Guarded view of the catalog. `CoffeesStore.coffees` is an httpResource value that
-   * THROWS while the resource is in an error state, so every read goes through here —
-   * [] on error (the template shows a retry block instead), the real list otherwise
-   * (loading already yields the [] default).
+   * The catalog list. `CoffeesStore.coffees` already returns [] while the resource is
+   * in its error state (the store guards the throwing httpResource value), so reads
+   * here are safe; the template shows a retry block when `store.error()` is set.
    */
-  protected readonly coffees = computed(() => (this.store.error() ? [] : this.store.coffees()));
+  protected readonly coffees = this.store.coffees;
 
   /**
    * The most recent few bags for the "Fresh on the shelf" teaser. Sort explicitly by

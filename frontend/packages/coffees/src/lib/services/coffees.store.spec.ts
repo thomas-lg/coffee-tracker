@@ -128,10 +128,13 @@ describe('CoffeesStore (error path)', () => {
     TestBed.resetTestingModule();
   });
 
-  it('surfaces a friendly error and stops loading', () => {
-    // The grid guards the list behind @if(error()), so on error the store only needs
-    // to expose the message and clear loading (reading .value would rethrow).
+  it('surfaces a friendly error, stops loading, and exposes an empty list without throwing', () => {
     expect(store.error()).toBe('Could not load your coffees.');
     expect(store.loading()).toBe(false);
+    // The raw httpResource value rethrows in the error state; the store guards it, so
+    // these reads (and every template consumer) return the empty default instead of crashing.
+    expect(store.coffees()).toEqual([]);
+    expect(store.filtered()).toEqual([]);
+    expect(store.origins()).toEqual([]);
   });
 });

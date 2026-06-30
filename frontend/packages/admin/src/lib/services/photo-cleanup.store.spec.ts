@@ -106,10 +106,12 @@ describe('PhotoCleanupStore (error path)', () => {
     TestBed.resetTestingModule();
   });
 
-  it('surfaces a friendly error and stops loading', () => {
-    // The template guards the value behind @if(error()), so on error the store only
-    // needs to expose the message and clear loading (reading .value would rethrow).
+  it('surfaces a friendly error, stops loading, and exposes an empty list without throwing', () => {
     expect(store.error()).toBe('Could not load stored photos.');
     expect(store.loading()).toBe(false);
+    // The raw httpResource value rethrows in the error state; the store guards it.
+    expect(store.photos()).toEqual([]);
+    expect(store.visible()).toEqual([]);
+    expect(store.storedCount()).toBe(0);
   });
 });
