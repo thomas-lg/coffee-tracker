@@ -40,3 +40,23 @@ The system SHALL select the OCR implementation by configuration (`Ocr:Engine`) s
 - **THEN** the system SHALL return the raw text with parsed fields left empty
 - **AND** SHALL NOT error
 
+### Requirement: OCR work is bounded and never leaks stored photos
+
+A single OCR run SHALL be bounded by a configurable hard timeout (`Ocr:TimeoutSeconds`, default 30 seconds): a run that exceeds it SHALL be terminated and reported as unavailable (`503`), distinct from a genuine caller cancellation. The number of OCR runs executing concurrently SHALL be capped by configuration (`Ocr:MaxConcurrency`, default twice the processor count); requests beyond the cap SHALL queue for a slot rather than spawn unbounded native processes. When a scan stores the photo before running OCR and OCR then fails or is cancelled, the system SHALL delete the stored photo so it is not orphaned.
+
+#### Scenario: A stuck OCR run is bounded by the timeout
+
+- **WHEN** an OCR run exceeds the configured timeout
+- **THEN** the system SHALL terminate the underlying process and respond with `503`
+- **AND** the scan SHALL NOT leave an orphaned stored photo
+
+#### Scenario: Concurrent scans are admission-controlled
+
+- **WHEN** more scans are in flight than the configured concurrency cap
+- **THEN** the excess SHALL wait for a slot rather than starting additional OCR processes
+
+#### Scenario: A cancelled scan cleans up its stored photo
+
+- **WHEN** the caller cancels (or OCR throws) after the photo has already been stored
+- **THEN** the system SHALL delete the stored photo before completing
+
