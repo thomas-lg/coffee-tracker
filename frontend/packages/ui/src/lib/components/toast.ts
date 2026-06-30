@@ -33,7 +33,7 @@ export class ToastService {
       @for (t of toasts.toasts(); track t.id) {
         <div
           class="pointer-events-auto flex items-center gap-2 rounded-full bg-ink px-4 py-2.5 text-sm font-semibold text-foam shadow-lg"
-          role="status"
+          [attr.role]="t.tone === 'error' ? 'alert' : 'status'"
         >
           <span
             class="size-2 rounded-full"
