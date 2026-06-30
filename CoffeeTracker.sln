@@ -13,6 +13,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CoffeeTracker.Application",
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CoffeeTracker.Infrastructure", "backend\CoffeeTracker.Infrastructure\CoffeeTracker.Infrastructure.csproj", "{29FB3246-6C92-495E-948C-085B6899825C}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CoffeeTracker.Api", "backend\CoffeeTracker.Api\CoffeeTracker.Api.csproj", "{DEA79644-95C4-4218-828A-528EA2482BF5}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -71,6 +73,18 @@ Global
 		{29FB3246-6C92-495E-948C-085B6899825C}.Release|x64.Build.0 = Release|Any CPU
 		{29FB3246-6C92-495E-948C-085B6899825C}.Release|x86.ActiveCfg = Release|Any CPU
 		{29FB3246-6C92-495E-948C-085B6899825C}.Release|x86.Build.0 = Release|Any CPU
+		{DEA79644-95C4-4218-828A-528EA2482BF5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DEA79644-95C4-4218-828A-528EA2482BF5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DEA79644-95C4-4218-828A-528EA2482BF5}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{DEA79644-95C4-4218-828A-528EA2482BF5}.Debug|x64.Build.0 = Debug|Any CPU
+		{DEA79644-95C4-4218-828A-528EA2482BF5}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{DEA79644-95C4-4218-828A-528EA2482BF5}.Debug|x86.Build.0 = Debug|Any CPU
+		{DEA79644-95C4-4218-828A-528EA2482BF5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DEA79644-95C4-4218-828A-528EA2482BF5}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DEA79644-95C4-4218-828A-528EA2482BF5}.Release|x64.ActiveCfg = Release|Any CPU
+		{DEA79644-95C4-4218-828A-528EA2482BF5}.Release|x64.Build.0 = Release|Any CPU
+		{DEA79644-95C4-4218-828A-528EA2482BF5}.Release|x86.ActiveCfg = Release|Any CPU
+		{DEA79644-95C4-4218-828A-528EA2482BF5}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -79,5 +93,6 @@ Global
 		{9B438306-EB44-4D81-9D14-3CCE0AAA3458} = {1AE8ACA6-933B-BF2A-3671-3E2EAC007D16}
 		{CCB15EC6-6E2A-41AB-97DF-DBC0AEF84840} = {1AE8ACA6-933B-BF2A-3671-3E2EAC007D16}
 		{29FB3246-6C92-495E-948C-085B6899825C} = {1AE8ACA6-933B-BF2A-3671-3E2EAC007D16}
+		{DEA79644-95C4-4218-828A-528EA2482BF5} = {1AE8ACA6-933B-BF2A-3671-3E2EAC007D16}
 	EndGlobalSection
 EndGlobal

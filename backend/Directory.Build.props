@@ -1,0 +1,25 @@
+<Project>
+
+  <!-- Shared build settings for every backend project. Individual csproj files only
+       declare what is unique to them (package/project references, SDK type, IsPackable). -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+
+    <!-- Built-in .NET analyzers at the default (curated) rule set — correctness,
+         security, and reliability CA rules as warnings, without the noisy perf
+         micro-optimisation rules that a self-hosted app doesn't need promoted. -->
+    <EnableNETAnalyzers>true</EnableNETAnalyzers>
+    <AnalysisLevel>latest</AnalysisLevel>
+
+    <!-- Promote warnings to errors in Release (CI builds Release) so analyzer/compiler
+         findings can't slip through, while local Debug iteration stays friction-free. -->
+    <TreatWarningsAsErrors Condition="'$(Configuration)' == 'Release'">true</TreatWarningsAsErrors>
+
+    <!-- Reproducible restore: commit packages.lock.json and have CI restore in locked
+         mode so a published patch can't silently change a resolved build. -->
+    <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
+  </PropertyGroup>
+
+</Project>

@@ -55,7 +55,7 @@ public partial class CoffeeLabelParser : ICoffeeLabelParser
     // earliest position, then array order — so a longer canonical roast
     // ("Medium-Dark") still beats its substring ("Medium") at the same spot.
     // Whole-word matching is plain index scanning (no per-keyword regex compile).
-    private static string? FindKeyword(IReadOnlyList<string> lines, string[] keywords)
+    private static string? FindKeyword(List<string> lines, string[] keywords)
     {
         string? best = null;
         var bestScore = (Words: int.MaxValue, Line: int.MaxValue, Pos: int.MaxValue);
