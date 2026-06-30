@@ -11,19 +11,28 @@ import { BeanScene, CoffeeCard, CoffeeCardSkeleton, CoffeesStore } from '@coffee
 })
 export class Home {
   protected readonly store = inject(CoffeesStore);
+
+  /**
+   * Guarded view of the catalog. `CoffeesStore.coffees` is an httpResource value that
+   * THROWS while the resource is in an error state, so every read goes through here —
+   * [] on error (the template shows a retry block instead), the real list otherwise
+   * (loading already yields the [] default).
+   */
+  protected readonly coffees = computed(() => (this.store.error() ? [] : this.store.coffees()));
+
   /**
    * The most recent few bags for the "Fresh on the shelf" teaser. Sort explicitly by
    * id (newest first) so the teaser is self-contained and doesn't silently break if
    * the catalog API's default ordering ever changes.
    */
   protected readonly recent = computed(() =>
-    [...this.store.coffees()].sort((a, b) => b.id - a.id).slice(0, 4),
+    [...this.coffees()].sort((a, b) => b.id - a.id).slice(0, 4),
   );
   protected readonly skeletons = Array.from({ length: 4 });
 
   /** Headline numbers for the hero stat strip. */
   protected readonly stats = computed(() => {
-    const list = this.store.coffees();
+    const list = this.coffees();
     const rated = list.filter((c) => c.reviewCount > 0 && c.averageRating != null);
     const avg = rated.length
       ? rated.reduce((sum, c) => sum + (c.averageRating ?? 0), 0) / rated.length
