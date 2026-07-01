@@ -79,7 +79,7 @@ The system SHALL expose `POST /api/coffees` accepting a coffee-create payload (n
 
 #### Scenario: Rejecting an invalid create payload
 
-- **WHEN** a client sends `POST /api/coffees` missing a required field or with a malformed purchase URL or negative price
+- **WHEN** a client sends `POST /api/coffees` missing a required field, with a malformed purchase URL or negative price, or with a `date bought` in the future
 - **THEN** the system SHALL respond with HTTP 400
 - **AND** no coffee SHALL be persisted
 
@@ -99,11 +99,11 @@ The system SHALL expose `GET /api/coffees/{id}` returning one coffee as a respon
 
 ### Requirement: Coffees can be updated over HTTP
 
-The system SHALL expose `PUT /api/coffees/{id}` accepting a coffee-update payload, validating it and replacing the mutable fields of the identified coffee.
+The system SHALL expose `PUT /api/coffees/{id}` accepting a coffee-update payload, validating it and replacing the mutable fields of the identified coffee. Updates are restricted to the coffee's creator or an administrator (see "Catalog writes are restricted to the creator or an admin").
 
 #### Scenario: Updating an existing coffee
 
-- **WHEN** a client sends `PUT /api/coffees/{id}` with a valid payload for a coffee that exists
+- **WHEN** the coffee's creator (or an admin) sends `PUT /api/coffees/{id}` with a valid payload for a coffee that exists
 - **THEN** the system SHALL persist the updated fields
 - **AND** SHALL respond with HTTP 204
 
@@ -112,13 +112,19 @@ The system SHALL expose `PUT /api/coffees/{id}` accepting a coffee-update payloa
 - **WHEN** a client sends `PUT /api/coffees/{id}` for an id that does not exist
 - **THEN** the system SHALL respond with HTTP 404
 
+#### Scenario: Updating a coffee the caller does not own
+
+- **WHEN** an authenticated non-admin user sends `PUT /api/coffees/{id}` for a coffee created by a different user
+- **THEN** the system SHALL respond with HTTP 403
+- **AND** SHALL NOT modify the coffee
+
 ### Requirement: Coffees can be deleted over HTTP
 
-The system SHALL expose `DELETE /api/coffees/{id}` removing the identified coffee.
+The system SHALL expose `DELETE /api/coffees/{id}` removing the identified coffee. Deletion is restricted to the coffee's creator or an administrator (see "Catalog writes are restricted to the creator or an admin").
 
 #### Scenario: Deleting an existing coffee
 
-- **WHEN** a client sends `DELETE /api/coffees/{id}` for a coffee that exists
+- **WHEN** the coffee's creator (or an admin) sends `DELETE /api/coffees/{id}` for a coffee that exists
 - **THEN** the system SHALL remove the coffee
 - **AND** SHALL respond with HTTP 204
 
@@ -127,13 +133,19 @@ The system SHALL expose `DELETE /api/coffees/{id}` removing the identified coffe
 - **WHEN** a client sends `DELETE /api/coffees/{id}` for an id that does not exist
 - **THEN** the system SHALL respond with HTTP 404
 
+#### Scenario: Deleting a coffee the caller does not own
+
+- **WHEN** an authenticated non-admin user sends `DELETE /api/coffees/{id}` for a coffee created by a different user
+- **THEN** the system SHALL respond with HTTP 403
+- **AND** SHALL NOT remove the coffee
+
 ### Requirement: A photo can be attached to a coffee
 
-The system SHALL expose `POST /api/coffees/{id}/photo` accepting a multipart image upload, storing it via the photo-storage capability and recording the returned relative path on the coffee's photo path.
+The system SHALL expose `POST /api/coffees/{id}/photo` accepting a multipart image upload, storing it via the photo-storage capability and recording the returned relative path on the coffee's photo path. Attaching a photo is restricted to the coffee's creator or an administrator (see "Catalog writes are restricted to the creator or an admin").
 
 #### Scenario: Attaching a valid photo
 
-- **WHEN** a client uploads a valid image to `POST /api/coffees/{id}/photo` for a coffee that exists
+- **WHEN** the coffee's creator (or an admin) uploads a valid image to `POST /api/coffees/{id}/photo` for a coffee that exists
 - **THEN** the system SHALL store the image
 - **AND** SHALL set the coffee's photo path to the stored relative path
 - **AND** SHALL respond with HTTP 200 and the updated coffee DTO
@@ -144,9 +156,15 @@ The system SHALL expose `POST /api/coffees/{id}/photo` accepting a multipart ima
 - **THEN** the system SHALL respond with HTTP 404
 - **AND** SHALL NOT store the image
 
+#### Scenario: Attaching a photo to a coffee the caller does not own
+
+- **WHEN** an authenticated non-admin user uploads an image to `POST /api/coffees/{id}/photo` for a coffee created by a different user
+- **THEN** the system SHALL respond with HTTP 403
+- **AND** SHALL NOT store the image or modify the coffee
+
 #### Scenario: Rejecting an invalid photo
 
-- **WHEN** a client uploads a file whose content type is not an allowed image type, or whose size exceeds the configured cap
+- **WHEN** a client uploads a file whose content type is not an allowed image type, whose bytes do not match the declared image type, or whose size exceeds the configured cap
 - **THEN** the system SHALL respond with HTTP 400
 - **AND** SHALL NOT set the coffee's photo path
 
@@ -167,12 +185,37 @@ An account is mandatory to use the app, so the system SHALL require a valid bear
 
 ### Requirement: Created coffees record their owner
 
-When a coffee is created by an authenticated user, the system SHALL record that user's id as the coffee's creator.
+When a coffee is created by an authenticated user, the system SHALL record that user's id as the coffee's creator. Any authenticated user MAY create a coffee (the catalog is a shared shelf); ownership governs later modification, not creation.
 
 #### Scenario: Creator id is stamped on create
 
 - **WHEN** an authenticated user creates a coffee
 - **THEN** the stored coffee's `CreatedByUserId` SHALL be the authenticated user's id
+
+### Requirement: Catalog writes are restricted to the creator or an admin
+
+Modifying a coffee — update (`PUT`), delete (`DELETE`), and photo attach (`POST /{id}/photo`) — SHALL be permitted only for the user who created it or for an administrator. A non-owner, non-admin caller SHALL receive HTTP 403 and the coffee SHALL be left unchanged. A coffee with no recorded creator (rows created before owner-stamping, `CreatedByUserId` is null) SHALL be modifiable by administrators only — never by an arbitrary authenticated user.
+
+#### Scenario: Owner modifies their own coffee
+
+- **WHEN** the user who created a coffee updates, deletes, or sets a photo on it
+- **THEN** the system SHALL perform the operation
+
+#### Scenario: Admin moderates another user's coffee
+
+- **WHEN** an administrator updates, deletes, or sets a photo on a coffee created by a different user
+- **THEN** the system SHALL perform the operation
+
+#### Scenario: Non-owner is forbidden
+
+- **WHEN** an authenticated non-admin user attempts to update, delete, or set a photo on a coffee they did not create
+- **THEN** the system SHALL respond with HTTP 403
+- **AND** SHALL leave the coffee unchanged
+
+#### Scenario: Unowned legacy coffee is admin-only
+
+- **WHEN** a non-admin user attempts to modify a coffee whose `CreatedByUserId` is null
+- **THEN** the system SHALL respond with HTTP 403
 
 ### Requirement: Coffee responses include aggregate review stats
 

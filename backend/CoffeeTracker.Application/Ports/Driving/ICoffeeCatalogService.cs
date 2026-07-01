@@ -17,17 +17,35 @@ public interface ICoffeeCatalogService
     /// <summary>Creates a coffee from the supplied payload and returns the stored resource.</summary>
     Task<CoffeeResponseDto> CreateAsync(CoffeeCreateDto dto, CancellationToken ct = default);
 
-    /// <summary>Updates an existing coffee. Returns false if no coffee has the given id.</summary>
-    Task<bool> UpdateAsync(int id, CoffeeUpdateDto dto, CancellationToken ct = default);
+    /// <summary>
+    /// Updates an existing coffee. Writes are restricted to the coffee's creator or
+    /// an admin; the result distinguishes a missing coffee from a forbidden caller.
+    /// </summary>
+    Task<CatalogWriteStatus> UpdateAsync(int id, CoffeeUpdateDto dto, CancellationToken ct = default);
 
-    /// <summary>Deletes a coffee. Returns false if no coffee has the given id.</summary>
-    Task<bool> DeleteAsync(int id, CancellationToken ct = default);
+    /// <summary>
+    /// Deletes a coffee. Writes are restricted to the coffee's creator or an admin;
+    /// the result distinguishes a missing coffee from a forbidden caller.
+    /// </summary>
+    Task<CatalogWriteStatus> DeleteAsync(int id, CancellationToken ct = default);
 
     /// <summary>
     /// Stores an uploaded photo and associates it with the coffee. The result
-    /// distinguishes a missing coffee and a rejected upload from success.
+    /// distinguishes a missing coffee, a forbidden caller, and a rejected upload
+    /// from success.
     /// </summary>
     Task<SetPhotoResult> SetPhotoAsync(int id, Stream content, string? contentType, long length, CancellationToken ct = default);
+}
+
+/// <summary>
+/// Outcome of a catalog write (update/delete). A coffee may only be modified by
+/// the user who created it or by an admin; everyone else is <see cref="Forbidden"/>.
+/// </summary>
+public enum CatalogWriteStatus
+{
+    Success,
+    NotFound,
+    Forbidden,
 }
 
 /// <summary>Outcome of <see cref="ICoffeeCatalogService.SetPhotoAsync"/>.</summary>
@@ -35,6 +53,7 @@ public enum SetPhotoStatus
 {
     Success,
     CoffeeNotFound,
+    Forbidden,
     InvalidContentType,
     TooLarge,
 }

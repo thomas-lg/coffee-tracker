@@ -3,6 +3,7 @@
 {
   "compileOnSave": false,
   "compilerOptions": {
+    "strict": true,
     "paths": {
       "@coffee-tracker/ui": ["./packages/ui/src/public-api.ts"],
       "@coffee-tracker/util": ["./packages/util/src/public-api.ts"],
@@ -25,7 +26,8 @@
   "angularCompilerOptions": {
     "enableI18nLegacyMessageIdFormat": false,
     "strictInjectionParameters": true,
-    "strictInputAccessModifiers": true
+    "strictInputAccessModifiers": true,
+    "strictTemplates": true
   },
   "files": [],
   "references": [

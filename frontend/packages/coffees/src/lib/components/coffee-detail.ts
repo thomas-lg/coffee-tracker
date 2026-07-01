@@ -91,7 +91,11 @@ export class CoffeeDetail {
   protected toggleTag(id: number): void {
     this.selectedTags.update((s) => {
       const next = new Set(s);
-      next.has(id) ? next.delete(id) : next.add(id);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
       return next;
     });
   }
@@ -123,9 +127,23 @@ export class CoffeeDetail {
     }
   }
 
-  protected async remove(): Promise<void> {
+  // In-page armed-confirm for delete (no native confirm(): unstyled, untestable,
+  // and suppressible in installed PWAs). Mirrors the admin photo-cleanup pattern.
+  protected readonly confirmingDelete = signal(false);
+  protected readonly deleting = signal(false);
+
+  protected armDelete(): void {
+    this.confirmingDelete.set(true);
+  }
+
+  protected cancelDelete(): void {
+    this.confirmingDelete.set(false);
+  }
+
+  protected async confirmDelete(): Promise<void> {
     const c = this.coffee();
-    if (!c || !confirm(`Delete “${c.name}”? This removes its reviews too.`)) return;
+    if (!c || this.deleting()) return;
+    this.deleting.set(true);
     try {
       await firstValueFrom(this.coffeesApi.delete(c.id));
       this.store.reload(); // a delete changes the catalog list
@@ -133,6 +151,8 @@ export class CoffeeDetail {
       await this.router.navigate(['/coffees']);
     } catch {
       this.toast.show('Could not delete it (you may not have permission).', 'error');
+      this.deleting.set(false);
+      this.confirmingDelete.set(false);
     }
   }
 }

@@ -36,29 +36,41 @@ public class CoffeesController(ICoffeeCatalogService catalog) : ControllerBase
         return CreatedAtAction(nameof(GetCoffee), new { id = created.Id }, created);
     }
 
-    /// <summary>Updates an existing coffee.</summary>
+    /// <summary>Updates an existing coffee (creator or admin only).</summary>
     [HttpPut("{id:int}")]
     public async Task<IActionResult> UpdateCoffee(int id, CoffeeUpdateDto dto, CancellationToken ct)
     {
-        var found = await catalog.UpdateAsync(id, dto, ct);
-        return found ? NoContent() : NotFound();
+        var status = await catalog.UpdateAsync(id, dto, ct);
+        return status switch
+        {
+            CatalogWriteStatus.Success => NoContent(),
+            CatalogWriteStatus.NotFound => NotFound(),
+            CatalogWriteStatus.Forbidden => Forbid(),
+            _ => throw new InvalidOperationException($"Unexpected catalog write status: {status}"),
+        };
     }
 
-    /// <summary>Deletes a coffee.</summary>
+    /// <summary>Deletes a coffee (creator or admin only).</summary>
     [HttpDelete("{id:int}")]
     public async Task<IActionResult> DeleteCoffee(int id, CancellationToken ct)
     {
-        var found = await catalog.DeleteAsync(id, ct);
-        return found ? NoContent() : NotFound();
+        var status = await catalog.DeleteAsync(id, ct);
+        return status switch
+        {
+            CatalogWriteStatus.Success => NoContent(),
+            CatalogWriteStatus.NotFound => NotFound(),
+            CatalogWriteStatus.Forbidden => Forbid(),
+            _ => throw new InvalidOperationException($"Unexpected catalog write status: {status}"),
+        };
     }
 
-    /// <summary>Uploads a photo for a coffee and stores its relative path.</summary>
+    /// <summary>Uploads a photo for a coffee and stores its relative path (creator or admin only).</summary>
     [HttpPost("{id:int}/photo")]
     public async Task<ActionResult<CoffeeResponseDto>> UploadPhoto(int id, IFormFile file, CancellationToken ct)
     {
         if (file is null || file.Length == 0)
         {
-            return BadRequest("A non-empty image file is required.");
+            return Problem(statusCode: StatusCodes.Status400BadRequest, detail: "A non-empty image file is required.");
         }
 
         await using var stream = file.OpenReadStream();
@@ -68,9 +80,10 @@ public class CoffeesController(ICoffeeCatalogService catalog) : ControllerBase
         {
             SetPhotoStatus.Success => Ok(result.Coffee),
             SetPhotoStatus.CoffeeNotFound => NotFound(),
-            SetPhotoStatus.InvalidContentType => BadRequest("Unsupported image type. Allowed: JPEG, PNG, WebP."),
-            SetPhotoStatus.TooLarge => StatusCode(StatusCodes.Status413PayloadTooLarge, "The uploaded image is too large."),
-            _ => BadRequest(),
+            SetPhotoStatus.Forbidden => Forbid(),
+            SetPhotoStatus.InvalidContentType => Problem(statusCode: StatusCodes.Status400BadRequest, detail: "Unsupported image type. Allowed: JPEG, PNG, WebP."),
+            SetPhotoStatus.TooLarge => Problem(statusCode: StatusCodes.Status413PayloadTooLarge, detail: "The uploaded image is too large."),
+            _ => throw new InvalidOperationException($"Unexpected set-photo status: {result.Status}"),
         };
     }
 }

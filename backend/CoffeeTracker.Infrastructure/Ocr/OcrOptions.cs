@@ -22,4 +22,20 @@ public class OcrOptions
 
     /// <summary>Tesseract language code (default <c>eng</c>).</summary>
     public string Language { get; set; } = "eng";
+
+    /// <summary>
+    /// Hard ceiling, in seconds, on a single OCR run. Bounds a hung, spinning, or
+    /// pathological-image tesseract process so it can't pin a worker/CPU on the
+    /// single instance. A timeout degrades the scan to "unavailable" (503), distinct
+    /// from a genuine caller cancellation.
+    /// </summary>
+    public int TimeoutSeconds { get; set; } = 30;
+
+    /// <summary>
+    /// Maximum number of tesseract processes allowed to run concurrently. Excess
+    /// scan requests queue (honouring their cancellation token) rather than all
+    /// spawning native processes at once and exhausting CPU/RAM. A value &lt;= 0
+    /// resolves to a default of <c>2 ×</c> the processor count at startup.
+    /// </summary>
+    public int MaxConcurrency { get; set; }
 }

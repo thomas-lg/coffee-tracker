@@ -17,4 +17,8 @@ public record CoffeeCreateDto(
     [Range(0, 100_000)] decimal Price,
     DateOnly DateBought,
     [StringLength(200)] string? ShopName,
-    [Url, StringLength(2000)] string? PurchaseUrl);
+    [Url, StringLength(2000)] string? PurchaseUrl) : IValidatableObject
+{
+    public IEnumerable<ValidationResult> Validate(ValidationContext validationContext) =>
+        DtoValidation.ValidateDateBought(DateBought, nameof(DateBought));
+}

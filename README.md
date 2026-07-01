@@ -73,6 +73,8 @@ port directly to the internet.
 | `Ocr__Engine`                     | no       | `tesseract`      | OCR engine for `/api/coffees/scan`: `tesseract` (uses the bundled native libs) or `none` (disables scanning → 503). |
 | `Ocr__TessdataPath`               | no       | system path      | Override the tessdata directory; defaults to the `TESSDATA_PREFIX` system path (the image ships English data). |
 | `Ocr__Language`                   | no       | `eng`            | Tesseract language code. |
+| `Ocr__TimeoutSeconds`             | no       | `30`             | Hard ceiling on a single OCR run; a slower/stuck scan is terminated and returns `503` so it can't pin a worker. |
+| `Ocr__MaxConcurrency`             | no       | `0` (≈ 2× CPUs)  | Max OCR processes running at once; extra scans queue instead of spawning unbounded `tesseract` processes. `0` resolves to twice the processor count. |
 | `PUID`                            | no       | `99`             | User ID the app runs as. Set to match your host volume owner so `/config`/`/photos` are writable (Unraid default `99` = `nobody`). |
 | `PGID`                            | no       | `100`            | Group ID the app runs as (Unraid default `100` = `users`). |
 

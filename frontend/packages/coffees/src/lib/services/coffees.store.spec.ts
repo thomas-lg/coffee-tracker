@@ -99,3 +99,42 @@ describe('CoffeesStore', () => {
     expect(store.shops()).toEqual(['Local Roast']);
   });
 });
+
+describe('CoffeesStore (error path)', () => {
+  let store: CoffeesStore;
+  let http: HttpTestingController;
+  let appRef: ApplicationRef;
+
+  beforeEach(() => {
+    TestBed.configureTestingModule({
+      providers: [
+        provideZonelessChangeDetection(),
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        CoffeesStore,
+      ],
+    });
+    store = TestBed.inject(CoffeesStore);
+    http = TestBed.inject(HttpTestingController);
+    appRef = TestBed.inject(ApplicationRef);
+
+    appRef.tick();
+    http.expectOne('/api/coffees').flush('boom', { status: 500, statusText: 'Server Error' });
+    appRef.tick();
+  });
+
+  afterEach(() => {
+    http.verify();
+    TestBed.resetTestingModule();
+  });
+
+  it('surfaces a friendly error, stops loading, and exposes an empty list without throwing', () => {
+    expect(store.error()).toBe('Could not load your coffees.');
+    expect(store.loading()).toBe(false);
+    // The raw httpResource value rethrows in the error state; the store guards it, so
+    // these reads (and every template consumer) return the empty default instead of crashing.
+    expect(store.coffees()).toEqual([]);
+    expect(store.filtered()).toEqual([]);
+    expect(store.origins()).toEqual([]);
+  });
+});

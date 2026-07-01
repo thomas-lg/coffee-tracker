@@ -38,6 +38,41 @@ internal static class ApiClient
     public static Task<HttpResponseMessage> Delete(this HttpClient client, string url, string? token = null) =>
         client.SendAsync(Build(HttpMethod.Delete, url, body: null, token));
 
+    // Posts a single file as multipart/form-data under the field name the upload
+    // endpoints bind (`file`). Lets the boundary tests drive the real model-binding +
+    // storage path. A null contentType omits the part's Content-Type header.
+    public static Task<HttpResponseMessage> PostFile(
+        this HttpClient client,
+        string url,
+        byte[] bytes,
+        string? contentType,
+        string? token = null,
+        string fileName = "upload.bin",
+        string fieldName = "file")
+    {
+        var form = new MultipartFormDataContent();
+        var part = new ByteArrayContent(bytes);
+        if (contentType is not null)
+        {
+            part.Headers.ContentType = new MediaTypeHeaderValue(contentType);
+        }
+
+        form.Add(part, fieldName, fileName);
+
+        var request = new HttpRequestMessage(HttpMethod.Post, url) { Content = form };
+        if (token is not null)
+        {
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        }
+
+        return client.SendAsync(request);
+    }
+
+    /// <summary>A byte sequence whose magic number is a valid PNG header (the bytes
+    /// the storage adapter sniffs; the rest need not be a real image).</summary>
+    public static byte[] FakePng() =>
+        [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0x00, 0x01, 0x02, 0x03, 0x04];
+
     private static HttpRequestMessage Build(HttpMethod method, string url, object? body, string? token)
     {
         var request = new HttpRequestMessage(method, url);

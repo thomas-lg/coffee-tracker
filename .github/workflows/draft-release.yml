@@ -28,7 +28,7 @@ jobs:
     if: github.event_name == 'push'
     steps:
       - name: Create/Update Draft Release
-        uses: release-drafter/release-drafter@v7
+        uses: release-drafter/release-drafter@4d75298e00d9e34c483e5ff8c68d0ea1c1940c1e # v7
         with:
           config-name: release-drafter.yml
           token: ${{ secrets.GITHUB_TOKEN }}
@@ -38,7 +38,7 @@ jobs:
     if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'
     steps:
       - name: Publish Release
-        uses: release-drafter/release-drafter@v7
+        uses: release-drafter/release-drafter@4d75298e00d9e34c483e5ff8c68d0ea1c1940c1e # v7
         with:
           config-name: release-drafter.yml
           publish: ${{ github.event.inputs.dry_run == 'false' }}

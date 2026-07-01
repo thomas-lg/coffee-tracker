@@ -48,6 +48,12 @@ builder.Host.UseSerilog((context, services, lc) =>
 // fix the wire format but the OpenAPI generator wouldn't see it). See RoastLevel.
 builder.Services.AddControllers();
 
+// Emit RFC7807 application/problem+json for error responses so every client-error
+// shape is consistent — the automatic [ApiController] model-validation 400, the
+// explicit Problem(...)/ValidationProblem(...) calls in controllers, and unhandled
+// exceptions all share one body format.
+builder.Services.AddProblemDetails();
+
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
 

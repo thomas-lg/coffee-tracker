@@ -52,7 +52,7 @@ export type IconName = keyof typeof ICONS;
   template: '',
 })
 export class Icon {
-  readonly name = input.required<string>();
+  readonly name = input.required<IconName>();
   readonly size = input(20);
   readonly strokeWidth = input(2);
 

@@ -5,11 +5,17 @@ TBD - created by archiving change m2-coffee-crud-and-photo-upload. Update Purpos
 ## Requirements
 ### Requirement: Uploaded photos are validated before storage
 
-The system SHALL accept only image uploads whose content type is on an allowlist (`image/jpeg`, `image/png`, `image/webp`) and whose size does not exceed a configurable maximum (default 5 MB). Uploads failing either check SHALL be rejected without being written to disk.
+The system SHALL accept only image uploads whose content type is on an allowlist (`image/jpeg`, `image/png`, `image/webp`), whose leading bytes match the file-signature (magic number) of the declared type, and whose size does not exceed a configurable maximum (default 5 MB). Because the content-type header is client-controlled, acceptance and the stored extension SHALL NOT rest on it alone. Uploads failing any check SHALL be rejected without being written to disk.
 
 #### Scenario: Rejecting a disallowed content type
 
 - **WHEN** a file whose content type is not on the allowlist is submitted for storage
+- **THEN** the system SHALL reject it
+- **AND** SHALL NOT write any file to disk
+
+#### Scenario: Rejecting bytes that do not match the declared type
+
+- **WHEN** a file is submitted with an allowed content type (e.g. `image/png`) but whose leading bytes are not that format's signature
 - **THEN** the system SHALL reject it
 - **AND** SHALL NOT write any file to disk
 

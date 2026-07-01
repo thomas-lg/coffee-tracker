@@ -14,7 +14,11 @@ export type CoffeeSort = 'new' | 'rating' | 'name';
 export class CoffeesStore {
   private readonly resource = httpResource<Coffee[]>(() => '/api/coffees', { defaultValue: [] });
 
-  readonly coffees = this.resource.value;
+  // httpResource.value THROWS while the resource is in an error state (even with a
+  // defaultValue), so guard every read here — it returns the empty default on error.
+  // This keeps the derived signals below (filtered/origins/…) and every template
+  // consumer (grid, home) safe without each one re-implementing the guard.
+  readonly coffees = computed(() => (this.resource.error() ? [] : this.resource.value()));
   readonly loading = this.resource.isLoading;
   readonly error = computed(() => (this.resource.error() ? 'Could not load your coffees.' : null));
 

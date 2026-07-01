@@ -1,13 +1,14 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
-import { Button, Icon, Select, Skeleton } from '@coffee-tracker/ui';
+import { Button, Icon, Select } from '@coffee-tracker/ui';
 import { ROAST_LEVELS } from '@coffee-tracker/data';
 import { CoffeesStore, type RoastFilter } from '../services/coffees.store';
 import { CoffeeCard } from './coffee-card';
+import { CoffeeCardSkeleton } from './coffee-card-skeleton';
 
 @Component({
   selector: 'ct-coffee-grid',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [Button, Icon, Select, Skeleton, CoffeeCard],
+  imports: [Button, Icon, Select, CoffeeCard, CoffeeCardSkeleton],
   templateUrl: './coffee-grid.html',
 })
 export class CoffeeGrid {

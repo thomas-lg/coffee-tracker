@@ -49,12 +49,17 @@ public class CoffeeCatalogService(
         return ToDto(saved, averageRating: null, reviewCount: 0);
     }
 
-    public async Task<bool> UpdateAsync(int id, CoffeeUpdateDto dto, CancellationToken ct = default)
+    public async Task<CatalogWriteStatus> UpdateAsync(int id, CoffeeUpdateDto dto, CancellationToken ct = default)
     {
         var coffee = await repository.GetByIdAsync(id, ct);
         if (coffee is null)
         {
-            return false;
+            return CatalogWriteStatus.NotFound;
+        }
+
+        if (!CanModify(coffee))
+        {
+            return CatalogWriteStatus.Forbidden;
         }
 
         coffee.Name = dto.Name;
@@ -67,15 +72,20 @@ public class CoffeeCatalogService(
         coffee.PurchaseUrl = dto.PurchaseUrl;
 
         await repository.UpdateAsync(coffee, ct);
-        return true;
+        return CatalogWriteStatus.Success;
     }
 
-    public async Task<bool> DeleteAsync(int id, CancellationToken ct = default)
+    public async Task<CatalogWriteStatus> DeleteAsync(int id, CancellationToken ct = default)
     {
         var coffee = await repository.GetByIdAsync(id, ct);
         if (coffee is null)
         {
-            return false;
+            return CatalogWriteStatus.NotFound;
+        }
+
+        if (!CanModify(coffee))
+        {
+            return CatalogWriteStatus.Forbidden;
         }
 
         await repository.DeleteAsync(id, ct);
@@ -86,7 +96,7 @@ public class CoffeeCatalogService(
             await photoStorage.DeleteAsync(coffee.PhotoPath, ct);
         }
 
-        return true;
+        return CatalogWriteStatus.Success;
     }
 
     public async Task<SetPhotoResult> SetPhotoAsync(int id, Stream content, string? contentType, long length, CancellationToken ct = default)
@@ -95,6 +105,11 @@ public class CoffeeCatalogService(
         if (coffee is null)
         {
             return new SetPhotoResult(SetPhotoStatus.CoffeeNotFound, null);
+        }
+
+        if (!CanModify(coffee))
+        {
+            return new SetPhotoResult(SetPhotoStatus.Forbidden, null);
         }
 
         var stored = await photoStorage.SaveAsync(content, contentType, length, ct);
@@ -127,10 +142,23 @@ public class CoffeeCatalogService(
             await photoStorage.DeleteAsync(previousPath, ct);
         }
 
-        // Re-read with aggregates so the response carries accurate rating stats.
+        // Re-read with aggregates so the response carries accurate rating stats. A null
+        // here means the coffee was deleted between the update and the re-read; surface
+        // that as a 404 rather than a 200 with fabricated zeroed stats.
         var withStats = await repository.GetWithStatsByIdAsync(id, ct);
-        return new SetPhotoResult(SetPhotoStatus.Success, withStats is null ? ToDto(coffee, null, 0) : ToDto(withStats));
+        return withStats is null
+            ? new SetPhotoResult(SetPhotoStatus.CoffeeNotFound, null)
+            : new SetPhotoResult(SetPhotoStatus.Success, ToDto(withStats));
     }
+
+    /// <summary>
+    /// Catalog writes are restricted to the coffee's creator or an admin. Rows
+    /// created before owner-stamping (null <see cref="Coffee.CreatedByUserId"/>) are
+    /// writable by admins only — never world-writable.
+    /// </summary>
+    private bool CanModify(Coffee coffee) =>
+        currentUser.IsAdmin ||
+        (coffee.CreatedByUserId is not null && coffee.CreatedByUserId == currentUser.Id);
 
     private static SetPhotoStatus MapRejection(PhotoStorageStatus status) => status switch
     {
