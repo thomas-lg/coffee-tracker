@@ -17,7 +17,9 @@ export class PhotoCleanupStore {
     defaultValue: [],
   });
 
-  readonly photos = this.resource.value;
+  // httpResource.value throws while the resource is errored — guard reads so the
+  // template's count/visible derivations stay safe on the error path (see CoffeesStore).
+  readonly photos = computed(() => (this.resource.error() ? [] : this.resource.value()));
   readonly loading = this.resource.isLoading;
   readonly error = computed(() => (this.resource.error() ? 'Could not load stored photos.' : null));
 

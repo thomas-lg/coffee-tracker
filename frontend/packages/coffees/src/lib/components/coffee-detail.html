@@ -44,11 +44,35 @@
             <p class="font-mono text-xs uppercase tracking-widest text-crema-deep">{{ c.roaster }}</p>
             <h1 class="font-display text-4xl font-semibold">{{ c.name }}</h1>
           </div>
-          <div class="flex gap-2">
-            <a [routerLink]="['/coffees', c.id, 'edit']"><ct-button variant="ghost">Edit</ct-button></a>
-            <button (click)="remove()" class="rounded-full border border-line px-4 py-3 text-sm font-semibold text-muted hover:border-red-300 hover:text-red-500">
-              Delete
-            </button>
+          <div class="flex flex-wrap items-center gap-2">
+            @if (!confirmingDelete()) {
+              <a [routerLink]="['/coffees', c.id, 'edit']"><ct-button variant="ghost">Edit</ct-button></a>
+              <button
+                type="button"
+                (click)="armDelete()"
+                class="rounded-full border border-line px-4 py-3 text-sm font-semibold text-muted hover:border-red-300 hover:text-red-500"
+              >
+                Delete
+              </button>
+            } @else {
+              <span class="text-sm font-semibold text-ink">Delete “{{ c.name }}”? Removes its ratings too.</span>
+              <button
+                type="button"
+                (click)="cancelDelete()"
+                [disabled]="deleting()"
+                class="rounded-full px-3 py-3 text-sm font-semibold text-muted hover:text-ink"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                (click)="confirmDelete()"
+                [disabled]="deleting()"
+                class="rounded-full border border-red-300 px-4 py-3 text-sm font-semibold text-red-600 hover:bg-red-50 disabled:opacity-60"
+              >
+                {{ deleting() ? 'Deleting…' : 'Confirm delete' }}
+              </button>
+            }
           </div>
         </div>
 
@@ -96,6 +120,7 @@
             #stageEl
             [value]="newStage()"
             (input)="newStage.set(stageEl.value)"
+            aria-label="Stage (optional)"
             placeholder="Stage (optional) — e.g. Fresh bag, Last cups"
             class="input mt-3 w-full"
           />
@@ -104,6 +129,7 @@
             [value]="newNotes()"
             (input)="newNotes.set(notesEl.value)"
             rows="2"
+            aria-label="Tasting notes (optional)"
             placeholder="Tasting notes (optional)"
             class="input mt-2 w-full resize-none"
           ></textarea>
@@ -111,7 +137,9 @@
             <div class="mt-3 flex flex-wrap gap-1.5">
               @for (t of tags(); track t.id) {
                 <button
+                  type="button"
                   (click)="toggleTag(t.id)"
+                  [attr.aria-pressed]="isTagOn(t.id)"
                   class="rounded-full border px-2.5 py-1 text-xs font-semibold transition"
                   [class]="isTagOn(t.id) ? 'border-crema bg-crema text-ink' : 'border-line bg-foam text-cocoa hover:border-cocoa'"
                 >

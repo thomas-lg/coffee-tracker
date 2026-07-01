@@ -21,6 +21,7 @@ import { ChangeDetectionStrategy, Component, computed, input, output, signal } f
             [class.text-line]="n > (hover() || value())"
             [class.scale-110]="n === hover()"
             [attr.aria-label]="n + (n === 1 ? ' star' : ' stars')"
+            [attr.aria-pressed]="n <= value()"
           >
             ★
           </button>

@@ -12,12 +12,21 @@ namespace CoffeeTracker.Infrastructure.Ocr;
 /// version-pinned <c>lib*.dll.so</c> names that no distro ships and needs a <c>libdl</c>
 /// shim on modern glibc. The CLI is Tesseract's first-class, stable interface.
 /// </summary>
-public class TesseractCliOcrService(IOptions<OcrOptions> options, ILogger<TesseractCliOcrService> logger) : IOcrService
+public class TesseractCliOcrService(IOptions<OcrOptions> options, ILogger<TesseractCliOcrService> logger) : IOcrService, IDisposable
 {
     private readonly string _executable =
         string.IsNullOrWhiteSpace(options.Value.ExecutablePath) ? "tesseract" : options.Value.ExecutablePath!;
     private readonly string _tessdataPath = ResolveTessdataPath(options.Value);
     private readonly string _language = ResolveLanguage(options.Value.Language);
+
+    // Hard per-run ceiling so a hung/pathological process can't pin a worker forever.
+    private readonly TimeSpan _timeout =
+        TimeSpan.FromSeconds(options.Value.TimeoutSeconds > 0 ? options.Value.TimeoutSeconds : 30);
+
+    // Process-wide admission control: this adapter is a singleton, so this one
+    // semaphore caps how many tesseract processes run at once across all requests.
+    private readonly SemaphoreSlim _gate =
+        new(options.Value.MaxConcurrency > 0 ? options.Value.MaxConcurrency : Environment.ProcessorCount * 2);
 
     // Cheap, side-effect-free check: the engine can only run if the language's
     // traineddata is present. A missing `tesseract` binary is handled in ReadAsync
@@ -25,8 +34,28 @@ public class TesseractCliOcrService(IOptions<OcrOptions> options, ILogger<Tesser
     // pure file check — no process spawn just to test availability.
     public bool IsAvailable => File.Exists(Path.Combine(_tessdataPath, $"{_language}.traineddata"));
 
+    // The concurrency gate is the only owned disposable. As a DI singleton this is
+    // released when the container is disposed at shutdown.
+    public void Dispose()
+    {
+        _gate.Dispose();
+        GC.SuppressFinalize(this);
+    }
+
     public async Task<OcrResult> ReadAsync(Stream image, CancellationToken ct = default)
     {
+        // Admission control: queue (don't spawn) once MaxConcurrency processes are live.
+        // Cancelled while waiting ⇒ propagate as a normal caller cancellation (the gate
+        // was never acquired, so there is nothing to release).
+        await _gate.WaitAsync(ct);
+
+        // Bound the child independently of the caller. The linked token fires when EITHER
+        // the caller cancels OR our timeout elapses; the two cases are told apart in the
+        // catch blocks below by inspecting the original ct.
+        using var linked = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        linked.CancelAfter(_timeout);
+        var token = linked.Token;
+
         Process? process = null;
         Task<string>? stdoutTask = null;
         Task<string>? stderrTask = null;
@@ -55,13 +84,13 @@ public class TesseractCliOcrService(IOptions<OcrOptions> options, ILogger<Tesser
 
             // Start draining stdout/stderr before writing stdin so a large image can't
             // deadlock against a full output pipe.
-            stdoutTask = process.StandardOutput.ReadToEndAsync(ct);
-            stderrTask = process.StandardError.ReadToEndAsync(ct);
+            stdoutTask = process.StandardOutput.ReadToEndAsync(token);
+            stderrTask = process.StandardError.ReadToEndAsync(token);
 
-            await image.CopyToAsync(process.StandardInput.BaseStream, ct);
+            await image.CopyToAsync(process.StandardInput.BaseStream, token);
             process.StandardInput.Close();
 
-            await process.WaitForExitAsync(ct);
+            await process.WaitForExitAsync(token);
             // Observe both pipes (stderr too, even on success) so neither read is left
             // as an unobserved task.
             var text = await stdoutTask;
@@ -75,11 +104,20 @@ public class TesseractCliOcrService(IOptions<OcrOptions> options, ILogger<Tesser
 
             return OcrResult.Read(text);
         }
-        catch (OperationCanceledException)
+        catch (OperationCanceledException) when (ct.IsCancellationRequested)
         {
             // The caller cancelled — propagate rather than masquerading as an engine
             // outage (which would log noise and skew availability signals).
             throw;
+        }
+        catch (OperationCanceledException)
+        {
+            // Our own timeout fired (linked token, but the caller's ct is untouched):
+            // treat as an engine outage → 503, not a client-cancelled request.
+            logger.LogWarning(
+                "tesseract exceeded the {TimeoutSeconds}s timeout; killing it and reporting unavailable.",
+                _timeout.TotalSeconds);
+            return OcrResult.Unavailable;
         }
         catch (Exception ex)
         {
@@ -90,9 +128,10 @@ public class TesseractCliOcrService(IOptions<OcrOptions> options, ILogger<Tesser
         {
             if (process is not null)
             {
-                // Dispose() does NOT terminate the child; on cancel/error the process
-                // (possibly blocked waiting for stdin EOF) would otherwise leak. Kill the
-                // tree, then observe the pipe reads (the kill unblocks them) before dispose.
+                // Dispose() does NOT terminate the child; on cancel/timeout/error the
+                // process (possibly blocked waiting for stdin EOF) would otherwise leak.
+                // Kill the tree, then observe the pipe reads (the kill unblocks them)
+                // before dispose.
                 try
                 {
                     if (!process.HasExited)
@@ -109,6 +148,8 @@ public class TesseractCliOcrService(IOptions<OcrOptions> options, ILogger<Tesser
                 await Observe(stderrTask);
                 process.Dispose();
             }
+
+            _gate.Release();
         }
     }
 

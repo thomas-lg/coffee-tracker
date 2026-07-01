@@ -82,3 +82,36 @@ describe('PhotoCleanupStore', () => {
     expect(store.selectedCount()).toBe(0);
   });
 });
+
+describe('PhotoCleanupStore (error path)', () => {
+  let store: PhotoCleanupStore;
+  let http: HttpTestingController;
+  let appRef: ApplicationRef;
+
+  beforeEach(() => {
+    TestBed.configureTestingModule({
+      providers: [provideHttpClient(), provideHttpClientTesting(), PhotoCleanupStore],
+    });
+    store = TestBed.inject(PhotoCleanupStore);
+    http = TestBed.inject(HttpTestingController);
+    appRef = TestBed.inject(ApplicationRef);
+
+    appRef.tick();
+    http.expectOne('/api/admin/photos').flush('boom', { status: 500, statusText: 'Server Error' });
+    appRef.tick();
+  });
+
+  afterEach(() => {
+    http.verify();
+    TestBed.resetTestingModule();
+  });
+
+  it('surfaces a friendly error, stops loading, and exposes an empty list without throwing', () => {
+    expect(store.error()).toBe('Could not load stored photos.');
+    expect(store.loading()).toBe(false);
+    // The raw httpResource value rethrows in the error state; the store guards it.
+    expect(store.photos()).toEqual([]);
+    expect(store.visible()).toEqual([]);
+    expect(store.storedCount()).toBe(0);
+  });
+});

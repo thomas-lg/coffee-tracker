@@ -55,6 +55,28 @@ public sealed class AuthFlowTests : IntegrationTest
     }
 
     [Fact]
+    public async Task Account_locks_out_after_repeated_failed_logins()
+    {
+        // MaxFailedAccessAttempts = 5 (see Infrastructure DI). The register + 6 logins
+        // below stay under the 10/min auth rate limit, so 429s don't mask the lockout.
+        await Client.RegisterAsync("lockme@example.com", "Lock Me");
+
+        HttpResponseMessage? last = null;
+        for (var i = 0; i < 5; i++)
+        {
+            last = await Client.Post("/api/auth/login", new LoginDto("lockme@example.com", "wrong-password"));
+        }
+
+        // The 5th failed attempt trips the account lockout (423 Locked, not 401).
+        Assert.Equal(HttpStatusCode.Locked, last!.StatusCode);
+
+        // While locked, even the *correct* password is refused — proving the
+        // IsLockedOutAsync short-circuit runs before the password check.
+        var afterLock = await Client.Post("/api/auth/login", new LoginDto("lockme@example.com", ApiClient.DefaultPassword));
+        Assert.Equal(HttpStatusCode.Locked, afterLock.StatusCode);
+    }
+
+    [Fact]
     public async Task Duplicate_email_registration_conflicts()
     {
         await Client.RegisterAsync("dupe@example.com", "First");

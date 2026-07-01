@@ -14,14 +14,18 @@
   <div class="mb-5 flex flex-wrap items-center gap-3">
     <div class="inline-flex rounded-full border border-line bg-foam p-1 text-sm font-semibold">
       <button
+        type="button"
         (click)="store.setFilter('all')"
+        [attr.aria-pressed]="store.filter() === 'all'"
         class="rounded-full px-3 py-1.5 transition"
         [class]="store.filter() === 'all' ? 'bg-crema/30 text-ink' : 'text-muted hover:text-ink'"
       >
         All
       </button>
       <button
+        type="button"
         (click)="store.setFilter('unused')"
+        [attr.aria-pressed]="store.filter() === 'unused'"
         class="rounded-full px-3 py-1.5 transition"
         [class]="store.filter() === 'unused' ? 'bg-crema/30 text-ink' : 'text-muted hover:text-ink'"
       >
@@ -65,9 +69,10 @@
 
   <!-- Content states -->
   @if (store.loading()) {
-    <div class="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
+    <div class="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4" aria-busy="true">
+      <span class="sr-only" role="status">Loading photos…</span>
       @for (i of [1, 2, 3, 4, 5, 6, 7, 8]; track i) {
-        <div class="aspect-square animate-pulse rounded-2xl bg-line/60"></div>
+        <div class="aspect-square animate-pulse rounded-2xl bg-line/60" aria-hidden="true"></div>
       }
     </div>
   } @else if (store.error()) {
