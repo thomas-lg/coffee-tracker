@@ -65,6 +65,36 @@ secure context. Don't publish the container port directly to the internet.
    first user becomes admin), then set it back to `false` and recreate.
 5. Point the reverse proxy at the container's `8080`.
 
+### Behind SWAG + Authelia
+
+The app runs fine behind a forward-auth gateway, but two things are worth knowing.
+
+**Bypass Authelia for `/api`.** Every API endpoint already requires the app's own JWT
+(plus rate-limited login), so gate only the pages with Authelia and let the API defend
+itself — the same model the sonarr/radarr sample confs use for their API keys:
+
+```yaml
+access_control:
+  rules:
+    - domain: coffee.example.com
+      resources: ['^/api/.*']
+      policy: bypass
+```
+
+Keep everything else (including `/photos`, which has **no** app-level auth) behind
+Authelia. Without the bypass, an expired Authelia session makes every API call fail
+with a gateway 401 while the page still renders — the app detects that (a 401 without
+the API's `WWW-Authenticate: Bearer` challenge) and does one full-page reload so
+Authelia can re-authenticate the browser.
+
+**Why this app behaves differently from non-PWA containers.** The service worker
+serves the app shell from the browser cache, so opening/refreshing the app doesn't
+necessarily hit the proxy, and `fetch()` calls can never redirect the window — Authelia
+answers them 401, not 302. The service worker uses network-first navigations
+(`navigationRequestStrategy: freshness` in `ngsw-config.json`) so that refreshes do
+reach the proxy and get the usual redirect to the Authelia portal; don't remove that
+setting if the deployment sits behind forward auth.
+
 ### Updating
 
 Pull a newer tag (`:latest` or a pinned `:sha-…` / `:vX.Y.Z`) and recreate the
