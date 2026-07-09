@@ -27,6 +27,11 @@ public sealed class EfRefreshTokenStore(
         var now = clock.GetUtcNow().UtcDateTime;
         var expires = now.AddDays(_lifetimeDays);
 
+        // Opportunistic cleanup so the table stays bounded: drop tokens past their expiry.
+        // Revoked-but-unexpired rows are kept so reuse of a rotated token is still detected
+        // during its validity window; once expired they can't be meaningfully replayed.
+        await db.RefreshTokens.Where(t => t.ExpiresAtUtc < now).ExecuteDeleteAsync(ct);
+
         db.RefreshTokens.Add(new RefreshToken
         {
             Id = Guid.NewGuid(),
