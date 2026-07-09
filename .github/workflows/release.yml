@@ -1,11 +1,16 @@
 name: Release
 
-# Builds and pushes the production image to GHCR. Triggered by pushes to main
-# (=> :latest + :sha-<short>) and by version tags v* (=> semver tags).
-# CI tests live in ci.yml; this workflow only builds + publishes.
+# Builds and pushes the production image to GHCR. Publishing to main is gated on
+# CI: this runs via workflow_run when the CI workflow succeeds on main
+# (=> :latest + :sha-<short>). Version tags v* still trigger directly
+# (=> semver tags) — they're cut from main commits that already passed CI, and
+# the Trivy gate below scans the image again before it's pushed.
 on:
-  push:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
     branches: [main]
+  push:
     tags: ['v*']
 
 permissions:
@@ -14,12 +19,27 @@ permissions:
   id-token: write # mint the OIDC token for the build-provenance attestation
   attestations: write # record the attestation against the pushed image
 
+# Serialize publishes per ref so rapid pushes can't race on :latest. No
+# cancel-in-progress: killing a run mid-push could leave a tag without its
+# attestation.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
 env:
   IMAGE: ghcr.io/thomas-lg/coffee-tracker
 
 jobs:
   image:
     runs-on: ubuntu-latest
+    # main: only publish when the gating CI run succeeded AND its commit is still
+    # the tip of main (a superseding push gets its own CI run and release, so a
+    # stale run publishing an old sha would only churn :latest). Tags: publish.
+    if: >-
+      (github.event_name == 'workflow_run'
+        && github.event.workflow_run.conclusion == 'success'
+        && github.event.workflow_run.head_sha == github.sha)
+      || startsWith(github.ref, 'refs/tags/v')
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
       - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
@@ -36,7 +56,29 @@ jobs:
             type=raw,value=latest,enable={{is_default_branch}}
             type=sha
             type=semver,pattern={{version}}
+      # Build first WITHOUT pushing so Trivy can gate on the exact image; the push
+      # step below reuses the warm buildx cache, so it doesn't rebuild.
+      - name: Build image (no push)
+        uses: docker/build-push-action@f9f3042f7e2789586610d6e8b85c8f03e5195baf # v7
+        with:
+          context: .
+          platforms: linux/amd64
+          push: false
+          load: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+      # Block the release if the image ships a fixable CRITICAL/HIGH CVE. ci.yml
+      # scans PRs report-style; this scan is the hard gate on what actually ships.
+      - name: Scan release image for vulnerabilities (Trivy)
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          image-ref: ${{ env.IMAGE }}:${{ steps.meta.outputs.version }}
+          format: table
+          exit-code: '1'
+          severity: CRITICAL,HIGH
+          ignore-unfixed: true
       - id: build
+        name: Push image
         uses: docker/build-push-action@f9f3042f7e2789586610d6e8b85c8f03e5195baf # v7
         with:
           context: .

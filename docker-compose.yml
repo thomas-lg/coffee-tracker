@@ -5,7 +5,8 @@ services:
     build: .
     image: ghcr.io/thomas-lg/coffee-tracker:local
     ports:
-      - '8080:8080'
+      # Dev-only compose — bind to localhost so the app isn't exposed on the LAN.
+      - '127.0.0.1:8080:8080'
     environment:
       # REQUIRED — the app refuses to start without a strong key. Generate e.g.
       # with: openssl rand -base64 48
@@ -24,6 +25,12 @@ services:
     volumes:
       - config:/config # coffee.db (+ -wal/-shm). Back up before updating the image.
       - photos:/photos # uploaded coffee photos
+    healthcheck:
+      test: ['CMD', 'curl', '-fsS', 'http://localhost:8080/health']
+      interval: 30s
+      timeout: 5s
+      start_period: 15s
+      retries: 3
     restart: unless-stopped
 
 volumes:

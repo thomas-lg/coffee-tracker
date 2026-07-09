@@ -6,11 +6,23 @@
 # (dataaxiom only removes a referrer when its parent image is deleted).
 name: Cleanup Container Registry
 
+# RETENTION CONTRACT: sha-* tags are ephemeral (10 newest kept, rest pruned after
+# 30 days). Anything that must keep pulling — the NAS, compose files, docs — must
+# pin :latest, a semver tag, or an image digest, never an old sha-* tag.
 on:
   schedule:
     # Run weekly on Sundays at 2 AM UTC
     - cron: "0 2 * * 0"
   workflow_dispatch: # Allow manual trigger
+    inputs:
+      dry-run:
+        description: "Dry run (log what would be deleted, delete nothing)"
+        required: false
+        default: "false"
+        type: choice
+        options:
+          - "false"
+          - "true"
 
 permissions:
   packages: write
@@ -28,4 +40,5 @@ jobs:
           exclude-tags: latest
           delete-untagged: true
           older-than: 30 days
+          dry-run: ${{ github.event.inputs.dry-run == 'true' }}
           token: ${{ secrets.GITHUB_TOKEN }}
