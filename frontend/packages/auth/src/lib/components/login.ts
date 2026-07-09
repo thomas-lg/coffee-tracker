@@ -24,7 +24,12 @@ export class Login {
   protected readonly submitting = signal(false);
 
   protected async onSubmit(): Promise<void> {
-    if (this.submitting() || this.f().invalid()) return;
+    if (this.submitting()) return;
+    if (this.f().invalid()) {
+      // Surface why nothing happened: reveal every field's validation message.
+      this.f().markAsTouched();
+      return;
+    }
     this.submitting.set(true);
     try {
       await this.auth.login(this.model());

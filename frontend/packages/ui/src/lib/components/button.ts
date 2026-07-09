@@ -44,7 +44,7 @@ export class Button {
   private readonly base =
     'inline-flex cursor-pointer items-center justify-center gap-2 rounded-full px-5 py-3 text-sm font-semibold transition-[transform,background-color,box-shadow] duration-150 active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-crema disabled:pointer-events-none disabled:opacity-50';
 
-  private readonly classes: Record<string, string> = {
+  private readonly classes: Record<'primary' | 'crema' | 'ghost', string> = {
     primary: 'bg-ink text-foam hover:opacity-90 shadow-sm',
     crema: 'bg-crema text-ink hover:bg-crema-deep hover:text-foam shadow-sm',
     ghost: 'bg-transparent text-ink ring-1 ring-line hover:ring-cocoa',

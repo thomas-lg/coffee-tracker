@@ -193,6 +193,87 @@
         }
       }
     },
+    "/api/Auth/refresh": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RefreshRequestDto"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RefreshRequestDto"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/RefreshRequestDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthResponseDto"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthResponseDto"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthResponseDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/Auth/logout": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RefreshRequestDto"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RefreshRequestDto"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/RefreshRequestDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "No Content"
+          }
+        }
+      }
+    },
     "/api/Coffees": {
       "get": {
         "tags": [
@@ -818,6 +899,8 @@
         "required": [
           "token",
           "expiresAt",
+          "refreshToken",
+          "refreshExpiresAt",
           "userId",
           "displayName",
           "isAdmin"
@@ -828,6 +911,13 @@
             "type": "string"
           },
           "expiresAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "refreshToken": {
+            "type": "string"
+          },
+          "refreshExpiresAt": {
             "type": "string",
             "format": "date-time"
           },
@@ -912,7 +1002,7 @@
           "roastLevel",
           "price",
           "dateBought",
-          "photoPath",
+          "photoUrl",
           "shopName",
           "purchaseUrl",
           "createdAt",
@@ -954,7 +1044,7 @@
             "type": "string",
             "format": "date"
           },
-          "photoPath": {
+          "photoUrl": {
             "type": [
               "null",
               "string"
@@ -1151,6 +1241,7 @@
       "PhotoListItemDto": {
         "required": [
           "path",
+          "url",
           "used"
         ],
         "type": "object",
@@ -1158,8 +1249,24 @@
           "path": {
             "type": "string"
           },
+          "url": {
+            "type": "string"
+          },
           "used": {
             "type": "boolean"
+          }
+        }
+      },
+      "RefreshRequestDto": {
+        "required": [
+          "refreshToken"
+        ],
+        "type": "object",
+        "properties": {
+          "refreshToken": {
+            "maxLength": 4096,
+            "minLength": 0,
+            "type": "string"
           }
         }
       },
@@ -1458,7 +1565,7 @@
         "required": [
           "rawText",
           "parsed",
-          "photoPath"
+          "photoUrl"
         ],
         "type": "object",
         "properties": {
@@ -1468,7 +1575,7 @@
           "parsed": {
             "$ref": "#/components/schemas/ScannedCoffeeDto"
           },
-          "photoPath": {
+          "photoUrl": {
             "type": "string"
           }
         }

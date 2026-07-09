@@ -21,8 +21,12 @@ export interface StoredSession {
   userId: string;
   displayName: string | null;
   isAdmin: boolean;
-  /** ISO date-time. */
+  /** ISO date-time — access-token expiry (short-lived, ~15 min). */
   expiresAt: string;
+  /** Opaque refresh token; omit to simulate a session that cannot be refreshed. */
+  refreshToken?: string;
+  /** ISO date-time — refresh-token expiry. */
+  refreshExpiresAt?: string;
 }
 
 /**

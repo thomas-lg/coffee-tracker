@@ -13,7 +13,7 @@ const SAMPLE: Coffee = {
   roastLevel: 'Dark',
   price: 30,
   dateBought: '2026-06-01',
-  photoPath: null,
+  photoUrl: null,
   shopName: null,
   purchaseUrl: null,
   createdAt: '2026-06-01T00:00:00Z',

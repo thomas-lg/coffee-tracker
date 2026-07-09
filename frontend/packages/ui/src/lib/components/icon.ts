@@ -21,8 +21,12 @@ import {
   createElement,
 } from 'lucide';
 
-/** Curated icon set (kebab name → lucide node). Add as needed. */
-const ICONS: Record<string, IconNode> = {
+/**
+ * Curated icon set (kebab name → lucide node). Add as needed. `satisfies` (rather
+ * than a widening `Record<string, …>` annotation) keeps the keys literal, so
+ * `IconName` is a closed union and a typo'd name is a compile error.
+ */
+const ICONS = {
   coffee: Coffee,
   search: Search,
   camera: Camera,
@@ -40,7 +44,7 @@ const ICONS: Record<string, IconNode> = {
   back: ArrowLeft,
   'arrow-right': ArrowRight,
   'chevron-down': ChevronDown,
-};
+} satisfies Record<string, IconNode>;
 
 export type IconName = keyof typeof ICONS;
 
