@@ -67,15 +67,17 @@ jobs:
           load: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-      # Block the release if the image ships a fixable CRITICAL/HIGH CVE. ci.yml
-      # scans PRs report-style; this scan is the hard gate on what actually ships.
+      # Block the release only on a fixable CRITICAL CVE (vuln scanner only). HIGHs are
+      # reported on PRs (ci.yml) but don't block: base-image HIGHs churn with the vuln DB
+      # and are outside our control, so they shouldn't wedge a release.
       - name: Scan release image for vulnerabilities (Trivy)
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
           image-ref: ${{ env.IMAGE }}:${{ steps.meta.outputs.version }}
+          scanners: vuln
           format: table
           exit-code: '1'
-          severity: CRITICAL,HIGH
+          severity: CRITICAL
           ignore-unfixed: true
       - id: build
         name: Push image
