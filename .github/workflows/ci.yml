@@ -166,10 +166,10 @@ jobs:
           push: false
           load: true
           tags: coffee-tracker:ci
-      # Scan the built image for known OS/library CVEs. Report-only: results go to the
-      # Security tab, and unfixed CVEs don't fail the build so base-image noise can't
-      # block every PR (tighten to exit-code 1 later if desired).
-      - name: Scan image for vulnerabilities (Trivy)
+      # Report CRITICAL+HIGH CVEs to the Security tab (SARIF), non-blocking: base-image
+      # HIGHs come and go with Trivy's vuln DB and are outside our control, so they must
+      # not flake PRs. The hard gate below blocks only on a fixable CRITICAL.
+      - name: Scan image for vulnerabilities (Trivy — report)
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
           image-ref: coffee-tracker:ci
@@ -183,3 +183,14 @@ jobs:
         with:
           sarif_file: trivy-results.sarif
           category: trivy-image
+      # Hard gate: fail only on a FIXABLE CRITICAL vulnerability (vuln scanner only, so a
+      # false-positive secret match can't block). Reuses the Trivy DB cached above.
+      - name: Fail on fixable CRITICAL vulnerabilities (Trivy — gate)
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          image-ref: coffee-tracker:ci
+          scanners: vuln
+          format: table
+          exit-code: '1'
+          severity: CRITICAL
+          ignore-unfixed: true

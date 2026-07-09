@@ -121,7 +121,7 @@ export class CoffeeForm implements OnDestroy {
         shopName: c.shopName ?? '',
         purchaseUrl: c.purchaseUrl ?? '',
       });
-      if (c.photoPath) this.photoPreview.set('/' + c.photoPath);
+      if (c.photoUrl) this.photoPreview.set(c.photoUrl);
     } catch {
       this.toast.show('Could not load that coffee.', 'error');
     } finally {
@@ -176,26 +176,52 @@ export class CoffeeForm implements OnDestroy {
   }
 
   protected async onSubmit(): Promise<void> {
-    if (this.submitting() || this.f().invalid()) return;
+    if (this.submitting()) return;
+    if (this.f().invalid()) {
+      // Surface why nothing happened: reveal every field's validation message.
+      this.f().markAsTouched();
+      return;
+    }
     this.submitting.set(true);
     try {
       const existingId = this.coffeeId();
       const dto = this.toDto(this.model());
+
+      // Step 1 — save the coffee itself. Only THIS failure should keep the user on
+      // the form; retrying after step 1 succeeded would create a duplicate.
       let savedId: number;
-      if (existingId != null) {
-        await firstValueFrom(this.api.update(existingId, dto));
-        savedId = existingId;
-      } else {
-        const created = await firstValueFrom(this.api.create(dto));
-        savedId = created.id;
+      try {
+        if (existingId != null) {
+          await firstValueFrom(this.api.update(existingId, dto));
+          savedId = existingId;
+        } else {
+          const created = await firstValueFrom(this.api.create(dto));
+          savedId = created.id;
+        }
+      } catch {
+        this.toast.show('Could not save the coffee.', 'error');
+        return;
       }
+
+      // Step 2 — best-effort photo upload. The coffee is already saved, so a failure
+      // here must not invite a duplicate resubmit: report it and move on.
+      let photoFailed = false;
       const file = this.photoFile();
-      if (file) await firstValueFrom(this.api.uploadPhoto(savedId, file));
+      if (file) {
+        try {
+          await firstValueFrom(this.api.uploadPhoto(savedId, file));
+        } catch {
+          photoFailed = true;
+        }
+      }
+
       this.store.reload(); // keep the grid in sync with the new/edited coffee
-      this.toast.show(existingId != null ? 'Coffee updated.' : 'Coffee added.', 'success');
+      if (photoFailed) {
+        this.toast.show('Coffee saved, but the photo failed to upload. You can retry it from Edit.', 'error');
+      } else {
+        this.toast.show(existingId != null ? 'Coffee updated.' : 'Coffee added.', 'success');
+      }
       await this.router.navigate(['/coffees', savedId]);
-    } catch {
-      this.toast.show('Could not save the coffee.', 'error');
     } finally {
       this.submitting.set(false);
     }

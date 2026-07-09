@@ -1,7 +1,7 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { rxResource } from '@angular/core/rxjs-interop';
 import { Router, RouterLink } from '@angular/router';
 import { FormField, FormRoot, email, form, minLength, required } from '@angular/forms/signals';
-import { firstValueFrom } from 'rxjs';
 import { Button, ToastService } from '@coffee-tracker/ui';
 import { ConfigApi } from '@coffee-tracker/data';
 import { AuthStore } from '../auth.store';
@@ -18,8 +18,13 @@ export class Register {
   private readonly toast = inject(ToastService);
   private readonly config = inject(ConfigApi);
 
-  /** null = still loading the config flag. */
-  protected readonly registrationEnabled = signal<boolean | null>(null);
+  /** Reactive config read (same rxResource pattern as the data screens). */
+  private readonly configRes = rxResource({ stream: () => this.config.get() });
+  /** null = still loading the config flag; a failed load closes registration. */
+  protected readonly registrationEnabled = computed<boolean | null>(() => {
+    if (this.configRes.error()) return false;
+    return this.configRes.value()?.registrationEnabled ?? null;
+  });
   protected readonly submitting = signal(false);
   protected readonly model = signal({ email: '', password: '', displayName: '' });
   protected readonly f = form(this.model, (p) => {
@@ -30,14 +35,13 @@ export class Register {
     minLength(p.password, 8);
   });
 
-  constructor() {
-    firstValueFrom(this.config.get())
-      .then((c) => this.registrationEnabled.set(c.registrationEnabled))
-      .catch(() => this.registrationEnabled.set(false));
-  }
-
   protected async onSubmit(): Promise<void> {
-    if (this.submitting() || this.f().invalid()) return;
+    if (this.submitting()) return;
+    if (this.f().invalid()) {
+      // Surface why nothing happened: reveal every field's validation message.
+      this.f().markAsTouched();
+      return;
+    }
     this.submitting.set(true);
     try {
       await this.auth.register(this.model());

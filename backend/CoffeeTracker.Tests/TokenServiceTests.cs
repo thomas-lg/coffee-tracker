@@ -1,7 +1,8 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using CoffeeTracker.Application.Auth;
+using CoffeeTracker.Application.Ports.Driven;
 using CoffeeTracker.Infrastructure.Identity;
-using Microsoft.Extensions.Options;
 using Xunit;
 
 namespace CoffeeTracker.Tests;
@@ -25,7 +26,7 @@ public class TokenServiceTests
         Key = "test-signing-key-test-signing-key-test-signing-key!",
         Issuer = "coffee-tracker",
         Audience = "coffee-tracker",
-        LifetimeMinutes = 60,
+        AccessTokenMinutes = 15,
     };
 
     private static TokenService NewService() =>
@@ -34,12 +35,18 @@ public class TokenServiceTests
     private static JwtSecurityToken Decode(string token) =>
         new JwtSecurityTokenHandler().ReadJwtToken(token);
 
-    [Fact]
-    public void CreateToken_EmitsUserIdAsNameIdentifier()
-    {
-        var (token, _) = NewService().CreateToken("user-123", "a@x.com", "Alice", isAdmin: false);
+    private static AuthUser User(
+        string id = "u",
+        string? email = "a@x.com",
+        string? displayName = "A",
+        bool isAdmin = false) => new(id, email, displayName, isAdmin);
 
-        var jwt = Decode(token);
+    [Fact]
+    public void CreateAccessToken_EmitsUserIdAsNameIdentifier()
+    {
+        var access = NewService().CreateAccessToken(User(id: "user-123", displayName: "Alice"));
+
+        var jwt = Decode(access.Token);
         // JwtSecurityTokenHandler serializes ClaimTypes.NameIdentifier as "nameid".
         var sub = jwt.Claims.Single(c => c.Type is ClaimTypes.NameIdentifier or "nameid").Value;
         Assert.Equal("user-123", sub);
@@ -48,31 +55,31 @@ public class TokenServiceTests
     [Theory]
     [InlineData(true, "true")]
     [InlineData(false, "false")]
-    public void CreateToken_EmitsIsAdminClaim(bool isAdmin, string expected)
+    public void CreateAccessToken_EmitsIsAdminClaim(bool isAdmin, string expected)
     {
-        var (token, _) = NewService().CreateToken("u", "a@x.com", "A", isAdmin);
+        var access = NewService().CreateAccessToken(User(isAdmin: isAdmin));
 
-        var claim = Decode(token).Claims.Single(c => c.Type == TokenService.AdminClaim);
+        var claim = Decode(access.Token).Claims.Single(c => c.Type == AppClaims.Admin);
         Assert.Equal(expected, claim.Value);
     }
 
     [Fact]
-    public void CreateToken_SetsExpiryFromLifetimeAndIssuer()
+    public void CreateAccessToken_SetsExpiryFromLifetimeAndIssuer()
     {
-        var (token, expiresAt) = NewService().CreateToken("u", "a@x.com", "A", isAdmin: false);
+        var access = NewService().CreateAccessToken(User());
 
-        Assert.Equal(FixedNow.AddMinutes(Options.LifetimeMinutes), expiresAt);
-        var jwt = Decode(token);
+        Assert.Equal(FixedNow.AddMinutes(Options.AccessTokenMinutes), access.ExpiresAt);
+        var jwt = Decode(access.Token);
         Assert.Equal(Options.Issuer, jwt.Issuer);
         Assert.Contains(Options.Audience, jwt.Audiences);
     }
 
     [Fact]
-    public void CreateToken_OmitsOptionalClaimsWhenAbsent()
+    public void CreateAccessToken_OmitsOptionalClaimsWhenAbsent()
     {
-        var (token, _) = NewService().CreateToken("u", email: null, displayName: null, isAdmin: false);
+        var access = NewService().CreateAccessToken(User(email: null, displayName: null));
 
-        var jwt = Decode(token);
+        var jwt = Decode(access.Token);
         Assert.DoesNotContain(jwt.Claims, c => c.Type == "displayName");
         Assert.DoesNotContain(jwt.Claims, c => c.Type is ClaimTypes.Email or "email");
     }

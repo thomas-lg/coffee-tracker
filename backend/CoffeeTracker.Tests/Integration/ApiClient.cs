@@ -1,6 +1,8 @@
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using CoffeeTracker.Application.Dtos;
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.PixelFormats;
 
 namespace CoffeeTracker.Tests.Integration;
 
@@ -35,8 +37,8 @@ internal static class ApiClient
     public static Task<HttpResponseMessage> Put(this HttpClient client, string url, object? body = null, string? token = null) =>
         client.SendAsync(Build(HttpMethod.Put, url, body, token));
 
-    public static Task<HttpResponseMessage> Delete(this HttpClient client, string url, string? token = null) =>
-        client.SendAsync(Build(HttpMethod.Delete, url, body: null, token));
+    public static Task<HttpResponseMessage> Delete(this HttpClient client, string url, string? token = null, object? body = null) =>
+        client.SendAsync(Build(HttpMethod.Delete, url, body, token));
 
     // Posts a single file as multipart/form-data under the field name the upload
     // endpoints bind (`file`). Lets the boundary tests drive the real model-binding +
@@ -68,10 +70,21 @@ internal static class ApiClient
         return client.SendAsync(request);
     }
 
-    /// <summary>A byte sequence whose magic number is a valid PNG header (the bytes
-    /// the storage adapter sniffs; the rest need not be a real image).</summary>
-    public static byte[] FakePng() =>
-        [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0x00, 0x01, 0x02, 0x03, 0x04];
+    /// <summary>
+    /// A real, decodable 1x1 PNG. The storage adapter now decodes and re-encodes
+    /// uploads through ImageSharp, so accept-path tests must send a genuine image —
+    /// a header-only fake would be rejected as InvalidContentType.
+    /// </summary>
+    public static byte[] RealPng()
+    {
+        using var img = new Image<Rgba32>(1, 1);
+        using var ms = new MemoryStream();
+        img.SaveAsPng(ms);
+        return ms.ToArray();
+    }
+
+    /// <summary>Genuinely-non-image bytes for reject-path tests (any claimed type).</summary>
+    public static byte[] NotAnImage() => "hello, definitely not an image"u8.ToArray();
 
     private static HttpRequestMessage Build(HttpMethod method, string url, object? body, string? token)
     {

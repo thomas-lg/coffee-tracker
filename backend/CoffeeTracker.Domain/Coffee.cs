@@ -32,4 +32,12 @@ public class Coffee
     public string? CreatedByUserId { get; set; }
 
     public DateTimeOffset CreatedAt { get; set; }
+
+    /// <summary>
+    /// Whether the given user may modify (edit/delete/replace photo) this coffee.
+    /// Restricted to the creator or an admin; rows created before owner-stamping (null
+    /// <see cref="CreatedByUserId"/>) are admin-only — never world-writable.
+    /// </summary>
+    public bool IsModifiableBy(string? userId, bool isAdmin) =>
+        isAdmin || (CreatedByUserId is not null && CreatedByUserId == userId);
 }

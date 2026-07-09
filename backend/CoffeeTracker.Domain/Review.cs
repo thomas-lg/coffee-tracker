@@ -41,4 +41,10 @@ public class Review
 
     /// <summary>Flavor tags attached to this review (many-to-many).</summary>
     public ICollection<FlavorTag> Tags { get; set; } = [];
+
+    /// <summary>Only the author may edit their own review (admins may delete, not rewrite).</summary>
+    public bool IsEditableBy(string userId) => UserId == userId;
+
+    /// <summary>The author or an admin (moderation) may delete a review.</summary>
+    public bool IsDeletableBy(string userId, bool isAdmin) => UserId == userId || isAdmin;
 }

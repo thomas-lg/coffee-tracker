@@ -15,6 +15,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : IdentityDbCo
     public DbSet<Coffee> Coffees => Set<Coffee>();
     public DbSet<Review> Reviews => Set<Review>();
     public DbSet<FlavorTag> FlavorTags => Set<FlavorTag>();
+    public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -54,6 +55,18 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : IdentityDbCo
         builder.Entity<FlavorTag>()
             .HasIndex(t => t.Name)
             .IsUnique();
+
+        builder.Entity<RefreshToken>(token =>
+        {
+            token.HasIndex(t => t.TokenHash).IsUnique();
+            token.HasIndex(t => t.UserId);
+            token.Property(t => t.TokenHash).HasMaxLength(64);
+            // Deleting a user revokes their refresh tokens.
+            token.HasOne<AppUser>()
+                .WithMany()
+                .HasForeignKey(t => t.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
 
         // Seed the starter tag set into the schema (idempotent via the migration).
         builder.Entity<FlavorTag>().HasData(

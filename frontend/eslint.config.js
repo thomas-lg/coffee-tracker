@@ -8,6 +8,7 @@ module.exports = tseslint.config(
     // Build outputs, generated code, and tooling scripts aren't linted.
     ignores: [
       'dist/**',
+      'out-tsc/**',
       '.angular/**',
       'coverage/**',
       'playwright-report/**',

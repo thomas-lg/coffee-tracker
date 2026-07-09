@@ -12,8 +12,14 @@ public class JwtOptions
 
     public string Audience { get; set; } = "coffee-tracker";
 
-    /// <summary>Token lifetime. Default 7 days (no refresh tokens in M3; users re-login).</summary>
-    public int LifetimeMinutes { get; set; } = 60 * 24 * 7;
+    /// <summary>
+    /// Access-token lifetime in minutes. Kept short — a stolen token expires quickly;
+    /// sessions stay alive via the rotating refresh token, not a long-lived access token.
+    /// </summary>
+    public int AccessTokenMinutes { get; set; } = 15;
+
+    /// <summary>Refresh-token lifetime in days (the effective session length).</summary>
+    public int RefreshTokenDays { get; set; } = 14;
 
     /// <summary>Minimum key length for HS256 (256 bits). Used by the startup fail-fast check.</summary>
     public const int MinKeyBytes = 32;

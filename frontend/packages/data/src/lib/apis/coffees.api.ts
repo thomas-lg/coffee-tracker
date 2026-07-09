@@ -29,7 +29,7 @@ export class CoffeesApi {
     return this.http.delete<void>(`${this.base}/${id}`);
   }
 
-  /** Multipart upload; returns the coffee with its new photoPath. */
+  /** Multipart upload; returns the coffee with its new signed photoUrl. */
   uploadPhoto(id: number, file: File): Observable<Coffee> {
     const form = new FormData();
     form.append('file', file);

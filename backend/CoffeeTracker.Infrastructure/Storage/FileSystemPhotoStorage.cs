@@ -1,13 +1,19 @@
 using CoffeeTracker.Application.Ports.Driven;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.Formats;
+using SixLabors.ImageSharp.Formats.Jpeg;
+using SixLabors.ImageSharp.Formats.Png;
+using SixLabors.ImageSharp.Formats.Webp;
 
 namespace CoffeeTracker.Infrastructure.Storage;
 
 /// <summary>
 /// Driven adapter: stores uploaded photos on the local filesystem. Owns the
-/// storage-security decisions — content-type allowlist, size cap, and
-/// server-generated filenames — so no client-supplied path ever reaches disk.
+/// storage-security decisions — content-type allowlist, size cap, server-generated
+/// filenames, and re-encoding the image through a decoder so only pixel data (no
+/// embedded payload/EXIF) is ever written to disk.
 /// </summary>
 public class FileSystemPhotoStorage : IPhotoStorage
 {
@@ -28,12 +34,14 @@ public class FileSystemPhotoStorage : IPhotoStorage
 
     private readonly string _directory;
     private readonly long _maxBytes;
+    private readonly long _maxPixels;
     private readonly ILogger<FileSystemPhotoStorage> _logger;
 
     public FileSystemPhotoStorage(IOptions<PhotoStorageOptions> options, ILogger<FileSystemPhotoStorage> logger)
     {
         _directory = Path.GetFullPath(options.Value.PhotosPath);
         _maxBytes = options.Value.MaxPhotoBytes;
+        _maxPixels = options.Value.MaxImagePixels;
         _logger = logger;
     }
 
@@ -49,42 +57,84 @@ public class FileSystemPhotoStorage : IPhotoStorage
             return PhotoStorageResult.Rejected(PhotoStorageStatus.TooLarge);
         }
 
+        // Buffer the upload so we can both sniff it and hand it to the decoder. Bounded
+        // by the cap: guard against a stream that lied about its length (chunked uploads
+        // where Length was 0/unknown).
+        using var buffer = new MemoryStream();
+        await content.CopyToAsync(buffer, ct);
+        if (buffer.Length > _maxBytes)
+        {
+            return PhotoStorageResult.Rejected(PhotoStorageStatus.TooLarge);
+        }
+
         // The Content-Type header is client-controlled, so acceptance (and the stored
-        // extension) must not rest on it alone: read the leading bytes and confirm the
-        // file's actual magic-number signature matches the claimed type. Reading the
-        // header here also lets us reconstruct the full content below without requiring
-        // a seekable stream.
+        // extension) must not rest on it alone: confirm the file's actual magic-number
+        // signature matches the claimed type before doing the expensive decode.
+        buffer.Position = 0;
         var header = new byte[HeaderBytes];
-        var headerLength = await content.ReadAtLeastAsync(header, header.Length, throwOnEndOfStream: false, ct);
+        var headerLength = await buffer.ReadAtLeastAsync(header, header.Length, throwOnEndOfStream: false, ct);
         if (!SignatureMatches(contentType, header.AsSpan(0, headerLength)))
         {
             return PhotoStorageResult.Rejected(PhotoStorageStatus.InvalidContentType);
         }
 
-        Directory.CreateDirectory(_directory);
-
-        // Server-generated name: no client input contributes to the path, so
-        // directory traversal is structurally impossible.
-        var fileName = $"{Guid.NewGuid():N}{extension}";
-        var fullPath = Path.Combine(_directory, fileName);
-
-        await using (var file = new FileStream(fullPath, FileMode.CreateNew, FileAccess.Write, FileShare.None))
+        // Read only the header to learn the pixel dimensions, and reject a decompression
+        // bomb (a tiny file that declares huge dimensions) BEFORE the full decode would
+        // allocate gigabytes. The byte cap above bounds compressed size, not decoded size.
+        buffer.Position = 0;
+        ImageInfo info;
+        try
         {
-            // Write the header bytes already consumed for sniffing, then the remainder.
-            await file.WriteAsync(header.AsMemory(0, headerLength), ct);
-            await content.CopyToAsync(file, ct);
-
-            // Guard against a stream that lied about its length (chunked uploads
-            // where Length was 0/unknown): if it overran the cap, discard it.
-            if (file.Length > _maxBytes)
-            {
-                file.Close();
-                File.Delete(fullPath);
-                return PhotoStorageResult.Rejected(PhotoStorageStatus.TooLarge);
-            }
+            info = await Image.IdentifyAsync(buffer, ct);
+        }
+        catch (Exception ex) when (ex is UnknownImageFormatException or InvalidImageContentException)
+        {
+            return PhotoStorageResult.Rejected(PhotoStorageStatus.InvalidContentType);
         }
 
-        return PhotoStorageResult.Stored($"{PublicPrefix}/{fileName}");
+        if ((long)info.Width * info.Height > _maxPixels)
+        {
+            return PhotoStorageResult.Rejected(PhotoStorageStatus.TooLarge);
+        }
+
+        // Decode then re-encode: the stored file is rebuilt from pixels only, so any
+        // trailing/embedded payload (polyglot) or metadata in the upload is discarded.
+        // A file that sniffed as an image but can't actually be decoded is rejected.
+        buffer.Position = 0;
+        Image image;
+        try
+        {
+            image = await Image.LoadAsync(buffer, ct);
+        }
+        catch (Exception ex) when (ex is UnknownImageFormatException or InvalidImageContentException)
+        {
+            return PhotoStorageResult.Rejected(PhotoStorageStatus.InvalidContentType);
+        }
+
+        using (image)
+        {
+            Directory.CreateDirectory(_directory);
+
+            // Server-generated name: no client input contributes to the path, so
+            // directory traversal is structurally impossible.
+            var fileName = $"{Guid.NewGuid():N}{extension}";
+            var fullPath = Path.Combine(_directory, fileName);
+
+            try
+            {
+                await using var file = new FileStream(fullPath, FileMode.CreateNew, FileAccess.Write, FileShare.None);
+                await image.SaveAsync(file, EncoderFor(extension), ct);
+            }
+            catch
+            {
+                // Encoding or the write failed (or the client aborted mid-write): don't
+                // leave a partial/zero-byte file behind.
+                TryDeleteFile(fullPath);
+                throw;
+            }
+
+            return PhotoStorageResult.Stored($"{PublicPrefix}/{fileName}");
+        }
     }
 
     /// <summary>Bytes to read for signature sniffing (WebP needs the first 12).</summary>
@@ -92,6 +142,14 @@ public class FileSystemPhotoStorage : IPhotoStorage
 
     /// <summary>The 8-byte PNG file signature (89 50 4E 47 0D 0A 1A 0A).</summary>
     private static readonly byte[] PngSignature = [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A];
+
+    private static IImageEncoder EncoderFor(string extension) => extension switch
+    {
+        ".jpg" => new JpegEncoder(),
+        ".png" => new PngEncoder(),
+        ".webp" => new WebpEncoder(),
+        _ => throw new ArgumentOutOfRangeException(nameof(extension), extension, "No encoder for extension."),
+    };
 
     /// <summary>
     /// Confirms the file-signature (magic number) of <paramref name="header"/> matches
@@ -120,30 +178,35 @@ public class FileSystemPhotoStorage : IPhotoStorage
         return false;
     }
 
-    public Task DeleteAsync(string relativePath, CancellationToken ct = default)
+    public Task<bool> DeleteAsync(string relativePath, CancellationToken ct = default)
     {
         // Resolve by filename only, so a stored value can never point outside the
         // photos directory (defence-in-depth even though we generate the names).
         var fileName = Path.GetFileName(relativePath);
-        if (!string.IsNullOrEmpty(fileName))
+        if (string.IsNullOrEmpty(fileName))
         {
-            var fullPath = Path.Combine(_directory, fileName);
-            try
-            {
-                // File.Delete is a no-op if the file is already gone (idempotent),
-                // but it still throws for a missing directory, a locked file, or a
-                // permission problem. Cleanup is best-effort: a failure here must not
-                // turn an already-committed delete/replace into a 500, so swallow and
-                // log — an orphaned file is recoverable, a failed user operation isn't.
-                File.Delete(fullPath);
-            }
-            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
-            {
-                _logger.LogWarning(ex, "Failed to delete stored photo {RelativePath}; leaving it as an orphan.", relativePath);
-            }
+            return Task.FromResult(false);
         }
 
-        return Task.CompletedTask;
+        var fullPath = Path.Combine(_directory, fileName);
+        try
+        {
+            if (!File.Exists(fullPath))
+            {
+                return Task.FromResult(false);
+            }
+
+            File.Delete(fullPath);
+            return Task.FromResult(true);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            // Cleanup is best-effort: a failure here must not turn an already-committed
+            // delete/replace into a 500 — an orphaned file is recoverable, a failed user
+            // operation isn't. Report "not deleted" so admin counts stay honest.
+            _logger.LogWarning(ex, "Failed to delete stored photo {RelativePath}; leaving it as an orphan.", ForLog(relativePath));
+            return Task.FromResult(false);
+        }
     }
 
     public Task<IReadOnlyList<string>> ListAsync(CancellationToken ct = default)
@@ -160,5 +223,21 @@ public class FileSystemPhotoStorage : IPhotoStorage
             .Select(f => $"{PublicPrefix}/{Path.GetFileName(f)}")
             .ToList();
         return Task.FromResult(paths);
+    }
+
+    // Strip CR/LF from a caller-supplied value before logging it, so a crafted path
+    // can't forge extra log lines (CodeQL cs/log-forging).
+    private static string ForLog(string value) => value.Replace("\r", string.Empty).Replace("\n", string.Empty);
+
+    private void TryDeleteFile(string fullPath)
+    {
+        try
+        {
+            File.Delete(fullPath);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            _logger.LogWarning(ex, "Failed to clean up partial photo {FullPath}.", fullPath);
+        }
     }
 }
