@@ -116,7 +116,9 @@
         <img [src]="photoPreview()" alt="Selected coffee" class="h-40 w-full rounded-xl object-cover" />
       }
 
-      <ct-button type="submit" [disabled]="submitting() || f().invalid()" class="mt-2">
+      <!-- Stays enabled while invalid: submitting then marks every field touched so
+           the validation messages explain what's missing. -->
+      <ct-button type="submit" [disabled]="submitting()" class="mt-2">
         {{ submitting() ? 'Saving…' : editing() ? 'Save changes' : 'Add coffee' }}
       </ct-button>
     </form>

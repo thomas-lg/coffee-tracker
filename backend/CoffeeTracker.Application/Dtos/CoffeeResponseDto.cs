@@ -14,7 +14,7 @@ public record CoffeeResponseDto(
     RoastLevel RoastLevel,
     decimal Price,
     DateOnly DateBought,
-    string? PhotoPath,
+    string? PhotoUrl,
     string? ShopName,
     string? PurchaseUrl,
     DateTimeOffset CreatedAt,

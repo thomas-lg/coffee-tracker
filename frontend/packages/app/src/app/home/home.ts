@@ -1,12 +1,12 @@
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { Button, CountUp, Icon } from '@coffee-tracker/ui';
-import { BeanScene, CoffeeCard, CoffeeCardSkeleton, CoffeesStore } from '@coffee-tracker/coffees';
+import { BeanScene, CoffeeCard, CoffeeShelfStates, CoffeesStore } from '@coffee-tracker/coffees';
 
 @Component({
   selector: 'app-home',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, Button, CountUp, Icon, BeanScene, CoffeeCard, CoffeeCardSkeleton],
+  imports: [RouterLink, Button, CountUp, Icon, BeanScene, CoffeeCard, CoffeeShelfStates],
   templateUrl: './home.html',
 })
 export class Home {
@@ -27,7 +27,6 @@ export class Home {
   protected readonly recent = computed(() =>
     [...this.coffees()].sort((a, b) => b.id - a.id).slice(0, 4),
   );
-  protected readonly skeletons = Array.from({ length: 4 });
 
   /** Headline numbers for the hero stat strip. */
   protected readonly stats = computed(() => {

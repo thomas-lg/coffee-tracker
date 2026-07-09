@@ -6,9 +6,9 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { PhotoCleanupStore } from './photo-cleanup.store';
 
 const SEED = [
-  { path: 'photos/used.jpg', used: true },
-  { path: 'photos/orphan1.jpg', used: false },
-  { path: 'photos/orphan2.jpg', used: false },
+  { path: 'photos/used.jpg', url: '/photos/used.jpg?exp=1&sig=a', used: true },
+  { path: 'photos/orphan1.jpg', url: '/photos/orphan1.jpg?exp=1&sig=b', used: false },
+  { path: 'photos/orphan2.jpg', url: '/photos/orphan2.jpg?exp=1&sig=c', used: false },
 ];
 
 describe('PhotoCleanupStore', () => {
@@ -75,7 +75,9 @@ describe('PhotoCleanupStore', () => {
     // so the reload's httpResource effect issues a fresh GET we can satisfy.
     await Promise.resolve();
     appRef.tick();
-    http.expectOne('/api/admin/photos').flush([{ path: 'photos/used.jpg', used: true }]);
+    http
+      .expectOne('/api/admin/photos')
+      .flush([{ path: 'photos/used.jpg', url: '/photos/used.jpg?exp=1&sig=a', used: true }]);
 
     const result = await done;
     expect(result).toEqual({ deleted: 2, skipped: 0 });

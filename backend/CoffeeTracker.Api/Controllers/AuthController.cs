@@ -44,6 +44,27 @@ public class AuthController(IAuthService auth) : ControllerBase
         };
     }
 
+    /// <summary>Exchanges a valid refresh token for a fresh access + refresh token pair.</summary>
+    [HttpPost("refresh")]
+    public async Task<ActionResult<AuthResponseDto>> Refresh(RefreshRequestDto dto, CancellationToken ct)
+    {
+        var result = await auth.RefreshAsync(dto.RefreshToken, ct);
+        return result.Status switch
+        {
+            AuthStatus.Success => Ok(result.Response),
+            AuthStatus.InvalidRefreshToken => Problem(statusCode: StatusCodes.Status401Unauthorized, detail: "Invalid or expired refresh token."),
+            _ => throw new InvalidOperationException($"Unexpected refresh status: {result.Status}"),
+        };
+    }
+
+    /// <summary>Revokes the presented refresh token (sign-out). Idempotent.</summary>
+    [HttpPost("logout")]
+    public async Task<IActionResult> Logout(RefreshRequestDto dto, CancellationToken ct)
+    {
+        await auth.LogoutAsync(dto.RefreshToken, ct);
+        return NoContent();
+    }
+
     private static ModelStateDictionary BuildErrors(string key, IReadOnlyList<string>? errors)
     {
         var modelState = new ModelStateDictionary();

@@ -1,4 +1,14 @@
-import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  ElementRef,
+  computed,
+  effect,
+  inject,
+  input,
+  signal,
+  viewChild,
+} from '@angular/core';
 import { rxResource } from '@angular/core/rxjs-interop';
 import { Router, RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
@@ -43,9 +53,16 @@ export class CoffeeDetail {
     defaultValue: [],
   });
 
-  protected readonly coffee = this.coffeeRes.value;
-  protected readonly reviews = this.reviewsRes.value;
-  protected readonly tags = this.tagsRes.value;
+  // rxResource.value() THROWS while the resource is in an error state — guard the
+  // reads (same pattern as CoffeesStore) so a 404/failed load renders the
+  // "Coffee not found" branch instead of blowing up mid-render.
+  protected readonly coffee = computed(() =>
+    this.coffeeRes.error() ? undefined : this.coffeeRes.value(),
+  );
+  protected readonly reviews = computed(() =>
+    this.reviewsRes.error() ? [] : this.reviewsRes.value(),
+  );
+  protected readonly tags = computed(() => (this.tagsRes.error() ? [] : this.tagsRes.value()));
   protected readonly loading = computed(() => this.coffeeRes.isLoading() && !this.coffee());
 
   protected readonly roastGradient = roastGradient;
@@ -131,6 +148,15 @@ export class CoffeeDetail {
   // and suppressible in installed PWAs). Mirrors the admin photo-cleanup pattern.
   protected readonly confirmingDelete = signal(false);
   protected readonly deleting = signal(false);
+  private readonly cancelDeleteBtn = viewChild<ElementRef<HTMLButtonElement>>('cancelDeleteBtn');
+
+  constructor() {
+    // Arming the confirm removes the Delete button (focus would drop to <body>);
+    // move it to Cancel once the confirm controls exist in the DOM.
+    effect(() => {
+      if (this.confirmingDelete()) this.cancelDeleteBtn()?.nativeElement.focus();
+    });
+  }
 
   protected armDelete(): void {
     this.confirmingDelete.set(true);

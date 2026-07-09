@@ -43,7 +43,8 @@
 
     <!-- Bulk action / confirm, only when something is selected -->
     @if (store.selectedCount() > 0) {
-      <div class="ml-auto flex items-center gap-2">
+      <!-- aria-live on the stable wrapper so arming the confirm step is announced. -->
+      <div class="ml-auto flex items-center gap-2" aria-live="polite">
         @if (!confirming()) {
           <span class="text-sm text-muted">{{ store.selectedCount() }} selected</span>
           <button (click)="store.clearSelection()" class="text-sm font-semibold text-muted hover:text-ink">
@@ -53,6 +54,7 @@
         } @else {
           <span class="text-sm font-semibold text-ink">Delete {{ store.selectedCount() }} photo(s)?</span>
           <button
+            #cancelBtn
             (click)="cancel()"
             class="rounded-full px-3 py-1.5 text-sm font-semibold text-muted hover:text-ink"
             [disabled]="deleting()"
@@ -103,7 +105,7 @@
             (click)="store.toggle(p.path)"
           >
             <img
-              [src]="'/' + p.path"
+              [src]="p.url"
               [alt]="fileName(p.path)"
               loading="lazy"
               class="aspect-square w-full object-cover"

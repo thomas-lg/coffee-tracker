@@ -77,6 +77,32 @@ public sealed class AuthFlowTests : IntegrationTest
     }
 
     [Fact]
+    public async Task Successful_login_resets_the_failed_attempt_counter()
+    {
+        // MaxFailedAccessAttempts = 5. Four failures, one success, then four more
+        // failures: if ResetAccessFailedCountAsync did NOT run on the success, the
+        // cumulative count would cross 5 on the first post-success failure and every
+        // response below would be 423 Locked instead of 401. The register + 9 logins
+        // stay within the 10/min auth rate limit, so 429s can't mask the outcome.
+        await Client.RegisterAsync("resetme@example.com", "Reset Me");
+
+        for (var i = 0; i < 4; i++)
+        {
+            var fail = await Client.Post("/api/auth/login", new LoginDto("resetme@example.com", "wrong-password"));
+            Assert.Equal(HttpStatusCode.Unauthorized, fail.StatusCode);
+        }
+
+        var success = await Client.Post("/api/auth/login", new LoginDto("resetme@example.com", ApiClient.DefaultPassword));
+        Assert.Equal(HttpStatusCode.OK, success.StatusCode);
+
+        for (var i = 0; i < 4; i++)
+        {
+            var fail = await Client.Post("/api/auth/login", new LoginDto("resetme@example.com", "wrong-password"));
+            Assert.Equal(HttpStatusCode.Unauthorized, fail.StatusCode); // NOT 423: counter was reset
+        }
+    }
+
+    [Fact]
     public async Task Duplicate_email_registration_conflicts()
     {
         await Client.RegisterAsync("dupe@example.com", "First");

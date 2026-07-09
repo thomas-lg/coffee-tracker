@@ -18,9 +18,9 @@ import { roastBucket, roastGradient } from '../utils/coffee-visual';
     <a [routerLink]="['/coffees', coffee().id]" class="ct-rise" [style.animationDelay]="(index() % 12) * 40 + 'ms'">
       <ct-card [interactive]="true">
         <div class="relative h-32 text-foam" [style.background]="roastGradient(coffee().roastLevel)">
-          @if (coffee().photoPath) {
+          @if (coffee().photoUrl; as photoUrl) {
             <img
-              [src]="'/' + coffee().photoPath"
+              [src]="photoUrl"
               [alt]="coffee().name"
               loading="lazy"
               decoding="async"

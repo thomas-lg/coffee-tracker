@@ -13,6 +13,7 @@
       "@coffee-tracker/admin": ["./packages/admin/src/public-api.ts"]
     },
     "noImplicitOverride": true,
+    "noUncheckedIndexedAccess": true,
     "noPropertyAccessFromIndexSignature": true,
     "noImplicitReturns": true,
     "noFallthroughCasesInSwitch": true,

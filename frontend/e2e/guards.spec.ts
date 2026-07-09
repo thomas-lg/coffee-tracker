@@ -13,13 +13,15 @@ test.describe('route guards', () => {
     await expect(page.getByRole('heading', { name: /sign in/i })).toBeVisible();
   });
 
-  test('an expired session is sent to /login', async ({ page }) => {
+  test('a fully expired session (access + refresh token) is sent to /login', async ({ page }) => {
     await injectSession(page, {
       token: 'expired.placeholder.token',
       userId: '00000000-0000-0000-0000-000000000000',
       displayName: null,
       isAdmin: false,
       expiresAt: new Date(Date.now() - 60_000).toISOString(),
+      refreshToken: 'expired-refresh-token',
+      refreshExpiresAt: new Date(Date.now() - 60_000).toISOString(),
     });
 
     await page.goto('/coffees');

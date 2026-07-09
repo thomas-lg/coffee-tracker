@@ -154,6 +154,88 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/Auth/refresh": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["RefreshRequestDto"];
+                    "text/json": components["schemas"]["RefreshRequestDto"];
+                    "application/*+json": components["schemas"]["RefreshRequestDto"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["AuthResponseDto"];
+                        "application/json": components["schemas"]["AuthResponseDto"];
+                        "text/json": components["schemas"]["AuthResponseDto"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/Auth/logout": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["RefreshRequestDto"];
+                    "text/json": components["schemas"]["RefreshRequestDto"];
+                    "application/*+json": components["schemas"]["RefreshRequestDto"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/Coffees": {
         parameters: {
             query?: never;
@@ -629,6 +711,9 @@ export interface components {
             token: string;
             /** Format: date-time */
             expiresAt: string;
+            refreshToken: string;
+            /** Format: date-time */
+            refreshExpiresAt: string;
             userId: string;
             displayName: null | string;
             isAdmin: boolean;
@@ -656,7 +741,7 @@ export interface components {
             price: number | string;
             /** Format: date */
             dateBought: string;
-            photoPath: null | string;
+            photoUrl: null | string;
             shopName: null | string;
             purchaseUrl: null | string;
             /** Format: date-time */
@@ -704,7 +789,11 @@ export interface components {
         };
         PhotoListItemDto: {
             path: string;
+            url: string;
             used: boolean;
+        };
+        RefreshRequestDto: {
+            refreshToken: string;
         };
         RegisterDto: {
             email: string;
@@ -762,7 +851,7 @@ export interface components {
         ScanResponseDto: {
             rawText: string;
             parsed: components["schemas"]["ScannedCoffeeDto"];
-            photoPath: string;
+            photoUrl: string;
         };
     };
     responses: never;

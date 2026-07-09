@@ -86,14 +86,21 @@ public class CoffeeCatalogServiceTests
             return Task.FromResult(result);
         }
 
-        public Task DeleteAsync(string relativePath, CancellationToken ct = default)
+        public Task<bool> DeleteAsync(string relativePath, CancellationToken ct = default)
         {
             Deleted.Add(relativePath);
-            return Task.CompletedTask;
+            return Task.FromResult(true);
         }
 
         public Task<IReadOnlyList<string>> ListAsync(CancellationToken ct = default)
             => Task.FromResult<IReadOnlyList<string>>([]);
+    }
+
+    // Returns the relative path unchanged so assertions can compare against stored paths.
+    private sealed class FakePhotoUrlSigner : IPhotoUrlSigner
+    {
+        public string? Sign(string? relativePath) => relativePath;
+        public bool Validate(string fileName, string? exp, string? sig) => true;
     }
 
     private sealed class FixedTimeProvider(DateTimeOffset now) : TimeProvider
@@ -115,6 +122,7 @@ public class CoffeeCatalogServiceTests
         => new(
             repo,
             storage ?? new FakePhotoStorage(PhotoStorageResult.Stored("photos/x.jpg")),
+            new FakePhotoUrlSigner(),
             new FakeCurrentUser(currentUserId, isAdmin),
             new FixedTimeProvider(FixedNow));
 
@@ -153,7 +161,7 @@ public class CoffeeCatalogServiceTests
         Assert.Equal("Yirgacheffe", dto.Name);
         Assert.Equal("Square Mile", dto.Roaster);
         Assert.Equal(18.5m, dto.Price);
-        Assert.Null(dto.PhotoPath);
+        Assert.Null(dto.PhotoUrl);
     }
 
     [Fact]
@@ -186,7 +194,7 @@ public class CoffeeCatalogServiceTests
         Assert.Equal("Yirgacheffe", created.Name);
         Assert.Equal("Local Roastery", created.ShopName);
         Assert.Equal("https://example.com/coffee", created.PurchaseUrl);
-        Assert.Null(created.PhotoPath);
+        Assert.Null(created.PhotoUrl);
     }
 
     [Fact]
@@ -364,9 +372,9 @@ public class CoffeeCatalogServiceTests
         var result = await service.SetPhotoAsync(7, Stream.Null, "image/jpeg", 10);
 
         Assert.Equal(SetPhotoStatus.Success, result.Status);
-        Assert.Equal("photos/abc.jpg", result.Coffee!.PhotoPath);
+        Assert.Equal("photos/abc.jpg", result.Coffee!.PhotoUrl);
         var reloaded = await service.GetByIdAsync(7);
-        Assert.Equal("photos/abc.jpg", reloaded!.PhotoPath);
+        Assert.Equal("photos/abc.jpg", reloaded!.PhotoUrl);
     }
 
     [Fact]
@@ -421,6 +429,6 @@ public class CoffeeCatalogServiceTests
         Assert.Equal(expected, result.Status);
         Assert.Null(result.Coffee);
         var reloaded = await service.GetByIdAsync(7);
-        Assert.Null(reloaded!.PhotoPath);
+        Assert.Null(reloaded!.PhotoUrl);
     }
 }

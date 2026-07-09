@@ -7,6 +7,7 @@ import {
   input,
   viewChild,
 } from '@angular/core';
+import { prefersReducedMotion } from '@coffee-tracker/util';
 
 interface Bean {
   x: number;
@@ -50,7 +51,7 @@ export class BeanScene implements AfterViewInit, OnDestroy {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const reduce = prefersReducedMotion();
     let w = 0;
     let h = 0;
     let beans: Bean[] = [];
@@ -127,6 +128,13 @@ export class BeanScene implements AfterViewInit, OnDestroy {
       ctx.restore();
     };
 
+    /** One motionless frame — the reduced-motion rendering (no rAF loop). */
+    const drawStatic = () => {
+      ctx.clearRect(0, 0, w, h);
+      bg();
+      beans.forEach(drawBean);
+    };
+
     let t = 0;
     const frame = () => {
       t += 0.016;
@@ -162,13 +170,17 @@ export class BeanScene implements AfterViewInit, OnDestroy {
 
     // ResizeObserver so the first real layout (deferred / absolutely-positioned host
     // can be 0 at AfterViewInit) and any later resize reseed at the right size.
-    this.ro = new ResizeObserver(() => init());
+    // Under reduced motion there is no frame loop to repaint after the resize wipes
+    // the canvas, so redraw the static frame here too.
+    this.ro = new ResizeObserver(() => {
+      init();
+      if (reduce) drawStatic();
+    });
     this.ro.observe(canvas);
     init();
 
     if (reduce) {
-      bg();
-      beans.forEach(drawBean);
+      drawStatic();
       return;
     }
     frame();

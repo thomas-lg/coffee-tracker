@@ -83,7 +83,7 @@ public class ReviewService(
         }
 
         // Editing is owner-only (admins may delete but not rewrite someone's review).
-        if (review.UserId != userId)
+        if (!review.IsEditableBy(userId))
         {
             return new ReviewResult(ReviewStatus.Forbidden, null);
         }
@@ -125,7 +125,7 @@ public class ReviewService(
         }
 
         // Owner or admin (moderation) may delete.
-        if (review.UserId != userId && !currentUser.IsAdmin)
+        if (!review.IsDeletableBy(userId, currentUser.IsAdmin))
         {
             return ReviewStatus.Forbidden;
         }

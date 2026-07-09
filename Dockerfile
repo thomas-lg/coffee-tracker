@@ -3,7 +3,8 @@
 # same-origin from the API on :8080. Built for linux/amd64 (the Unraid NAS).
 
 # --- Stage 1: build the Angular PWA ---
-FROM node:22-slim AS web
+# node:22-slim
+FROM node:22-slim@sha256:53ada149d435c38b14476cb57e4a7da73c15595aba79bd6971b547ceb6d018bf AS web
 WORKDIR /web
 # Restore deps in their own layer (cached until a manifest changes). This is an npm
 # workspaces repo, so `npm ci` needs every member's package.json present up front —
@@ -25,20 +26,23 @@ RUN npx ng build app --configuration production
 # → /web/dist/app/browser
 
 # --- Stage 2: publish the API ---
-FROM mcr.microsoft.com/dotnet/sdk:10.0 AS api
+# mcr.microsoft.com/dotnet/sdk:10.0
+FROM mcr.microsoft.com/dotnet/sdk:10.0@sha256:ea8bde36c11b6e7eec2656d0e59101d4462f6bd630730f2c8201ed0572b295d5 AS api
 WORKDIR /src
 COPY backend/ ./backend/
 RUN dotnet publish backend/CoffeeTracker.Api/CoffeeTracker.Api.csproj -c Release -o /publish
 
 # --- Stage 3: runtime ---
-FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
+# mcr.microsoft.com/dotnet/aspnet:10.0
+FROM mcr.microsoft.com/dotnet/aspnet:10.0@sha256:7644f992230d35cf230017189d4038c0ae0f7388b13f4f7ae1900a155bafb597 AS runtime
 # OCR via the tesseract CLI (the app shells out to it). The tesseract-ocr package
 # pulls its own runtime libs; tesseract-ocr-eng ships eng.traineddata. gosu drops
-# privileges in the entrypoint. TESSDATA_PREFIX is the parent of the tessdata dir.
+# privileges in the entrypoint. curl is only for the HEALTHCHECK (the aspnet image
+# ships neither curl nor wget). TESSDATA_PREFIX is the parent of the tessdata dir.
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
         tesseract-ocr tesseract-ocr-eng \
-        gosu \
+        gosu curl \
     && rm -rf /var/lib/apt/lists/*
 
 # PUID/PGID default to Unraid's nobody:users. Override at runtime to match whoever
@@ -64,4 +68,6 @@ RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 # to run the app as that (non-root) user. Don't set USER here — the entrypoint drops
 # privileges itself after fixing ownership.
 EXPOSE 8080
+HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
+    CMD curl -fsS http://localhost:8080/health || exit 1
 ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]

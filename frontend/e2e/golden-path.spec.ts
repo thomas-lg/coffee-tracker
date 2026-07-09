@@ -21,7 +21,10 @@ test('golden path: register, add a coffee, see it on the shelf, and rate it', as
 
     await expect(page).toHaveURL(/^https?:\/\/[^/]+\/$/);
     const stored = await page.evaluate((k) => window.localStorage.getItem(k), SESSION_KEY);
-    expect(JSON.parse(stored as string).token).toBeTruthy();
+    const session = JSON.parse(stored as string);
+    expect(session.token).toBeTruthy();
+    expect(session.refreshToken).toBeTruthy(); // short-lived access tokens persist via refresh
+
   });
 
   await test.step('add a coffee from the catalog', async () => {

@@ -18,10 +18,11 @@ public interface IPhotoStorage
     /// <summary>
     /// Deletes a previously stored photo identified by the relative path returned
     /// from <see cref="SaveAsync"/>. Best-effort and idempotent: a missing file is
-    /// not an error. Used to avoid orphaning files when a photo is replaced or its
-    /// coffee deleted.
+    /// not an error. Returns true only if a file actually existed and was removed, so
+    /// callers (e.g. admin cleanup) can report accurate counts. Used to avoid orphaning
+    /// files when a photo is replaced or its coffee deleted.
     /// </summary>
-    Task DeleteAsync(string relativePath, CancellationToken ct = default);
+    Task<bool> DeleteAsync(string relativePath, CancellationToken ct = default);
 
     /// <summary>
     /// Returns the relative paths of every stored photo, in the same shape

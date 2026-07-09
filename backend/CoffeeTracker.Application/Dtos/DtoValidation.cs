@@ -9,9 +9,13 @@ internal static class DtoValidation
     // certainly a typo (e.g. DateOnly.MinValue) rather than a real purchase.
     private static readonly DateOnly MinPlausibleDate = new(2000, 1, 1);
 
-    public static IEnumerable<ValidationResult> ValidateDateBought(DateOnly dateBought, string memberName)
+    public static IEnumerable<ValidationResult> ValidateDateBought(
+        DateOnly dateBought, string memberName, ValidationContext validationContext)
     {
-        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        var clock = validationContext.GetService(typeof(TimeProvider)) as TimeProvider ?? TimeProvider.System;
+        // Allow one day of slack so a user ahead of UTC entering their local "today"
+        // isn't rejected as a future date.
+        var today = DateOnly.FromDateTime(clock.GetUtcNow().UtcDateTime).AddDays(1);
         if (dateBought > today)
         {
             yield return new ValidationResult("Date bought cannot be in the future.", [memberName]);

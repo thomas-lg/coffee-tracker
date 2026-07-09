@@ -8,7 +8,9 @@ export function roastBucket(roastLevel: string): 'Light' | 'Medium' | 'Dark' {
 
 /** Warm gradient used as a coffee-bag "label" when there's no photo. */
 export function roastGradient(roastLevel: string): string {
-  const map: Record<string, [string, string]> = {
+  // Closed key union (not Record<string, …>): indexing by a bucket can't miss,
+  // so no undefined creeps in under noUncheckedIndexedAccess.
+  const map: Record<'Light' | 'Medium' | 'Dark', [string, string]> = {
     Light: ['#c98f4e', '#9a6536'],
     Medium: ['#7c4f30', '#4e3018'],
     Dark: ['#3a2415', '#160b05'],

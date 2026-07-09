@@ -1,6 +1,6 @@
 using System.Security.Claims;
+using CoffeeTracker.Application.Auth;
 using CoffeeTracker.Application.Ports.Driven;
-using CoffeeTracker.Infrastructure.Identity;
 
 namespace CoffeeTracker.Api.Auth;
 
@@ -14,7 +14,7 @@ public class HttpContextCurrentUser(IHttpContextAccessor accessor) : ICurrentUse
     public string? Id =>
         accessor.HttpContext?.User.FindFirstValue(ClaimTypes.NameIdentifier);
 
-    // TokenService emits the admin flag as the AdminClaim ("true"/"false").
+    // The token carries the admin flag as AppClaims.Admin ("true"/"false").
     public bool IsAdmin =>
-        string.Equals(accessor.HttpContext?.User.FindFirstValue(TokenService.AdminClaim), "true", StringComparison.OrdinalIgnoreCase);
+        string.Equals(accessor.HttpContext?.User.FindFirstValue(AppClaims.Admin), "true", StringComparison.OrdinalIgnoreCase);
 }

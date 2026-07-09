@@ -12,6 +12,7 @@ namespace CoffeeTracker.Application.Services;
 public class CoffeeCatalogService(
     ICoffeeRepository repository,
     IPhotoStorage photoStorage,
+    IPhotoUrlSigner photoUrlSigner,
     ICurrentUser currentUser,
     TimeProvider timeProvider) : ICoffeeCatalogService
 {
@@ -90,10 +91,11 @@ public class CoffeeCatalogService(
 
         await repository.DeleteAsync(id, ct);
 
-        // Remove the associated photo so deleting a coffee doesn't orphan its file.
+        // Remove the associated photo so deleting a coffee doesn't orphan its file. The
+        // row is already gone, so run the cleanup even if the request was cancelled.
         if (coffee.PhotoPath is not null)
         {
-            await photoStorage.DeleteAsync(coffee.PhotoPath, ct);
+            await photoStorage.DeleteAsync(coffee.PhotoPath, CancellationToken.None);
         }
 
         return CatalogWriteStatus.Success;
@@ -129,9 +131,10 @@ public class CoffeeCatalogService(
         }
         catch
         {
-            // The new file is already on disk but the path didn't get persisted;
-            // delete it so a failed update doesn't leave an unreferenced orphan.
-            await photoStorage.DeleteAsync(newPath, ct);
+            // The new file is already on disk but the path didn't get persisted; delete
+            // it so a failed update doesn't leave an unreferenced orphan. Use None: on a
+            // cancellation the request's ct is already tripped, but cleanup must still run.
+            await photoStorage.DeleteAsync(newPath, CancellationToken.None);
             throw;
         }
 
@@ -139,7 +142,7 @@ public class CoffeeCatalogService(
         // (Stored names are random GUIDs, so the new path is always distinct.)
         if (previousPath is not null)
         {
-            await photoStorage.DeleteAsync(previousPath, ct);
+            await photoStorage.DeleteAsync(previousPath, CancellationToken.None);
         }
 
         // Re-read with aggregates so the response carries accurate rating stats. A null
@@ -151,26 +154,21 @@ public class CoffeeCatalogService(
             : new SetPhotoResult(SetPhotoStatus.Success, ToDto(withStats));
     }
 
-    /// <summary>
-    /// Catalog writes are restricted to the coffee's creator or an admin. Rows
-    /// created before owner-stamping (null <see cref="Coffee.CreatedByUserId"/>) are
-    /// writable by admins only — never world-writable.
-    /// </summary>
-    private bool CanModify(Coffee coffee) =>
-        currentUser.IsAdmin ||
-        (coffee.CreatedByUserId is not null && coffee.CreatedByUserId == currentUser.Id);
+    private bool CanModify(Coffee coffee) => coffee.IsModifiableBy(currentUser.Id, currentUser.IsAdmin);
 
     private static SetPhotoStatus MapRejection(PhotoStorageStatus status) => status switch
     {
         PhotoStorageStatus.InvalidContentType => SetPhotoStatus.InvalidContentType,
         PhotoStorageStatus.TooLarge => SetPhotoStatus.TooLarge,
-        _ => SetPhotoStatus.InvalidContentType,
+        // Stored isn't a rejection; a new status must be mapped deliberately rather than
+        // silently masquerading as an invalid content type.
+        _ => throw new ArgumentOutOfRangeException(nameof(status), status, "Unexpected photo storage rejection."),
     };
 
-    private static CoffeeResponseDto ToDto(CoffeeWithStats s) =>
+    private CoffeeResponseDto ToDto(CoffeeWithStats s) =>
         ToDto(s.Coffee, s.AverageRating, s.ReviewCount, s.FlavorTags);
 
-    private static CoffeeResponseDto ToDto(
+    private CoffeeResponseDto ToDto(
         Coffee c,
         double? averageRating,
         int reviewCount,
@@ -182,7 +180,7 @@ public class CoffeeCatalogService(
         c.RoastLevel,
         c.Price,
         c.DateBought,
-        c.PhotoPath,
+        photoUrlSigner.Sign(c.PhotoPath),
         c.ShopName,
         c.PurchaseUrl,
         c.CreatedAt,

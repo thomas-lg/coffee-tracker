@@ -1,7 +1,7 @@
-# Keeps the four ecosystems this repo ships patched: NuGet (backend), npm
-# (frontend workspaces), Docker base images (prod + devcontainer), and the
-# Actions used in these workflows. Weekly, grouped minor+patch to keep PR noise
-# down. Targets the default branch (main); `deps` prefix feeds the conventional
+# Keeps the ecosystems this repo ships patched: NuGet (backend), npm (frontend
+# workspaces), Docker base images (prod + devcontainer), devcontainer features,
+# and the Actions used in these workflows. Weekly, grouped minor+patch to keep
+# PR noise down. Targets the default branch (main); `deps` prefix feeds the conventional
 # PR-title check + label workflows.
 version: 2
 updates:
@@ -39,6 +39,16 @@ updates:
 
   - package-ecosystem: docker
     directory: "/.devcontainer"
+    schedule:
+      interval: weekly
+    labels: [dependencies, docker]
+    commit-message:
+      prefix: deps
+
+  # The docker ecosystem above only covers the devcontainer's base image; this one
+  # updates the features pinned in devcontainer.json / devcontainer-lock.json.
+  - package-ecosystem: devcontainers
+    directory: "/"
     schedule:
       interval: weekly
     labels: [dependencies, docker]

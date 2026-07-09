@@ -31,20 +31,27 @@ public class CoffeeScanServiceTests
             return Task.FromResult(result);
         }
 
-        public Task DeleteAsync(string relativePath, CancellationToken ct = default)
+        public Task<bool> DeleteAsync(string relativePath, CancellationToken ct = default)
         {
             Deleted.Add(relativePath);
-            return Task.CompletedTask;
+            return Task.FromResult(true);
         }
 
         public Task<IReadOnlyList<string>> ListAsync(CancellationToken ct = default)
             => Task.FromResult<IReadOnlyList<string>>([]);
     }
 
+    // Returns the relative path unchanged so assertions can compare against stored paths.
+    private sealed class FakePhotoUrlSigner : IPhotoUrlSigner
+    {
+        public string? Sign(string? relativePath) => relativePath;
+        public bool Validate(string fileName, string? exp, string? sig) => true;
+    }
+
     private static Stream Image() => new MemoryStream(Encoding.UTF8.GetBytes("fake-image-bytes"));
 
     private static CoffeeScanService NewService(IOcrService ocr, FakePhotoStorage storage) =>
-        new(ocr, storage, new CoffeeLabelParser());
+        new(ocr, storage, new FakePhotoUrlSigner(), new CoffeeLabelParser());
 
     [Fact]
     public async Task ScanAsync_ReturnsOcrUnavailable_AndStoresNothing_WhenOcrDisabled()
@@ -70,7 +77,7 @@ public class CoffeeScanServiceTests
     }
 
     [Fact]
-    public async Task ScanAsync_ReturnsParsedFieldsAndPhotoPath_OnSuccess()
+    public async Task ScanAsync_ReturnsParsedFieldsAndPhotoUrl_OnSuccess()
     {
         var storage = new FakePhotoStorage(PhotoStorageResult.Stored("photos/bag.jpg"));
         var ocrText = "Stumptown Coffee Roasters\nMedium · Ethiopia\n340g";
@@ -80,7 +87,7 @@ public class CoffeeScanServiceTests
 
         Assert.Equal(ScanStatus.Success, result.Status);
         Assert.Equal(ocrText, result.Response!.RawText);
-        Assert.Equal("photos/bag.jpg", result.Response.PhotoPath);
+        Assert.Equal("photos/bag.jpg", result.Response.PhotoUrl);
         Assert.Equal("Ethiopia", result.Response.Parsed.Origin);
         Assert.Equal("Medium", result.Response.Parsed.RoastLevel);
         Assert.Equal("340g", result.Response.Parsed.Weight);

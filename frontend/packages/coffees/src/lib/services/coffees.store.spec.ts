@@ -13,7 +13,7 @@ function coffee(p: Partial<Coffee> & Pick<Coffee, 'id' | 'name'>): Coffee {
     roastLevel: 'Medium',
     price: 10,
     dateBought: '2026-06-01',
-    photoPath: null,
+    photoUrl: null,
     shopName: null,
     purchaseUrl: null,
     createdAt: '2026-06-01T00:00:00Z',

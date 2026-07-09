@@ -22,6 +22,13 @@ permissions:
   contents: write
   pull-requests: read
 
+# Rapid pushes to main both rewrite the same draft release — queue them instead
+# of letting two drafter runs race (no cancel: a publish run must never be killed
+# mid-flight).
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   draft-release:
     runs-on: ubuntu-latest

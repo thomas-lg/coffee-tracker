@@ -1,6 +1,7 @@
 using CoffeeTracker.Application.Dtos;
 using CoffeeTracker.Application.Ports.Driven;
 using CoffeeTracker.Application.Ports.Driving;
+using Microsoft.Extensions.Logging;
 
 namespace CoffeeTracker.Application.Services;
 
@@ -10,13 +11,17 @@ namespace CoffeeTracker.Application.Services;
 /// Paths on both sides share the `photos/{name}` shape, so comparison is ordinal set
 /// membership.
 /// </summary>
-public class PhotoAdminService(IPhotoStorage storage, ICoffeeRepository coffees) : IPhotoAdminService
+public class PhotoAdminService(
+    IPhotoStorage storage,
+    ICoffeeRepository coffees,
+    IPhotoUrlSigner photoUrlSigner,
+    ILogger<PhotoAdminService> logger) : IPhotoAdminService
 {
     public async Task<IReadOnlyList<PhotoListItemDto>> ListAsync(CancellationToken ct = default)
     {
         var stored = await storage.ListAsync(ct);
         var used = (await coffees.GetUsedPhotoPathsAsync(ct)).ToHashSet(StringComparer.Ordinal);
-        return stored.Select(path => new PhotoListItemDto(path, used.Contains(path))).ToList();
+        return stored.Select(path => new PhotoListItemDto(path, photoUrlSigner.Sign(path)!, used.Contains(path))).ToList();
     }
 
     public async Task<PhotoDeleteResultDto> DeleteAsync(IReadOnlyCollection<string> paths, CancellationToken ct = default)
@@ -31,9 +36,10 @@ public class PhotoAdminService(IPhotoStorage storage, ICoffeeRepository coffees)
         var skipped = 0;
         foreach (var path in paths.Distinct(StringComparer.Ordinal))
         {
-            if (stored.Contains(path) && !used.Contains(path))
+            // Count as deleted only when a file was actually removed; a path that raced
+            // into use, isn't a stored file, or vanished before the delete counts skipped.
+            if (stored.Contains(path) && !used.Contains(path) && await storage.DeleteAsync(path, ct))
             {
-                await storage.DeleteAsync(path, ct);
                 deleted++;
             }
             else
@@ -42,6 +48,7 @@ public class PhotoAdminService(IPhotoStorage storage, ICoffeeRepository coffees)
             }
         }
 
+        logger.LogInformation("Admin photo cleanup: {Deleted} deleted, {Skipped} skipped.", deleted, skipped);
         return new PhotoDeleteResultDto(deleted, skipped);
     }
 }

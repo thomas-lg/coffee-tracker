@@ -1,4 +1,12 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  ElementRef,
+  effect,
+  inject,
+  signal,
+  viewChild,
+} from '@angular/core';
 import { Button, ToastService } from '@coffee-tracker/ui';
 import { PhotoCleanupStore } from '../services/photo-cleanup.store';
 
@@ -21,6 +29,15 @@ export class PhotoCleanup {
   /** Two-step delete: the action button arms a confirm row rather than a modal. */
   protected readonly confirming = signal(false);
   protected readonly deleting = signal(false);
+  private readonly cancelBtn = viewChild<ElementRef<HTMLButtonElement>>('cancelBtn');
+
+  constructor() {
+    // Arming the confirm removes the Delete button (focus would drop to <body>);
+    // move it to Cancel once the confirm controls exist in the DOM.
+    effect(() => {
+      if (this.confirming()) this.cancelBtn()?.nativeElement.focus();
+    });
+  }
 
   /** Display name = the filename without the `photos/` prefix. */
   protected fileName(path: string): string {

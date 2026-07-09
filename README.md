@@ -68,6 +68,9 @@ port directly to the internet.
 | `Jwt__Key`                        | **yes**  | —                | Long random secret for signing auth tokens. The app refuses to start without a strong value (`openssl rand -base64 48`). |
 | `Jwt__Issuer`                     | no       | `coffee-tracker` | JWT issuer claim.                                                           |
 | `Jwt__Audience`                   | no       | `coffee-tracker` | JWT audience claim.                                                         |
+| `Jwt__AccessTokenMinutes`         | no       | `15`             | Access-token lifetime (minutes). Kept short; sessions persist via a rotating refresh token, so a stolen access token expires quickly. |
+| `Jwt__RefreshTokenDays`           | no       | `14`             | Refresh-token lifetime (days) — the effective session length. Refresh tokens rotate on use and are revoked on logout. |
+| `Storage__SignedUrlLifetimeMinutes` | no     | `60`             | How long a signed `/photos/…` URL stays valid (minutes). Photos are served only via short-lived signed URLs, never anonymously. |
 | `REGISTRATION_ENABLED`            | no       | `false`          | When `false`, new signups are blocked (safe default for a public instance). Set `true` to allow registration; the first user becomes admin. |
 | `ForwardedHeaders__KnownProxies`  | recommended | —             | Comma-separated IP(s) of your reverse proxy (SWAG/Authelia), so the app trusts `X-Forwarded-For`/`-Proto`. **Set this** behind a proxy — otherwise auth rate-limiting keys off the proxy's single IP and throttles all clients together. |
 | `Ocr__Engine`                     | no       | `tesseract`      | OCR engine for `/api/coffees/scan`: `tesseract` (uses the bundled native libs) or `none` (disables scanning → 503). |
@@ -87,8 +90,12 @@ and recreate the container. Volumes persist your data across the update.
 
 This app is designed to be internet-exposed and shared, so: no secrets are baked
 into the image (all injected at runtime), there is no default JWT key, registration
-is gated by a flag, login/register are rate-limited, uploads are validated, and the
-container runs as a non-root user. See the Security section in [PLAN.md](./PLAN.md).
+is gated by a flag, login/register are rate-limited, and the container runs as a
+non-root user. Auth uses **short-lived access tokens plus rotating, revocable refresh
+tokens** (reuse of a rotated token revokes the whole session family). Uploaded photos
+are **re-encoded** on upload (stripping any embedded payload/metadata) and served only
+through **short-lived signed URLs** — never anonymously. See the Security section in
+[PLAN.md](./PLAN.md).
 
 ## Status
 

@@ -34,7 +34,8 @@ export interface Coffee {
   price: number;
   /** ISO date (yyyy-MM-dd) */
   dateBought: string;
-  photoPath: string | null;
+  /** Signed, ready-to-use image URL (already rooted, e.g. `/photos/x.jpg?exp=…&sig=…`). */
+  photoUrl: string | null;
   shopName: string | null;
   purchaseUrl: string | null;
   /** ISO date-time */
@@ -96,16 +97,26 @@ export interface ScannedCoffee {
 export interface ScanResult {
   rawText: string;
   parsed: ScannedCoffee;
-  photoPath: string;
+  /** Signed, ready-to-use preview URL for the stored photo. */
+  photoUrl: string;
 }
 
 export interface AuthResponse {
   token: string;
-  /** ISO date-time */
+  /** ISO date-time — when the short-lived access token expires. */
   expiresAt: string;
+  /** Opaque refresh token used to obtain the next access/refresh pair. */
+  refreshToken: string;
+  /** ISO date-time — when the refresh token expires. */
+  refreshExpiresAt: string;
   userId: string;
   displayName: string | null;
   isAdmin: boolean;
+}
+
+/** Body for POST /api/auth/refresh and /api/auth/logout. */
+export interface RefreshRequest {
+  refreshToken: string;
 }
 
 export interface Login {
@@ -123,11 +134,12 @@ export interface ClientConfig {
   registrationEnabled: boolean;
 }
 
-// --- Admin photo cleanup (M5-review follow-up). These endpoints post-date the last
-// `gen:api` run, so they have no api-types.ts schema yet and thus no drift guard
-// below — re-run `npm run gen:api` once the OpenAPI doc includes /api/admin/photos. ---
+// --- Admin photo cleanup ---
 export interface PhotoListItem {
+  /** Raw relative path — what the delete endpoint expects back. */
   path: string;
+  /** Signed, ready-to-use display URL. */
+  url: string;
   used: boolean;
 }
 
@@ -157,6 +169,9 @@ type _GFlavorTag = Assert<SameKeys<FlavorTag, Schemas['FlavorTagDto']>>;
 type _GScanResult = Assert<SameKeys<ScanResult, Schemas['ScanResponseDto']>>;
 type _GScannedCoffee = Assert<SameKeys<ScannedCoffee, Schemas['ScannedCoffeeDto']>>;
 type _GAuthResponse = Assert<SameKeys<AuthResponse, Schemas['AuthResponseDto']>>;
+type _GRefreshRequest = Assert<SameKeys<RefreshRequest, Schemas['RefreshRequestDto']>>;
 type _GLogin = Assert<SameKeys<Login, Schemas['LoginDto']>>;
 type _GRegister = Assert<SameKeys<Register, Schemas['RegisterDto']>>;
 type _GClientConfig = Assert<SameKeys<ClientConfig, Schemas['ConfigDto']>>;
+type _GPhotoListItem = Assert<SameKeys<PhotoListItem, Schemas['PhotoListItemDto']>>;
+type _GPhotoDeleteResult = Assert<SameKeys<PhotoDeleteResult, Schemas['PhotoDeleteResultDto']>>;

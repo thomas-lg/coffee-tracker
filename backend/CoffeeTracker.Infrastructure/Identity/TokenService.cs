@@ -1,39 +1,40 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using CoffeeTracker.Application.Auth;
+using CoffeeTracker.Application.Ports.Driven;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 
 namespace CoffeeTracker.Infrastructure.Identity;
 
 /// <summary>
-/// Issues signed JWTs for authenticated users. The user id is emitted as
-/// <see cref="ClaimTypes.NameIdentifier"/> (robust against JWT bearer's inbound
-/// claim mapping) and admin status as a custom <c>isAdmin</c> claim.
+/// Driven adapter implementing <see cref="ITokenIssuer"/>: signs short-lived JWT
+/// access tokens. The user id is emitted as <see cref="ClaimTypes.NameIdentifier"/>
+/// (robust against JWT bearer's inbound claim mapping) and admin status as the
+/// shared <see cref="AppClaims.Admin"/> claim.
 /// </summary>
-public class TokenService(IOptions<JwtOptions> options, TimeProvider timeProvider)
+public class TokenService(IOptions<JwtOptions> options, TimeProvider timeProvider) : ITokenIssuer
 {
-    public const string AdminClaim = "isAdmin";
-
     private readonly JwtOptions _opts = options.Value;
 
-    public (string Token, DateTimeOffset ExpiresAt) CreateToken(string userId, string? email, string? displayName, bool isAdmin)
+    public AccessToken CreateAccessToken(AuthUser user)
     {
         var now = timeProvider.GetUtcNow();
-        var expires = now.AddMinutes(_opts.LifetimeMinutes);
+        var expires = now.AddMinutes(_opts.AccessTokenMinutes);
 
         var claims = new List<Claim>
         {
-            new(ClaimTypes.NameIdentifier, userId),
-            new(AdminClaim, isAdmin ? "true" : "false"),
+            new(ClaimTypes.NameIdentifier, user.Id),
+            new(AppClaims.Admin, user.IsAdmin ? "true" : "false"),
         };
-        if (!string.IsNullOrEmpty(email))
+        if (!string.IsNullOrEmpty(user.Email))
         {
-            claims.Add(new Claim(ClaimTypes.Email, email));
+            claims.Add(new Claim(ClaimTypes.Email, user.Email));
         }
-        if (!string.IsNullOrEmpty(displayName))
+        if (!string.IsNullOrEmpty(user.DisplayName))
         {
-            claims.Add(new Claim("displayName", displayName));
+            claims.Add(new Claim("displayName", user.DisplayName));
         }
 
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_opts.Key));
@@ -47,6 +48,6 @@ public class TokenService(IOptions<JwtOptions> options, TimeProvider timeProvide
             expires: expires.UtcDateTime,
             signingCredentials: credentials);
 
-        return (new JwtSecurityTokenHandler().WriteToken(token), expires);
+        return new AccessToken(new JwtSecurityTokenHandler().WriteToken(token), expires);
     }
 }

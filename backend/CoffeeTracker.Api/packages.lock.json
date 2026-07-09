@@ -232,6 +232,11 @@
           "Serilog": "4.0.0"
         }
       },
+      "SixLabors.ImageSharp": {
+        "type": "Transitive",
+        "resolved": "3.1.12",
+        "contentHash": "iAg6zifihXEFS/t7fiHhZBGAdCp3FavsF4i2ZIDp0JfeYeDVzvmlbY1CNhhIKimaIzrzSi5M/NBFcWvZT2rB/A=="
+      },
       "SourceGear.sqlite3": {
         "type": "Transitive",
         "resolved": "3.50.4.5",
@@ -292,6 +297,7 @@
           "Microsoft.AspNetCore.Identity.EntityFrameworkCore": "[10.0.9, )",
           "Microsoft.EntityFrameworkCore.Sqlite": "[10.0.9, )",
           "SQLitePCLRaw.bundle_e_sqlite3": "[3.0.3, )",
+          "SixLabors.ImageSharp": "[3.1.12, )",
           "System.IdentityModel.Tokens.Jwt": "[8.19.1, )"
         }
       }

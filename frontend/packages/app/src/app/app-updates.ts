@@ -1,12 +1,8 @@
-import {
-  EnvironmentProviders,
-  InjectionToken,
-  inject,
-  provideAppInitializer,
-} from '@angular/core';
+import { EnvironmentProviders, inject, provideAppInitializer } from '@angular/core';
 import { NavigationEnd, Router } from '@angular/router';
 import { SwUpdate } from '@angular/service-worker';
 import { filter, take } from 'rxjs/operators';
+import { RELOAD } from '@coffee-tracker/util';
 
 /**
  * How often to poll for a freshly deployed version while the app stays open.
@@ -16,14 +12,6 @@ import { filter, take } from 'rxjs/operators';
  * session without hammering the server.
  */
 const UPDATE_POLL_MS = 6 * 60 * 60 * 1000;
-
-/**
- * The "reload the page" action, injected so tests can substitute a spy —
- * `document.location.reload()` isn't implemented in jsdom and can't be spied on.
- */
-export const RELOAD = new InjectionToken<() => void>('RELOAD', {
-  factory: () => () => document.location.reload(),
-});
 
 /**
  * Wire service-worker update handling. Extracted from the provider so it can be

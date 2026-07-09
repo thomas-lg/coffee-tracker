@@ -8,8 +8,18 @@ PUID="${PUID:-99}"
 PGID="${PGID:-100}"
 
 # Running as root defeats the whole non-root posture — fail loudly rather than
-# silently handing the app uid 0 via gosu.
-if [ "$PUID" = "0" ] || [ "$PGID" = "0" ]; then
+# silently handing the app uid 0 via gosu. Validate digits-only first (fail closed
+# on garbage), then compare numerically so non-canonical zeros like "00" are
+# refused too.
+for id in "$PUID" "$PGID"; do
+    case "$id" in
+        ''|*[!0-9]*)
+            echo "docker-entrypoint: PUID/PGID must be numeric (got PUID='${PUID}' PGID='${PGID}')." >&2
+            exit 1
+            ;;
+    esac
+done
+if [ "$PUID" -eq 0 ] || [ "$PGID" -eq 0 ]; then
     echo "docker-entrypoint: refusing PUID/PGID of 0 — set them to a non-root host user." >&2
     exit 1
 fi

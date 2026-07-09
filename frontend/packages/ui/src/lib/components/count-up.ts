@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, effect, input, signal } from '@angular/core';
+import { prefersReducedMotion } from '@coffee-tracker/util';
 
 /**
  * Animates a number from 0 up to `value` with an eased rAF tween. Respects
@@ -20,9 +21,7 @@ export class CountUp {
   constructor() {
     effect((onCleanup) => {
       const target = this.value();
-      const reduce =
-        typeof matchMedia !== 'undefined' && matchMedia('(prefers-reduced-motion: reduce)').matches;
-      if (reduce || typeof requestAnimationFrame === 'undefined') {
+      if (prefersReducedMotion() || typeof requestAnimationFrame === 'undefined') {
         this.current.set(target);
         return;
       }

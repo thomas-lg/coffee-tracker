@@ -24,9 +24,9 @@ describe('AdminPhotosApi', () => {
 
     const req = http.expectOne('/api/admin/photos');
     expect(req.request.method).toBe('GET');
-    req.flush([{ path: 'photos/a.jpg', used: false }]);
+    req.flush([{ path: 'photos/a.jpg', url: '/photos/a.jpg?exp=1&sig=x', used: false }]);
 
-    expect(result).toEqual([{ path: 'photos/a.jpg', used: false }]);
+    expect(result).toEqual([{ path: 'photos/a.jpg', url: '/photos/a.jpg?exp=1&sig=x', used: false }]);
   });
 
   it('DELETEs with the selected paths in the request body', () => {

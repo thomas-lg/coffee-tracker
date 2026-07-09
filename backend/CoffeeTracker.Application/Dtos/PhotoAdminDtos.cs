@@ -1,7 +1,10 @@
 namespace CoffeeTracker.Application.Dtos;
 
-/// <summary>One stored photo and whether a coffee currently references it.</summary>
-public record PhotoListItemDto(string Path, bool Used);
+/// <summary>
+/// One stored photo: its raw relative <see cref="Path"/> (used to request deletion),
+/// a signed <see cref="Url"/> to display it, and whether a coffee references it.
+/// </summary>
+public record PhotoListItemDto(string Path, string Url, bool Used);
 
 /// <summary>Request body for deleting selected photos by their relative paths.</summary>
 public record PhotoDeleteRequestDto(IReadOnlyList<string> Paths);
