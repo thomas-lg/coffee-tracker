@@ -187,6 +187,55 @@ describe('AuthStore', () => {
     expect(api.refresh).toHaveBeenCalledTimes(1);
   });
 
+  it('refreshes with the latest stored token when another tab rotated it', async () => {
+    const store = TestBed.inject(AuthStore);
+    await store.login({ email: 'a@b.c', password: 'secret-123' }); // in-memory + storage: refresh-1
+
+    // Another tab rotated the token and persisted the new pair to localStorage.
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({
+        token: 'tok-other',
+        userId: 'u1',
+        displayName: 'Ada',
+        isAdmin: true,
+        expiresAt: pastIso(), // access expired, so refresh proceeds
+        refreshToken: 'refresh-9',
+        refreshExpiresAt: futureIso(30 * 24 * 3_600_000),
+      }),
+    );
+    api.refresh.mockReturnValue(of(authResponse({ refreshToken: 'refresh-10' })));
+
+    await expect(store.refresh()).resolves.toBe(true);
+
+    // The stale in-memory 'refresh-1' must NOT be spent (that would trip reuse-revocation).
+    expect(api.refresh).toHaveBeenCalledWith('refresh-9');
+  });
+
+  it('adopts a session another tab wrote, and clears when another tab logs out', () => {
+    const store = TestBed.inject(AuthStore);
+    expect(store.session()).toBeNull();
+
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({
+        token: 't2',
+        userId: 'u1',
+        displayName: 'Ada',
+        isAdmin: false,
+        expiresAt: futureIso(),
+        refreshToken: 'r2',
+        refreshExpiresAt: futureIso(),
+      }),
+    );
+    window.dispatchEvent(new StorageEvent('storage', { key: STORAGE_KEY }));
+    expect(store.token()).toBe('t2');
+
+    localStorage.removeItem(STORAGE_KEY);
+    window.dispatchEvent(new StorageEvent('storage', { key: STORAGE_KEY }));
+    expect(store.session()).toBeNull();
+  });
+
   it('clears the session when the refresh token is rejected', async () => {
     const store = TestBed.inject(AuthStore);
     await store.login({ email: 'a@b.c', password: 'secret-123' });
