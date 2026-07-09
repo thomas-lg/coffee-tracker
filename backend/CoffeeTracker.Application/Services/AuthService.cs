@@ -60,7 +60,9 @@ public sealed class AuthService(
         if (user is null)
         {
             users.SpendDecoyVerification(dto.Password);
-            logger.LogWarning("Failed login for unknown email {Email}.", dto.Email);
+            // Don't log the attacker-supplied email itself (log-forging vector, and an
+            // unknown value has little forensic worth) — just that an attempt happened.
+            logger.LogWarning("Failed login attempt for an unknown email.");
             return AuthResult.Fail(AuthStatus.InvalidCredentials);
         }
 

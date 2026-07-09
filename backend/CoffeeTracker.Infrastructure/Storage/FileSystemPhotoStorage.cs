@@ -183,7 +183,7 @@ public class FileSystemPhotoStorage : IPhotoStorage
             // Cleanup is best-effort: a failure here must not turn an already-committed
             // delete/replace into a 500 — an orphaned file is recoverable, a failed user
             // operation isn't. Report "not deleted" so admin counts stay honest.
-            _logger.LogWarning(ex, "Failed to delete stored photo {RelativePath}; leaving it as an orphan.", relativePath);
+            _logger.LogWarning(ex, "Failed to delete stored photo {RelativePath}; leaving it as an orphan.", ForLog(relativePath));
             return Task.FromResult(false);
         }
     }
@@ -203,6 +203,10 @@ public class FileSystemPhotoStorage : IPhotoStorage
             .ToList();
         return Task.FromResult(paths);
     }
+
+    // Strip CR/LF from a caller-supplied value before logging it, so a crafted path
+    // can't forge extra log lines (CodeQL cs/log-forging).
+    private static string ForLog(string value) => value.Replace("\r", string.Empty).Replace("\n", string.Empty);
 
     private void TryDeleteFile(string fullPath)
     {
