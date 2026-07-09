@@ -32,9 +32,9 @@ public sealed class FileSystemPhotoStorageTests : IDisposable
         }
     }
 
-    private FileSystemPhotoStorage NewStorage(long maxBytes = 5 * 1024 * 1024) =>
+    private FileSystemPhotoStorage NewStorage(long maxBytes = 5 * 1024 * 1024, long maxImagePixels = 40_000_000) =>
         new(
-            Options.Create(new PhotoStorageOptions { PhotosPath = _dir, MaxPhotoBytes = maxBytes }),
+            Options.Create(new PhotoStorageOptions { PhotosPath = _dir, MaxPhotoBytes = maxBytes, MaxImagePixels = maxImagePixels }),
             NullLogger<FileSystemPhotoStorage>.Instance);
 
     private static byte[] RealImage(string contentType)
@@ -140,6 +140,21 @@ public sealed class FileSystemPhotoStorageTests : IDisposable
         var result = await storage.SaveAsync(new MemoryStream(polyglot), "image/png", polyglot.Length);
 
         Assert.Equal(PhotoStorageStatus.InvalidContentType, result.Status);
+        Assert.Empty(StoredFiles());
+    }
+
+    [Fact]
+    public async Task Save_rejects_an_image_whose_dimensions_exceed_the_pixel_cap()
+    {
+        // Decompression-bomb guard: the compressed bytes are tiny (a real 2×2 PNG) but
+        // its 4 pixels exceed a 2-pixel cap, so it's rejected from the header before the
+        // full decode would allocate. Proves the guard, not the byte cap.
+        var storage = NewStorage(maxImagePixels: 2);
+        var bytes = RealImage("image/png");
+
+        var result = await storage.SaveAsync(new MemoryStream(bytes), "image/png", bytes.Length);
+
+        Assert.Equal(PhotoStorageStatus.TooLarge, result.Status);
         Assert.Empty(StoredFiles());
     }
 

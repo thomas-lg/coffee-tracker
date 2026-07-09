@@ -34,12 +34,14 @@ public class FileSystemPhotoStorage : IPhotoStorage
 
     private readonly string _directory;
     private readonly long _maxBytes;
+    private readonly long _maxPixels;
     private readonly ILogger<FileSystemPhotoStorage> _logger;
 
     public FileSystemPhotoStorage(IOptions<PhotoStorageOptions> options, ILogger<FileSystemPhotoStorage> logger)
     {
         _directory = Path.GetFullPath(options.Value.PhotosPath);
         _maxBytes = options.Value.MaxPhotoBytes;
+        _maxPixels = options.Value.MaxImagePixels;
         _logger = logger;
     }
 
@@ -74,6 +76,25 @@ public class FileSystemPhotoStorage : IPhotoStorage
         if (!SignatureMatches(contentType, header.AsSpan(0, headerLength)))
         {
             return PhotoStorageResult.Rejected(PhotoStorageStatus.InvalidContentType);
+        }
+
+        // Read only the header to learn the pixel dimensions, and reject a decompression
+        // bomb (a tiny file that declares huge dimensions) BEFORE the full decode would
+        // allocate gigabytes. The byte cap above bounds compressed size, not decoded size.
+        buffer.Position = 0;
+        ImageInfo info;
+        try
+        {
+            info = await Image.IdentifyAsync(buffer, ct);
+        }
+        catch (Exception ex) when (ex is UnknownImageFormatException or InvalidImageContentException)
+        {
+            return PhotoStorageResult.Rejected(PhotoStorageStatus.InvalidContentType);
+        }
+
+        if ((long)info.Width * info.Height > _maxPixels)
+        {
+            return PhotoStorageResult.Rejected(PhotoStorageStatus.TooLarge);
         }
 
         // Decode then re-encode: the stored file is rebuilt from pixels only, so any

@@ -18,6 +18,14 @@ public class PhotoStorageOptions
     public long MaxPhotoBytes { get; set; } = 5 * 1024 * 1024;
 
     /// <summary>
+    /// Maximum decoded image size in pixels (width × height). A small, highly-compressed
+    /// file can declare enormous dimensions that would allocate gigabytes on decode
+    /// (a decompression bomb); such uploads are rejected from the header before decoding.
+    /// Defaults to 40 MP (comfortably above any phone camera).
+    /// </summary>
+    public long MaxImagePixels { get; set; } = 40_000_000;
+
+    /// <summary>
     /// How long a signed photo URL stays valid, in minutes. Long enough to cover a
     /// browsing session's cached image references; short enough that a leaked URL
     /// stops working quickly. Defaults to 60.
