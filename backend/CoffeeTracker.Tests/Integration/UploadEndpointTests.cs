@@ -33,14 +33,14 @@ public sealed class UploadEndpointTests : IntegrationTest
     [Fact]
     public async Task Scan_requires_authentication()
     {
-        var res = await Client.PostFile("/api/coffees/scan", ApiClient.FakePng(), "image/png");
+        var res = await Client.PostFile("/api/coffees/scan", ApiClient.RealPng(), "image/png");
         Assert.Equal(HttpStatusCode.Unauthorized, res.StatusCode);
     }
 
     [Fact]
     public async Task Photo_upload_requires_authentication()
     {
-        var res = await Client.PostFile("/api/coffees/1/photo", ApiClient.FakePng(), "image/png");
+        var res = await Client.PostFile("/api/coffees/1/photo", ApiClient.RealPng(), "image/png");
         Assert.Equal(HttpStatusCode.Unauthorized, res.StatusCode);
     }
 
@@ -60,7 +60,7 @@ public sealed class UploadEndpointTests : IntegrationTest
         // The test host runs with Ocr:Engine=none, so a well-formed scan degrades to 503.
         var user = await Client.RegisterAsync("scanner2@example.com", "Scanner Two");
 
-        var res = await Client.PostFile("/api/coffees/scan", ApiClient.FakePng(), "image/png", user.Token);
+        var res = await Client.PostFile("/api/coffees/scan", ApiClient.RealPng(), "image/png", user.Token);
 
         Assert.Equal(HttpStatusCode.ServiceUnavailable, res.StatusCode);
     }
@@ -87,14 +87,47 @@ public sealed class UploadEndpointTests : IntegrationTest
     }
 
     [Fact]
+    public async Task Photo_upload_rejects_a_polyglot_that_sniffs_as_png_but_cannot_decode()
+    {
+        var (token, coffeeId) = await CreateOwnedCoffeeAsync();
+
+        // Valid PNG magic number followed by garbage: passes the sniff, fails the
+        // decode — the re-encoding pipeline must reject it, not store it.
+        byte[] polyglot = [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0x00, 0x01, 0x02, 0x03, 0x04];
+        var res = await Client.PostFile($"/api/coffees/{coffeeId}/photo", polyglot, "image/png", token);
+
+        Assert.Equal(HttpStatusCode.BadRequest, res.StatusCode);
+    }
+
+    [Fact]
     public async Task Photo_upload_succeeds_for_a_valid_image_from_the_owner()
     {
         var (token, coffeeId) = await CreateOwnedCoffeeAsync();
 
-        var res = await Client.PostFile($"/api/coffees/{coffeeId}/photo", ApiClient.FakePng(), "image/png", token);
+        var res = await Client.PostFile($"/api/coffees/{coffeeId}/photo", ApiClient.RealPng(), "image/png", token);
 
         Assert.Equal(HttpStatusCode.OK, res.StatusCode);
         var coffee = (await res.Content.ReadFromJsonAsync<CoffeeResponseDto>())!;
-        Assert.False(string.IsNullOrEmpty(coffee.PhotoPath));
+        Assert.False(string.IsNullOrEmpty(coffee.PhotoUrl));
+    }
+
+    [Fact]
+    public async Task Photo_upload_to_someone_elses_coffee_is_forbidden()
+    {
+        // First registered user is the instance admin; keep them out of the way so
+        // both the owner and the intruder are ordinary users.
+        await Client.RegisterAsync("bootstrap-admin@example.com", "Admin");
+        var owner = await Client.RegisterAsync("photo-owner@example.com", "Owner");
+        var intruder = await Client.RegisterAsync("intruder@example.com", "Intruder");
+
+        var createRes = await Client.Post("/api/coffees", SampleCoffee(), owner.Token);
+        var coffee = (await createRes.Content.ReadFromJsonAsync<CoffeeResponseDto>())!;
+
+        var res = await Client.PostFile($"/api/coffees/{coffee.Id}/photo", ApiClient.RealPng(), "image/png", intruder.Token);
+
+        Assert.Equal(HttpStatusCode.Forbidden, res.StatusCode);
+        // The coffee must remain photo-less — the upload was rejected before storage.
+        var reloaded = await (await Client.Get($"/api/coffees/{coffee.Id}", owner.Token)).Content.ReadFromJsonAsync<CoffeeResponseDto>();
+        Assert.Null(reloaded!.PhotoUrl);
     }
 }
