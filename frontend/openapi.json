@@ -268,8 +268,8 @@
           "required": true
         },
         "responses": {
-          "204": {
-            "description": "No Content"
+          "200": {
+            "description": "OK"
           }
         }
       }
@@ -1264,8 +1264,6 @@
         "type": "object",
         "properties": {
           "refreshToken": {
-            "maxLength": 4096,
-            "minLength": 0,
             "type": "string"
           }
         }
