@@ -16,4 +16,11 @@ public class PhotoStorageOptions
 
     /// <summary>Maximum accepted upload size in bytes. Defaults to 5 MB.</summary>
     public long MaxPhotoBytes { get; set; } = 5 * 1024 * 1024;
+
+    /// <summary>
+    /// How long a signed photo URL stays valid, in minutes. Long enough to cover a
+    /// browsing session's cached image references; short enough that a leaked URL
+    /// stops working quickly. Defaults to 60.
+    /// </summary>
+    public int SignedUrlLifetimeMinutes { get; set; } = 60;
 }

@@ -11,6 +11,7 @@ public static class DependencyInjection
     public static IServiceCollection AddApplication(this IServiceCollection services)
     {
         services.TryAddSingleton(TimeProvider.System);
+        services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<ICoffeeCatalogService, CoffeeCatalogService>();
         services.AddScoped<IReviewService, ReviewService>();
         services.AddScoped<ICoffeeScanService, CoffeeScanService>();

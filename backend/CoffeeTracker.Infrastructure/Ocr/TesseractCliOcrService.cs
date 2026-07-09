@@ -17,7 +17,7 @@ public class TesseractCliOcrService(IOptions<OcrOptions> options, ILogger<Tesser
     private readonly string _executable =
         string.IsNullOrWhiteSpace(options.Value.ExecutablePath) ? "tesseract" : options.Value.ExecutablePath!;
     private readonly string _tessdataPath = ResolveTessdataPath(options.Value);
-    private readonly string _language = ResolveLanguage(options.Value.Language);
+    private readonly string _language = ResolveLanguage(options.Value.Language, logger);
 
     // Hard per-run ceiling so a hung/pathological process can't pin a worker forever.
     private readonly TimeSpan _timeout =
@@ -186,11 +186,20 @@ public class TesseractCliOcrService(IOptions<OcrOptions> options, ILogger<Tesser
             : "/usr/share/tesseract-ocr/5/tessdata";
     }
 
-    // Maps the config language to the traineddata filename stem / `-l` code. M5
-    // standardizes on English; adding a pack here updates both at once.
-    private static string ResolveLanguage(string? language) => language?.ToLowerInvariant() switch
+    // Maps the config language to the traineddata filename stem / `-l` code. Only
+    // English is bundled today; an unsupported value warns loudly rather than silently
+    // running English (adding a pack here updates both the map and the ceiling).
+    private static string ResolveLanguage(string? language, ILogger logger)
     {
-        "eng" or "en" or null or "" => "eng",
-        _ => "eng",
-    };
+        switch (language?.ToLowerInvariant())
+        {
+            case "eng" or "en" or null or "":
+                return "eng";
+            default:
+                logger.LogWarning(
+                    "Ocr:Language '{Language}' is not supported (only English is bundled); falling back to 'eng'.",
+                    language);
+                return "eng";
+        }
+    }
 }

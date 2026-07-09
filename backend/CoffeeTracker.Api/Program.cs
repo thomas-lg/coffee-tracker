@@ -4,6 +4,7 @@ using System.Text;
 using System.Threading.RateLimiting;
 using CoffeeTracker.Api;
 using CoffeeTracker.Application;
+using CoffeeTracker.Application.Auth;
 using CoffeeTracker.Infrastructure;
 using CoffeeTracker.Infrastructure.Identity;
 using CoffeeTracker.Infrastructure.Storage;
@@ -47,6 +48,10 @@ builder.Host.UseSerilog((context, services, lc) =>
 // both the JSON wire format and the generated OpenAPI schema (a global converter would
 // fix the wire format but the OpenAPI generator wouldn't see it). See RoastLevel.
 builder.Services.AddControllers();
+
+// Liveness probe for the container/orchestrator (Docker HEALTHCHECK). Anonymous and
+// unthrottled; reports only up/down, no internal detail.
+builder.Services.AddHealthChecks();
 
 // Emit RFC7807 application/problem+json for error responses so every client-error
 // shape is consistent — the automatic [ApiController] model-validation 400, the
@@ -147,7 +152,7 @@ builder.Services.AddAuthorization(options =>
     // carries for administrators. A reusable policy so every admin endpoint enforces
     // it the same way and non-admins get a 403 before any handler runs.
     options.AddPolicy(AuthorizationPolicies.Admin, policy =>
-        policy.RequireClaim(TokenService.AdminClaim, "true"));
+        policy.RequireClaim(AppClaims.Admin, "true"));
 });
 
 // Trust the reverse proxy's forwarded client IP/scheme when configured, so the
@@ -208,6 +213,25 @@ if (generatedDevKey)
         "Tokens will be invalidated on restart. Set Jwt__Key for a stable key.", JwtOptions.SectionName);
 }
 
+// Warn loudly when running behind a proxy without KnownProxies: forwarded headers are
+// then ignored, so RemoteIpAddress is the proxy's IP and the auth rate limiter buckets
+// every client together (one client can lock everyone out of login).
+if (!app.Environment.IsDevelopment()
+    && string.IsNullOrWhiteSpace(builder.Configuration["ForwardedHeaders:KnownProxies"]))
+{
+    app.Logger.LogWarning(
+        "ForwardedHeaders:KnownProxies is not set. X-Forwarded-* headers are ignored, so auth " +
+        "rate limiting keys off the reverse proxy's IP and throttles all clients together, and " +
+        "HSTS is not emitted. Set ForwardedHeaders__KnownProxies to your reverse proxy's IP(s).");
+}
+
+// Convert unhandled exceptions into RFC7807 problem responses in production (the dev
+// environment keeps the developer exception page WebApplication adds automatically).
+if (!app.Environment.IsDevelopment())
+{
+    app.UseExceptionHandler();
+}
+
 // Honour proxy-forwarded client IP/scheme before anything inspects the connection
 // (rate limiter, auth). Must run first in the pipeline.
 app.UseForwardedHeaders();
@@ -255,6 +279,27 @@ Directory.CreateDirectory(photosPath);
 // Ensure .webp is served with the right content type (older default providers omit it).
 var photoContentTypes = new FileExtensionContentTypeProvider();
 photoContentTypes.Mappings[".webp"] = "image/webp";
+
+// Gate photo access on a valid signed URL: photos are user data, and the app's stance
+// is that every read requires authorisation. The client gets time-limited signed URLs
+// (see IPhotoUrlSigner) embedded in coffee/scan responses; an unsigned or expired
+// request for /photos/* is rejected before the static-file middleware serves anything.
+var photoUrlSigner = app.Services.GetRequiredService<CoffeeTracker.Application.Ports.Driven.IPhotoUrlSigner>();
+app.Use(async (context, next) =>
+{
+    if (context.Request.Path.StartsWithSegments("/photos", out var remainder))
+    {
+        var fileName = remainder.Value?.TrimStart('/') ?? string.Empty;
+        if (fileName.Length == 0 ||
+            !photoUrlSigner.Validate(Uri.UnescapeDataString(fileName), context.Request.Query["exp"], context.Request.Query["sig"]))
+        {
+            context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+            return;
+        }
+    }
+
+    await next();
+});
 
 app.UseStaticFiles(new StaticFileOptions
 {
@@ -305,6 +350,10 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+
+// Liveness endpoint (see AddHealthChecks). Anonymous so the container HEALTHCHECK can
+// reach it without a token; excluded from the auth fallback policy.
+app.MapHealthChecks("/health").AllowAnonymous();
 
 // SPA fallback: Angular client-side routes (e.g. /coffees/1) resolve to index.html.
 // API/photos/openapi are matched first, so only unknown paths fall through.

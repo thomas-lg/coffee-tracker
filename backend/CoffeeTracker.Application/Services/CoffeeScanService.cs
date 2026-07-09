@@ -11,6 +11,7 @@ namespace CoffeeTracker.Application.Services;
 public class CoffeeScanService(
     IOcrService ocr,
     IPhotoStorage photoStorage,
+    IPhotoUrlSigner photoUrlSigner,
     ICoffeeLabelParser parser) : ICoffeeScanService
 {
     public async Task<ScanResult> ScanAsync(Stream image, string? contentType, long length, CancellationToken ct = default)
@@ -47,7 +48,7 @@ public class CoffeeScanService(
             }
 
             var parsed = parser.Parse(result.RawText);
-            return new ScanResult(ScanStatus.Success, new ScanResponseDto(result.RawText, parsed, stored.RelativePath!));
+            return new ScanResult(ScanStatus.Success, new ScanResponseDto(result.RawText, parsed, photoUrlSigner.Sign(stored.RelativePath!)!));
         }
         catch
         {

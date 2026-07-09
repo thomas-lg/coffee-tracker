@@ -25,7 +25,9 @@ public static class DependencyInjection
         services.AddScoped<ICoffeeRepository, EfCoffeeRepository>();
         services.AddScoped<IReviewRepository, EfReviewRepository>();
         services.AddScoped<IFlavorTagRepository, EfFlavorTagRepository>();
+        services.AddScoped<IRefreshTokenStore, EfRefreshTokenStore>();
         services.AddSingleton<IPhotoStorage, FileSystemPhotoStorage>();
+        services.AddSingleton<IPhotoUrlSigner, PhotoUrlSigner>();
 
         AddOcr(services, configuration);
         AddAuth(services, configuration);
@@ -54,9 +56,10 @@ public static class DependencyInjection
 
     /// <summary>
     /// Registers ASP.NET Identity (UserManager only — this API authenticates with
-    /// JWTs, not cookies) and the auth driving-port adapter. JWT bearer *validation*
-    /// is wired in the Api project (it owns the HTTP pipeline); token *issuance* and
-    /// user management live here.
+    /// JWTs, not cookies) and the auth driven-port adapters. JWT bearer *validation*
+    /// is wired in the Api project (it owns the HTTP pipeline); the auth use case lives
+    /// in the Application layer and drives these adapters (user store, token issuer,
+    /// registration policy; the refresh-token store is registered above).
     /// </summary>
     private static void AddAuth(IServiceCollection services, IConfiguration configuration)
     {
@@ -84,8 +87,9 @@ public static class DependencyInjection
         // REGISTRATION_ENABLED is a flat env var / key (default off), per the deploy docs.
         services.Configure<RegistrationOptions>(o => o.Enabled = configuration.GetValue<bool>("REGISTRATION_ENABLED"));
 
-        services.AddSingleton<TokenService>();
-        services.AddScoped<IAuthService, IdentityAuthService>();
+        services.AddSingleton<ITokenIssuer, TokenService>();
+        services.AddSingleton<IRegistrationPolicy, RegistrationPolicy>();
+        services.AddScoped<IUserDirectory, IdentityUserDirectory>();
     }
 
     /// <summary>
