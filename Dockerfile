@@ -27,14 +27,14 @@ RUN npx ng build app --configuration production
 
 # --- Stage 2: publish the API ---
 # mcr.microsoft.com/dotnet/sdk:10.0
-FROM mcr.microsoft.com/dotnet/sdk:10.0@sha256:ea8bde36c11b6e7eec2656d0e59101d4462f6bd630730f2c8201ed0572b295d5 AS api
+FROM mcr.microsoft.com/dotnet/sdk:10.0@sha256:ed034a8bf0b24ded0cbbac07e17825d8e9ebfe21e308191d0f7421eaf5ad4664 AS api
 WORKDIR /src
 COPY backend/ ./backend/
 RUN dotnet publish backend/CoffeeTracker.Api/CoffeeTracker.Api.csproj -c Release -o /publish
 
 # --- Stage 3: runtime ---
 # mcr.microsoft.com/dotnet/aspnet:10.0
-FROM mcr.microsoft.com/dotnet/aspnet:10.0@sha256:7644f992230d35cf230017189d4038c0ae0f7388b13f4f7ae1900a155bafb597 AS runtime
+FROM mcr.microsoft.com/dotnet/aspnet:10.0@sha256:1fa23fc4872d95fd71c2833ebe65d7e84a43b2d51a31d119516852f13d9505a7 AS runtime
 # OCR via the tesseract CLI (the app shells out to it). The tesseract-ocr package
 # pulls its own runtime libs; tesseract-ocr-eng ships eng.traineddata. gosu drops
 # privileges in the entrypoint. curl is only for the HEALTHCHECK (the aspnet image
