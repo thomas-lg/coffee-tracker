@@ -1,5 +1,6 @@
 using System.Text.RegularExpressions;
 using CoffeeTracker.Application.Dtos;
+using CoffeeTracker.Application.Ports.Driven;
 
 namespace CoffeeTracker.Application.Services;
 
@@ -29,13 +30,34 @@ public partial class CoffeeLabelParser : ICoffeeLabelParser
         "Jamaica", "Yirgacheffe", "Sidamo", "Guji", "Huila", "Nariño",
     ];
 
-    public ScannedCoffeeDto Parse(string rawText)
+    /// <summary>
+    /// Lines scoring below this mean word confidence (0-100) are treated as noise and
+    /// ignored for every field.
+    /// </summary>
+    /// <remarks>
+    /// Measured, not guessed. On a real photo of a bag on a wooden table, tesseract
+    /// scored the twelve background/reflection lines between 15.6 and 48.8, and the four
+    /// genuinely printed lines between 58.8 and 96.6 - a wide, unambiguous gap. 55 sits
+    /// inside it with margin either side. The words the engine is unsure of are exactly
+    /// the ones that used to end up as the coffee's name.
+    /// </remarks>
+    public const double DefaultMinConfidence = 55;
+
+    private readonly double _minConfidence;
+
+    public CoffeeLabelParser()
+        : this(DefaultMinConfidence)
     {
-        var text = rawText ?? string.Empty;
-        var lines = text
-            .Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-            .Where(l => l.Length > 0)
-            .ToList();
+    }
+
+    public CoffeeLabelParser(double minConfidence) => _minConfidence = minConfidence;
+
+    public ScannedCoffeeDto Parse(string rawText) => Parse(OcrResult.Read(rawText ?? string.Empty));
+
+    public ScannedCoffeeDto Parse(OcrResult ocr)
+    {
+        var text = ocr?.RawText ?? string.Empty;
+        var lines = RankLines(ocr?.Lines ?? []);
 
         var (name, roaster) = FindNameAndRoaster(lines);
         return new ScannedCoffeeDto(
@@ -155,14 +177,40 @@ public partial class CoffeeLabelParser : ICoffeeLabelParser
         }
 
         var firstName = prominent[0];
-        // Roaster fallback: a later line that looks like a roaster; else a later line
-        // that's neither the name nor a weight line (avoids echoing the name or
-        // promoting "Net wt 340g" to roaster).
-        var roaster = prominent.Skip(1).FirstOrDefault(l => RoasterKeywordRegex().IsMatch(l))
-                      ?? prominent.Skip(1).FirstOrDefault(l => l != firstName && !WeightRegex().IsMatch(l));
+        // Roaster requires POSITIVE evidence - a line that actually says "Roasters",
+        // "Roastery", "Coffee Co" etc. There used to be a positional fallback ("any
+        // other line that isn't the name or a weight"), which is wrong more often than
+        // it is right: on a real bag whose label carries origin, roast and a
+        // description but no visible roaster, it promoted the roast line
+        // ("TORREFACTION MEDIUM") to roaster. A null the user fills in beats a
+        // confident-looking wrong value, which is this parser's stated contract.
+        var roaster = prominent.Skip(1).FirstOrDefault(l => RoasterKeywordRegex().IsMatch(l));
         return (firstName, roaster);
     }
 
+    // Orders the lines the field heuristics see, and drops the ones the engine wasn't
+    // confident about. This is the difference between "prominent" meaning something and
+    // meaning nothing: the old code kept any line with >= 3 letters and then took the
+    // FIRST as the name, so a photo whose top edge was a wooden table yielded names like
+    // "aren bik re" while the bag's actual "PACIFIC BLEND" sat twelve lines lower.
+    //
+    // Now: discard low-confidence lines outright, then sort by glyph height descending,
+    // because the product name is the biggest thing printed on a bag. Reading order is
+    // only the tie-break, and OrderByDescending is stable, so an engine reporting no
+    // geometry degrades exactly to the previous ordering rather than to something
+    // arbitrary.
+    private List<string> RankLines(IReadOnlyList<OcrLine> lines) =>
+        [.. lines
+            .Where(l => !string.IsNullOrWhiteSpace(l.Text))
+            .Where(l => l.Confidence is null || l.Confidence >= _minConfidence)
+            .Select(l => new { Text = l.Text.Trim(), Height = l.Height ?? 0 })
+            .Where(l => l.Text.Length > 0)
+            .OrderByDescending(l => l.Height)
+            .Select(l => l.Text)];
+
+    // A candidate still has to carry some letters. Deliberately loose: OCR mangles real
+    // labels (the bag above came out as "ACIFIC BLEND", missing its P), so strictness
+    // here would reject good text. RankLines is what excludes junk now.
     private static bool IsProminent(string line) => line.Count(char.IsLetter) >= 3;
 
     [GeneratedRegex(@"(?<amount>\d+(?:[.,]\d+)?)\s*(?<unit>kg|g|gr|grams|oz|lbs|lb)\b", RegexOptions.IgnoreCase)]

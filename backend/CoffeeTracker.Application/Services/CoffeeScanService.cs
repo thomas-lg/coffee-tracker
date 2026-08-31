@@ -47,7 +47,7 @@ public class CoffeeScanService(
                 return new ScanResult(ScanStatus.OcrUnavailable, null);
             }
 
-            var parsed = parser.Parse(result.RawText);
+            var parsed = parser.Parse(result);
             return new ScanResult(ScanStatus.Success, new ScanResponseDto(result.RawText, parsed, photoUrlSigner.Sign(stored.RelativePath!)!));
         }
         catch
