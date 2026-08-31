@@ -65,6 +65,11 @@ updates:
     directory: "/" # production Dockerfile + docker-compose.yml
     schedule:
       interval: weekly
+    # Every bump here edits the same Dockerfile, so ungrouped they conflict with each
+    # other one merge at a time (#67/#68, then #87/#88). One PR for all base images.
+    groups:
+      docker-images:
+        patterns: ["*"]
     labels: [dependencies, docker]
     commit-message:
       prefix: deps
@@ -91,9 +96,16 @@ updates:
     directory: "/"
     schedule:
       interval: weekly
+    # Majors used to arrive one PR per action. Because they all edit the same few
+    # workflow files, each merge re-conflicted the rest -- #94 and #97 had to be
+    # rebased repeatedly and were eventually folded in by hand. Group them.
     groups:
       actions-minor-patch:
+        patterns: ["*"]
         update-types: [minor, patch]
+      actions-major:
+        patterns: ["*"]
+        update-types: [major]
     labels: [dependencies, github-actions]
     commit-message:
       prefix: deps
