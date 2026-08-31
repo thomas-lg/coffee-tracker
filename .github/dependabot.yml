@@ -24,6 +24,18 @@ updates:
       dotnet-major:
         patterns: ["*"]
         update-types: [major]
+    # Two majors are permanently out of reach, so don't re-raise them weekly. Both were
+    # tried and closed with the build output on the PR; revisit only if the cause changes.
+    ignore:
+      # 4.x demands a paid Six Labors license key at build time:
+      # "No Six Labors license found. Set $(SixLaborsLicenseKey) ..."
+      - dependency-name: SixLabors.ImageSharp
+        update-types: [version-update:semver-major]
+      # 3.x makes IOpenApiMediaType.Example read-only, which the
+      # Microsoft.AspNetCore.OpenApi source generator still assigns to (CS0200).
+      # Unblocked only by an ASP.NET Core release built against OpenApi 3.x.
+      - dependency-name: Microsoft.OpenApi
+        update-types: [version-update:semver-major]
     labels: [dependencies, dotnet]
     commit-message:
       prefix: deps

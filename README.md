@@ -29,7 +29,7 @@ Development happens inside a dev container, so the only host prerequisites are
 
 1. Clone the repo and open it in VS Code.
 2. Run **Dev Containers: Reopen in Container**. The first build installs the .NET
-   10 SDK, Node 22, the Angular CLI, `dotnet-ef`, and the native Tesseract OCR
+   10 SDK, Node 24, the Angular CLI, `dotnet-ef`, and the native Tesseract OCR
    libraries, then prints a toolchain summary.
 3. The API runs HTTP-only on `http://localhost:5000` and the Angular dev server on
    `http://localhost:4200` (both forwarded automatically). `http://localhost` is a
