@@ -70,6 +70,14 @@ updates:
     groups:
       docker-images:
         patterns: ["*"]
+    # node's major is pinned by Angular's supported range (engines in
+    # frontend/package.json) AND has to stay in lockstep with ci.yml's node-version and
+    # the devcontainer's node feature -- see #92. Taking a major here alone would ship an
+    # image built on a different runtime than CI tests with, so node moves deliberately
+    # alongside an Angular upgrade, in all four places at once. Digest/minor updates flow.
+    ignore:
+      - dependency-name: node
+        update-types: [version-update:semver-major]
     labels: [dependencies, docker]
     commit-message:
       prefix: deps

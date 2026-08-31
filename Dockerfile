@@ -3,9 +3,11 @@
 # same-origin from the API on :8080. Built for linux/amd64 (the Unraid NAS).
 
 # --- Stage 1: build the Angular PWA ---
-# node:24-slim -- keep in step with ci.yml's node-version and the devcontainer's
-# node feature. 24 is the current LTS; frontend/package.json's engines field allows
-# ^20.19 || ^22.12 || ^24, so odd-numbered (non-LTS) majors are deliberately skipped.
+# node:24-slim -- keep in step with ci.yml's node-version and the devcontainer's node
+# feature. 24 is the current LTS. Majors are pinned deliberately, not by parity: the gate
+# is frontend/package.json's engines (^20.19 || ^22.12 || ^24, i.e. Angular's supported
+# range) plus LTS status -- an even major is still "Current" until the October of its
+# release year. Dependabot ignores node majors here; move all three references at once.
 FROM node:24-slim@sha256:ba849c60be29959425b8734d57b8b4b7d56f98edd9504c9af091d5281095a71e AS web
 WORKDIR /web
 # Restore deps in their own layer (cached until a manifest changes). This is an npm
