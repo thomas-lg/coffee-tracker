@@ -10,9 +10,20 @@ updates:
     schedule:
       interval: weekly
     open-pull-requests-limit: 10
+    # One PR for everything, not one per package. Every NuGet bump that touches
+    # Application or Infrastructure invalidates the packages.lock.json of Api and
+    # Tests too, and Dependabot only refreshes the lock file of the project whose
+    # .csproj it edited — so each PR needs a manual `--force-evaluate` pass (see
+    # scripts/refresh-lockfiles.ps1). Grouping makes that chore weekly, not per-package.
+    # Majors stay in their own group so they remain reviewable on their own merits
+    # instead of being buried in a 13-package diff.
     groups:
       dotnet-minor-patch:
+        patterns: ["*"]
         update-types: [minor, patch]
+      dotnet-major:
+        patterns: ["*"]
+        update-types: [major]
     labels: [dependencies, dotnet]
     commit-message:
       prefix: deps

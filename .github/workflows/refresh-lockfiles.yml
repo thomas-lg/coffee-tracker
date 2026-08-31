@@ -1,0 +1,103 @@
+name: Refresh lock files
+
+# Regenerates the backend packages.lock.json files on a pull request and pushes the
+# result back to its branch. Exists because Dependabot only refreshes the lock file of
+# the project whose .csproj it edited, so any bump touching Application or Infrastructure
+# leaves Api/Tests stale and ci.yml's `dotnet restore --locked-mode` fails with NU1004.
+# Same job as scripts/refresh-lockfiles.ps1, but it doesn't need an SDK on anyone's laptop.
+#
+# Two constraints shaped this into a manually-dispatched workflow rather than an automatic
+# fix-up on `pull_request`:
+#
+#   1. Workflow runs triggered *by Dependabot* get a read-only GITHUB_TOKEN and no access
+#      to secrets, so a `pull_request`-triggered job could never push the fix.
+#      workflow_dispatch runs in the base-branch context, with a writable token.
+#   2. A push made with GITHUB_TOKEN does not raise new workflow events, so ci.yml would
+#      keep showing its old failure. The last step therefore re-triggers the required
+#      checks explicitly via `gh pr update-branch` — which also satisfies the strict
+#      up-to-date-branch rule on main that these PRs need anyway.
+#
+# Usage: gh workflow run refresh-lockfiles.yml -f pr=<number>
+
+on:
+  workflow_dispatch:
+    inputs:
+      pr:
+        description: "Pull request number whose lock files should be refreshed"
+        required: true
+        type: string
+
+# Unlike ci.yml (which stays contents: read), this workflow exists to commit.
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+        with:
+          # Check out the PR's head branch by name (not the merge ref) so the refreshed
+          # lock files can be pushed straight back to it.
+          ref: refs/pull/${{ inputs.pr }}/head
+          # A detached merge ref can't be pushed; resolve the real branch below.
+          fetch-depth: 0
+          persist-credentials: true
+
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Resolve the PR's head branch
+        id: pr
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          branch=$(gh pr view "${{ inputs.pr }}" --json headRefName -q .headRefName)
+          echo "branch=$branch" >> "$GITHUB_OUTPUT"
+          echo "Refreshing lock files on $branch"
+
+      # --force-evaluate re-resolves every project graph and rewrites every lock file,
+      # which is exactly what --locked-mode in ci.yml then verifies.
+      - name: Restore with --force-evaluate
+        run: dotnet restore CoffeeTracker.sln --force-evaluate
+
+      # A changed .csproj would mean the restore resolved something the bump didn't
+      # intend, so refuse rather than commit it. Mirrors scripts/refresh-lockfiles.ps1.
+      - name: Reject changes outside the lock files
+        run: |
+          unexpected=$(git status --porcelain | awk '{print $2}' \
+            | grep -v -E '^backend/[^/]+/packages\.lock\.json$' || true)
+          if [ -n "$unexpected" ]; then
+            echo "::error::Restore changed files other than the lock files:"
+            echo "$unexpected"
+            exit 1
+          fi
+
+      - name: Commit and push
+        id: commit
+        env:
+          BRANCH: ${{ steps.pr.outputs.branch }}
+        run: |
+          if git diff --quiet -- 'backend/*/packages.lock.json'; then
+            echo "Lock files already consistent; nothing to push."
+            echo "pushed=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add backend/*/packages.lock.json
+          # Two -m flags rather than one multi-line string: a YAML block scalar would
+          # carry this step's indentation into the commit message body.
+          git commit             -m "deps: refresh packages.lock.json after the NuGet bump"             -m "Dependabot updates only the lock file of the project it edited; Api and Tests reference Application/Infrastructure transitively and go stale, which fails ci.yml's restore --locked-mode with NU1004."
+          git push origin "HEAD:$BRANCH"
+          echo "pushed=true" >> "$GITHUB_OUTPUT"
+
+      # A GITHUB_TOKEN push raises no workflow events, so the required checks would still
+      # show the pre-fix failure. Updating the branch creates a new head and re-runs them.
+      - name: Re-trigger the required checks
+        if: steps.commit.outputs.pushed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh pr update-branch "${{ inputs.pr }}"
