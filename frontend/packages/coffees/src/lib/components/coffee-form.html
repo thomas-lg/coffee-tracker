@@ -112,8 +112,23 @@
         <input type="file" accept="image/*" (change)="onPhotoSelected($event)" class="text-sm" />
       </label>
 
-      @if (photoPreview()) {
-        <img [src]="photoPreview()" alt="Selected coffee" class="h-40 w-full rounded-xl object-cover" />
+      @if (photoPreview(); as preview) {
+        <!-- The thumbnail is cropped (object-cover), so make it openable: reading the
+             label off a bag needs the whole frame. -->
+        <button
+          type="button"
+          class="block w-full cursor-zoom-in overflow-hidden rounded-xl focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-crema"
+          aria-label="View photo full size"
+          (click)="photoZoomed.set(true)"
+        >
+          <img [src]="preview" alt="Selected coffee" class="h-40 w-full object-cover" />
+        </button>
+        <ct-image-lightbox
+          [src]="preview"
+          alt="Selected coffee"
+          [open]="photoZoomed()"
+          (openChange)="photoZoomed.set($event)"
+        />
       }
 
       <!-- Stays enabled while invalid: submitting then marks every field touched so

@@ -12,7 +12,7 @@ import {
 import { rxResource } from '@angular/core/rxjs-interop';
 import { Router, RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
-import { Button, Rating, Skeleton, TagChip, ToastService } from '@coffee-tracker/ui';
+import { Button, ImageLightbox, Rating, Skeleton, TagChip, ToastService } from '@coffee-tracker/ui';
 import { formatDate, formatPrice, formatRating } from '@coffee-tracker/util';
 import { AuthStore } from '@coffee-tracker/auth';
 import { CoffeesApi, FlavorTagsApi, ReviewsApi } from '@coffee-tracker/data';
@@ -23,10 +23,13 @@ import { BeanScene } from './bean-scene';
 @Component({
   selector: 'ct-coffee-detail',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, Button, Rating, TagChip, Skeleton, BeanScene],
+  imports: [RouterLink, Button, Rating, TagChip, Skeleton, BeanScene, ImageLightbox],
   templateUrl: './coffee-detail.html',
 })
 export class CoffeeDetail {
+  /** Whether the cropped bag photo has been opened at full size. */
+  protected readonly photoZoomed = signal(false);
+
   private readonly coffeesApi = inject(CoffeesApi);
   private readonly reviewsApi = inject(ReviewsApi);
   private readonly tagsApi = inject(FlavorTagsApi);
