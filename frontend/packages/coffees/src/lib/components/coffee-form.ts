@@ -12,7 +12,7 @@ import { Router, RouterLink } from '@angular/router';
 import { FormField, FormRoot, form, min, required, validate } from '@angular/forms/signals';
 import { firstValueFrom } from 'rxjs';
 import { HttpErrorResponse } from '@angular/common/http';
-import { Button, Icon, Skeleton, ToastService } from '@coffee-tracker/ui';
+import { Button, Icon, ImageLightbox, Skeleton, ToastService } from '@coffee-tracker/ui';
 import { CoffeesApi, ScanApi, ROAST_LEVELS, type CoffeeCreate, type RoastLevel } from '@coffee-tracker/data';
 import { CoffeesStore } from '../services/coffees.store';
 import { roastBucket } from '../utils/coffee-visual';
@@ -37,7 +37,7 @@ function today(): string {
 @Component({
   selector: 'ct-coffee-form',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormField, FormRoot, RouterLink, Button, Icon, Skeleton],
+  imports: [FormField, FormRoot, RouterLink, Button, Icon, Skeleton, ImageLightbox],
   templateUrl: './coffee-form.html',
 })
 export class CoffeeForm implements OnDestroy {
@@ -85,6 +85,8 @@ export class CoffeeForm implements OnDestroy {
   protected readonly scanning = signal(false);
   private readonly photoFile = signal<File | null>(null);
   protected readonly photoPreview = signal<string | null>(null);
+  /** Whether the cropped thumbnail has been opened at full size. */
+  protected readonly photoZoomed = signal(false);
 
   constructor() {
     effect(() => {

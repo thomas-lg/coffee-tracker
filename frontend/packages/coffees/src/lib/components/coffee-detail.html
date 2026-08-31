@@ -16,7 +16,21 @@
       <aside class="overflow-hidden rounded-2xl border border-line bg-foam shadow-sm md:sticky md:top-20">
         <div class="relative h-56" [style.background]="roastGradient(c.roastLevel)">
           @if (c.photoUrl; as photoUrl) {
-            <img [src]="photoUrl" [alt]="c.name" decoding="async" class="absolute inset-0 size-full object-cover" />
+            <!-- Cropped to fill the panel; click to see the whole photo. -->
+            <button
+              type="button"
+              class="absolute inset-0 cursor-zoom-in focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-crema"
+              [attr.aria-label]="'View photo of ' + c.name + ' full size'"
+              (click)="photoZoomed.set(true)"
+            >
+              <img [src]="photoUrl" [alt]="c.name" decoding="async" class="size-full object-cover" />
+            </button>
+            <ct-image-lightbox
+              [src]="photoUrl"
+              [alt]="c.name"
+              [open]="photoZoomed()"
+              (openChange)="photoZoomed.set($event)"
+            />
           } @else {
             <ct-bean-scene
               class="absolute inset-0"
