@@ -36,7 +36,7 @@ RUN dotnet publish backend/CoffeeTracker.Api/CoffeeTracker.Api.csproj -c Release
 
 # --- Stage 3: runtime ---
 # mcr.microsoft.com/dotnet/aspnet:10.0
-FROM mcr.microsoft.com/dotnet/aspnet:10.0@sha256:1fa23fc4872d95fd71c2833ebe65d7e84a43b2d51a31d119516852f13d9505a7 AS runtime
+FROM mcr.microsoft.com/dotnet/aspnet:10.0@sha256:a4556ed033fa96f984bb7a8d348851cb2d36b1281dd2420070045f664fbb5f94 AS runtime
 # OCR via the tesseract CLI (the app shells out to it). The tesseract-ocr package
 # pulls its own runtime libs; tesseract-ocr-eng ships eng.traineddata. gosu drops
 # privileges in the entrypoint. curl is only for the HEALTHCHECK (the aspnet image
