@@ -6,7 +6,7 @@
   "build": { "dockerfile": "Dockerfile", "context": ".." },
   "features": {
     // Node 22 + npm, layered on top of the .NET 10 SDK base image.
-    "ghcr.io/devcontainers/features/node:1": { "version": "22" },
+    "ghcr.io/devcontainers/features/node:2": { "version": "22" },
     // Claude Code CLI (npm-based, so it needs the Node feature above).
     "ghcr.io/anthropics/devcontainer-features/claude-code:1.0": {},
     // GitHub CLI (`gh`). Auth comes from the GH_TOKEN env var below — gh picks it
