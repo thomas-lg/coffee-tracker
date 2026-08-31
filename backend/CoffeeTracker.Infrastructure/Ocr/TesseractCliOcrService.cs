@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Globalization;
 using CoffeeTracker.Application.Ports.Driven;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -78,6 +79,12 @@ public class TesseractCliOcrService(IOptions<OcrOptions> options, ILogger<Tesser
             psi.ArgumentList.Add(_language);
             psi.ArgumentList.Add("--tessdata-dir");
             psi.ArgumentList.Add(_tessdataPath);
+            // Ask for TSV rather than plain text: it carries per-word confidence and
+            // bounding boxes, which is the only reliable way to tell printed label text
+            // from background noise (a photo of a bag on a table produces a dozen
+            // high-letter-count junk lines that look exactly like text otherwise).
+            // The config name must come last.
+            psi.ArgumentList.Add("tsv");
 
             process = Process.Start(psi)
                 ?? throw new InvalidOperationException($"Could not start '{_executable}'.");
@@ -102,7 +109,7 @@ public class TesseractCliOcrService(IOptions<OcrOptions> options, ILogger<Tesser
                 return OcrResult.Unavailable;
             }
 
-            return OcrResult.Read(text);
+            return BuildResult(text);
         }
         catch (OperationCanceledException) when (ct.IsCancellationRequested)
         {
@@ -170,6 +177,98 @@ public class TesseractCliOcrService(IOptions<OcrOptions> options, ILogger<Tesser
         {
             // Already handled by the caller's catch, or cancelled — ignore here.
         }
+    }
+
+    // Turns tesseract's TSV into lines carrying mean confidence and glyph height.
+    //
+    // Columns are: level page_num block_num par_num line_num word_num left top width
+    // height conf text. level 5 is a word; coarser levels repeat the geometry with
+    // conf = -1, so only words are read and then grouped by (block, par, line).
+    //
+    // Falls back to treating the output as plain text when it isn't TSV at all — a
+    // stubbed binary in tests, or a future tesseract that changes the format. Callers
+    // then simply get lines with no quality signals rather than an empty read.
+    private static OcrResult BuildResult(string stdout)
+    {
+        var lines = ParseTsv(stdout);
+        if (lines is null)
+        {
+            return OcrResult.Read(stdout);
+        }
+
+        // RawText is what the user sees in the UI, so rebuild it from every recognised
+        // word — unfiltered. Filtering is the parser's job; hiding text here would make
+        // a bad scan impossible to diagnose from the response.
+        var rawText = string.Join('\n', lines.Select(l => l.Text));
+        return OcrResult.Read(rawText, lines);
+    }
+
+    private static List<OcrLine>? ParseTsv(string stdout)
+    {
+        using var reader = new StringReader(stdout);
+        var header = reader.ReadLine();
+        if (header is null || !header.StartsWith("level\t", StringComparison.Ordinal))
+        {
+            return null;
+        }
+
+        var columns = header.Split('\t');
+        int Column(string name) => Array.IndexOf(columns, name);
+
+        var (levelAt, blockAt, parAt, lineAt) =
+            (Column("level"), Column("block_num"), Column("par_num"), Column("line_num"));
+        var (heightAt, confAt, textAt) = (Column("height"), Column("conf"), Column("text"));
+        if (levelAt < 0 || blockAt < 0 || parAt < 0 || lineAt < 0 || heightAt < 0 || confAt < 0 || textAt < 0)
+        {
+            return null;
+        }
+
+        // Ordered by first appearance so reading order survives for engines/pages where
+        // height is uninformative.
+        var grouped = new Dictionary<(string Block, string Par, string Line), List<(double Conf, int Height)>>();
+        var texts = new Dictionary<(string Block, string Par, string Line), List<string>>();
+        var order = new List<(string Block, string Par, string Line)>();
+
+        while (reader.ReadLine() is { } row)
+        {
+            var cells = row.Split('\t');
+            if (cells.Length <= textAt || cells[levelAt] != "5")
+            {
+                continue;
+            }
+
+            var word = cells[textAt].Trim();
+            if (word.Length == 0)
+            {
+                continue;
+            }
+
+            if (!double.TryParse(cells[confAt], NumberStyles.Float, CultureInfo.InvariantCulture, out var conf))
+            {
+                continue;
+            }
+
+            _ = int.TryParse(cells[heightAt], NumberStyles.Integer, CultureInfo.InvariantCulture, out var height);
+
+            var key = (cells[blockAt], cells[parAt], cells[lineAt]);
+            if (!grouped.TryGetValue(key, out var stats))
+            {
+                grouped[key] = stats = [];
+                texts[key] = [];
+                order.Add(key);
+            }
+
+            stats.Add((conf, height));
+            texts[key].Add(word);
+        }
+
+        return
+        [
+            .. order.Select(key => new OcrLine(
+                string.Join(' ', texts[key]),
+                grouped[key].Average(w => w.Conf),
+                grouped[key].Max(w => w.Height))),
+        ];
     }
 
     private static string ResolveTessdataPath(OcrOptions options)

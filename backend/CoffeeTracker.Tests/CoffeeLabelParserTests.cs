@@ -1,3 +1,4 @@
+using CoffeeTracker.Application.Ports.Driven;
 using CoffeeTracker.Application.Services;
 using Xunit;
 
@@ -51,7 +52,9 @@ public class CoffeeLabelParserTests
     public void Parse_DoesNotThrow_OnEmptyOrNull()
     {
         Assert.NotNull(Parser.Parse(string.Empty));
-        Assert.NotNull(Parser.Parse(null!));
+        // Casts needed since Parse gained an OcrResult overload; both take null.
+        Assert.NotNull(Parser.Parse((string)null!));
+        Assert.NotNull(Parser.Parse((OcrResult)null!));
     }
 
     [Fact]
@@ -158,5 +161,100 @@ public class CoffeeLabelParserTests
 
         Assert.Equal("Hair Bender", result.Name);
         Assert.Null(result.Roaster);
+    }
+
+    // ------------------------------------------------------------------------------
+    // Regression: a real photo of a real bag.
+    //
+    // These are the ACTUAL lines tesseract returned for a photo of a Pacific Blend bag
+    // lying on a wooden table, with the real per-line confidence and glyph height. The
+    // nine noise lines (table grain, bag reflections) score under 50; the printed label
+    // scores 58.8+. Before confidence filtering the parser took the first >=3-letter
+    // line in reading order, giving Name = "aren bik re", Roaster = "sc eS Ae ave".
+    // ------------------------------------------------------------------------------
+    private static OcrResult RealBagScan() => OcrResult.Read(
+        "raw text is passed through untouched; ranking uses the structured lines",
+        [
+            new OcrLine("aren bik re", 15.6, 38),
+            new OcrLine("sc eS Ae ave", 38.9, 72),
+            new OcrLine("Sr Ss aN Ss XN BN \\", 26.6, 108),
+            new OcrLine("AN WS we be Ve ee AN", 31.8, 115),
+            new OcrLine(": We BO Sees", 19.6, 18),
+            new OcrLine("\\, wh A Nees.", 25.3, 19),
+            new OcrLine("\"Mes", 43.8, 16),
+            new OcrLine("\\ \\ j Ba .", 46.2, 29),
+            new OcrLine("te Niort Ne \\ \\", 48.8, 38),
+            new OcrLine("ARAGUA, AMERIQUE DU SLD. VN", 58.8, 55),
+            new OcrLine("GUATEMALA", 96.6, 39),
+            new OcrLine("ORREFACTION MEDIUM +", 62.1, 80),
+            new OcrLine("ACIFIC BLEND", 94.1, 99),
+            new OcrLine("Gourmand & epice", 91.8, 41),
+        ]);
+
+    [Fact]
+    public void Parse_PicksTheTallestConfidentLineAsName_NotTheFirstNoiseLine()
+    {
+        var result = Parser.Parse(RealBagScan());
+
+        // The tallest confident line (h=99) is the brand text. Its leading "P" really is
+        // missing from the OCR - that is the engine, not the parser; the user fixes it.
+        Assert.Equal("ACIFIC BLEND", result.Name);
+    }
+
+    [Fact]
+    public void Parse_NeverSurfacesLowConfidenceNoise()
+    {
+        var result = Parser.Parse(RealBagScan());
+
+        foreach (var noise in new[] { "aren bik re", "sc eS Ae ave", "te Niort Ne" })
+        {
+            Assert.NotEqual(noise, result.Name);
+            Assert.NotEqual(noise, result.Roaster);
+        }
+    }
+
+    [Fact]
+    public void Parse_LeavesRoasterNull_WhenTheLabelNeverNamesOne()
+    {
+        // This bag's label shows origin, roast and a description - no roaster. The old
+        // positional fallback promoted "ORREFACTION MEDIUM +" (the roast line) here.
+        var result = Parser.Parse(RealBagScan());
+
+        Assert.Null(result.Roaster);
+    }
+
+    [Fact]
+    public void Parse_StillReadsOriginAndRoast_FromTheRealScan()
+    {
+        var result = Parser.Parse(RealBagScan());
+
+        Assert.Equal("Guatemala", result.Origin);
+        Assert.Equal("Medium", result.RoastLevel);
+    }
+
+    [Fact]
+    public void Parse_DoesNotLetAnUnsureLineWinOnHeightAlone()
+    {
+        var parser = new CoffeeLabelParser(minConfidence: 55);
+
+        var result = parser.Parse(OcrResult.Read(
+            "x",
+            [
+                new OcrLine("HUGE BUT GARBLED", 20, 500),
+                new OcrLine("Quiet Confident Name", 90, 30),
+            ]));
+
+        Assert.Equal("Quiet Confident Name", result.Name);
+    }
+
+    [Fact]
+    public void Parse_FallsBackToReadingOrder_WhenTheEngineReportsNoGeometry()
+    {
+        // Text-only engines (and the string overload) must behave exactly as before:
+        // first prominent line wins. Guards the degradation path instead of assuming it.
+        var result = Parser.Parse("Hair Bender\nStumptown Coffee Roasters\n340g");
+
+        Assert.Equal("Hair Bender", result.Name);
+        Assert.Equal("Stumptown Coffee Roasters", result.Roaster);
     }
 }
