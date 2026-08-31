@@ -12,10 +12,13 @@ name: Refresh lock files
 #   1. Workflow runs triggered *by Dependabot* get a read-only GITHUB_TOKEN and no access
 #      to secrets, so a `pull_request`-triggered job could never push the fix.
 #      workflow_dispatch runs in the base-branch context, with a writable token.
-#   2. A push made with GITHUB_TOKEN does not raise new workflow events, so ci.yml would
-#      keep showing its old failure. The last step therefore re-triggers the required
-#      checks explicitly via `gh pr update-branch` — which also satisfies the strict
-#      up-to-date-branch rule on main that these PRs need anyway.
+#   2. A push made with GITHUB_TOKEN does not produce runnable checks: GitHub queues the
+#      pull_request runs as `action_required`, awaiting manual approval, so the required
+#      checks keep showing their pre-fix state. The last step therefore re-triggers them
+#      by closing and reopening the PR, which raises a fresh pull_request event that runs
+#      without approval. `gh pr update-branch` alone is NOT enough — it no-ops with
+#      "PR branch already up-to-date" whenever the PR isn't behind main, leaving the PR
+#      with no runnable checks at all. Both are done, in that order.
 #
 # Usage: gh workflow run refresh-lockfiles.yml -f pr=<number>
 
@@ -94,10 +97,20 @@ jobs:
           git push origin "HEAD:$BRANCH"
           echo "pushed=true" >> "$GITHUB_OUTPUT"
 
-      # A GITHUB_TOKEN push raises no workflow events, so the required checks would still
-      # show the pre-fix failure. Updating the branch creates a new head and re-runs them.
+      # Make the required checks actually run again on the fixed head. Order matters:
+      # update-branch first so the PR satisfies main's strict up-to-date rule (a no-op
+      # when it is already current), then close/reopen so the final head gets a
+      # pull_request run that isn't stuck in `action_required`.
+      #
+      # Closing a Dependabot PR is normally its "don't recreate this update" signal, but
+      # it is reopened immediately and then merged, so the update lands either way.
       - name: Re-trigger the required checks
         if: steps.commit.outputs.pushed == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh pr update-branch "${{ inputs.pr }}"
+          PR: ${{ inputs.pr }}
+        run: |
+          # Non-fatal: it legitimately no-ops when the branch is already up to date.
+          gh pr update-branch "$PR" || true
+          gh pr close "$PR"
+          gh pr reopen "$PR"
