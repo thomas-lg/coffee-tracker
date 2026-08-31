@@ -4,12 +4,17 @@
 .github
 .devcontainer
 
-# Build outputs
+# Build outputs. These need the **/ prefix to be recursive: a bare `node_modules`
+# matches only the context root, so frontend/node_modules stayed IN the context. That
+# breaks a local `docker build` outright, because the npm workspace symlinks under it
+# (@coffee-tracker/* -> ../../packages/*) are unreadable to the build-context sender on
+# Windows ("error from sender: ... The file cannot be accessed by the system"). CI never
+# hit it because a fresh checkout has no node_modules to send.
 **/bin
 **/obj
-dist
-.angular
-node_modules
+**/dist
+**/.angular
+**/node_modules
 
 # Secrets — compose reads JWT_KEY from a .env file; never ship it in the context
 .env
