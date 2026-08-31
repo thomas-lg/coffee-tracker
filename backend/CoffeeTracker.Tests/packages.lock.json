@@ -536,8 +536,8 @@
       },
       "Microsoft.OpenApi": {
         "type": "Transitive",
-        "resolved": "2.12.2",
-        "contentHash": "ZkT7qiJe0Kj0+DTZOZo+xrDy1kNmdsWFQVPIQLNx9ZJ0T9cB2LG7r+Bi60so8/+yg1nkS7QCPadrzsTG4VPKrA=="
+        "resolved": "2.7.5",
+        "contentHash": "0FA67RSnRM4tcBKqiqVu/HPdZ9+QOKbmeRjxRUGTCjPU4C0bmUhd97Dso7Yild5P7nOV6GxJ2xrK0Kv/O9xp0w=="
       },
       "Microsoft.TestPlatform.ObjectModel": {
         "type": "Transitive",
@@ -740,7 +740,7 @@
           "CoffeeTracker.Infrastructure": "[1.0.0, )",
           "Microsoft.AspNetCore.Authentication.JwtBearer": "[10.0.11, )",
           "Microsoft.AspNetCore.OpenApi": "[10.0.11, )",
-          "Microsoft.OpenApi": "[2.12.2, )",
+          "Microsoft.OpenApi": "[2.7.5, )",
           "Serilog.AspNetCore": "[9.0.0, )",
           "Swashbuckle.AspNetCore.SwaggerUI": "[10.2.3, )"
         }
