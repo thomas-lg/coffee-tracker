@@ -48,6 +48,15 @@ updates:
     groups:
       npm-minor-patch:
         update-types: [minor, patch]
+    # Angular pins TypeScript to a narrow peer range -- @angular/build 22 wants
+    # ">=6.0 <6.1", so anything past a 6.0.x patch fails `npm ci` with ERESOLVE.
+    # TypeScript here is driven by Angular: bump it deliberately with an Angular
+    # major, not on its own. Patches still flow.
+    ignore:
+      - dependency-name: typescript
+        update-types:
+          - version-update:semver-major
+          - version-update:semver-minor
     labels: [dependencies, frontend]
     commit-message:
       prefix: deps
