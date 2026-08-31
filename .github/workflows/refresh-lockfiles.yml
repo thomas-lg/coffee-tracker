@@ -12,13 +12,17 @@ name: Refresh lock files
 #   1. Workflow runs triggered *by Dependabot* get a read-only GITHUB_TOKEN and no access
 #      to secrets, so a `pull_request`-triggered job could never push the fix.
 #      workflow_dispatch runs in the base-branch context, with a writable token.
-#   2. A push made with GITHUB_TOKEN does not produce runnable checks: GitHub queues the
-#      pull_request runs as `action_required`, awaiting manual approval, so the required
-#      checks keep showing their pre-fix state. The last step therefore re-triggers them
-#      by closing and reopening the PR, which raises a fresh pull_request event that runs
-#      without approval. `gh pr update-branch` alone is NOT enough — it no-ops with
-#      "PR branch already up-to-date" whenever the PR isn't behind main, leaving the PR
-#      with no runnable checks at all. Both are done, in that order.
+#   2. This workflow CANNOT make the required checks pass on its own, and doesn't pretend
+#      to. Any run whose triggering actor is github-actions[bot] is parked as
+#      `action_required` — GitHub's protection against workflows re-triggering
+#      themselves — and nothing the bot can do lifts it for its own runs: not pushing,
+#      not closing/reopening the PR, not the approve API. Only a non-bot actor can.
+#      (Established against PR #100: a bot push left CI parked; the same close/reopen
+#      done by a user token started it immediately.) So the last step does the part that
+#      works and then states plainly what is left — one command from any machine with a
+#      user token, no local .NET toolchain required. Granting a PAT or GitHub App token
+#      here would close the loop automatically; that is a secret-management decision for
+#      the repo owner, not something to assume.
 #
 # Usage: gh workflow run refresh-lockfiles.yml -f pr=<number>
 
@@ -34,6 +38,7 @@ on:
 permissions:
   contents: write
   pull-requests: write
+  actions: read # list check runs, to report whether they're parked as action_required
 
 jobs:
   refresh:
@@ -97,20 +102,36 @@ jobs:
           git push origin "HEAD:$BRANCH"
           echo "pushed=true" >> "$GITHUB_OUTPUT"
 
-      # Make the required checks actually run again on the fixed head. Order matters:
-      # update-branch first so the PR satisfies main's strict up-to-date rule (a no-op
-      # when it is already current), then close/reopen so the final head gets a
-      # pull_request run that isn't stuck in `action_required`.
-      #
-      # Closing a Dependabot PR is normally its "don't recreate this update" signal, but
-      # it is reopened immediately and then merged, so the update lands either way.
-      - name: Re-trigger the required checks
+      # Satisfy main's strict up-to-date rule, then report what a human still has to do.
+      # Non-fatal: update-branch legitimately no-ops when the branch is already current.
+      - name: Update the branch and report what remains
         if: steps.commit.outputs.pushed == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
           PR: ${{ inputs.pr }}
+          BRANCH: ${{ steps.pr.outputs.branch }}
+          REPO: ${{ github.repository }}
         run: |
-          # Non-fatal: it legitimately no-ops when the branch is already up to date.
           gh pr update-branch "$PR" || true
-          gh pr close "$PR"
-          gh pr reopen "$PR"
+
+          parked=$(gh run list --branch "$BRANCH" --limit 20             --json databaseId,conclusion             -q '[.[] | select(.conclusion == "action_required")] | length')
+
+          {
+            echo "### Lock files refreshed on \`$BRANCH\`"
+            echo
+            if [ "${parked:-0}" -gt 0 ]; then
+              echo "The required checks are parked as \`action_required\` because the fix was"
+              echo "pushed by \`github-actions[bot]\`. GITHUB_TOKEN cannot start or approve its"
+              echo "own runs, so finish it with a user token:"
+              echo
+              echo '```bash'
+              echo "gh pr close $PR && gh pr reopen $PR"
+              echo '```'
+            else
+              echo "Required checks are running on the refreshed head; nothing further to do."
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          if [ "${parked:-0}" -gt 0 ]; then
+            echo "::warning::Lock files pushed, but $parked check run(s) are parked as action_required. Run: gh pr close $PR && gh pr reopen $PR"
+          fi
