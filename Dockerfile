@@ -6,7 +6,7 @@
 # node:24-slim -- keep in step with ci.yml's node-version and the devcontainer's
 # node feature. 24 is the current LTS; frontend/package.json's engines field allows
 # ^20.19 || ^22.12 || ^24, so odd-numbered (non-LTS) majors are deliberately skipped.
-FROM node:24-slim@sha256:ba849c60be29959425b8734d57b8b4b7d56f98edd9504c9af091d5281095a71e AS web
+FROM node:26-slim@sha256:c0753125a3789977aefe869cbebccf70e3cfd7ea84ca48547458f02e4f1d7146 AS web
 WORKDIR /web
 # Restore deps in their own layer (cached until a manifest changes). This is an npm
 # workspaces repo, so `npm ci` needs every member's package.json present up front —
