@@ -49,8 +49,17 @@ them all with:
 ```
 
 It uses a local .NET SDK if you have one and the pinned SDK container otherwise, so it
-works on a bare host too. Dependabot hits this on every backend PR — refresh those without
-a local checkout via `gh workflow run refresh-lockfiles.yml -f pr=<number>`.
+works on a bare host too.
+
+Dependabot hits this on every backend PR. To refresh one without a local toolchain,
+`gh workflow run refresh-lockfiles.yml -f pr=<number>` does the restore and pushes the
+lock files — but it cannot make the checks pass on its own: GitHub parks any run triggered
+by `github-actions[bot]` as `action_required`, and `GITHUB_TOKEN` can neither start nor
+approve its own runs. The job summary says so and prints the one command that finishes it:
+
+```bash
+gh pr close <number> && gh pr reopen <number>
+```
 
 ## Install on Unraid (or any Docker host)
 
