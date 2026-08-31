@@ -21,16 +21,11 @@
               type="button"
               class="absolute inset-0 cursor-zoom-in focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-crema"
               [attr.aria-label]="'View photo of ' + c.name + ' full size'"
-              (click)="photoZoomed.set(true)"
+              (click)="lightbox.open()"
             >
               <img [src]="photoUrl" [alt]="c.name" decoding="async" class="size-full object-cover" />
             </button>
-            <ct-image-lightbox
-              [src]="photoUrl"
-              [alt]="c.name"
-              [open]="photoZoomed()"
-              (openChange)="photoZoomed.set($event)"
-            />
+            <ct-image-lightbox #lightbox [src]="photoUrl" [alt]="c.name" />
           } @else {
             <ct-bean-scene
               class="absolute inset-0"

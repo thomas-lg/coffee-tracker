@@ -85,8 +85,6 @@ export class CoffeeForm implements OnDestroy {
   protected readonly scanning = signal(false);
   private readonly photoFile = signal<File | null>(null);
   protected readonly photoPreview = signal<string | null>(null);
-  /** Whether the cropped thumbnail has been opened at full size. */
-  protected readonly photoZoomed = signal(false);
 
   constructor() {
     effect(() => {

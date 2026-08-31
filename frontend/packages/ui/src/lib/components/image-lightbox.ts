@@ -1,13 +1,4 @@
-import {
-  ChangeDetectionStrategy,
-  Component,
-  ElementRef,
-  effect,
-  input,
-  output,
-  signal,
-  viewChild,
-} from '@angular/core';
+import { ChangeDetectionStrategy, Component, ElementRef, input, viewChild } from '@angular/core';
 import { Icon } from './icon';
 
 /**
@@ -18,12 +9,23 @@ import { Icon } from './icon';
  * read the label. This shows the whole thing, scaled to fit the viewport
  * (`object-contain`), over a dimmed backdrop.
  *
- * Opening is the caller's business (`open` input); closing is this component's, and
- * it accepts every gesture people try: the close button, the backdrop, and Escape.
- *
  * Rendered as a native `<dialog>` so the browser supplies the modal semantics for
  * free — focus containment, inertness of the page behind, and top-layer stacking
  * that can't be broken by an ancestor's `overflow` or `z-index`.
+ *
+ * Driven by method call rather than by a bound `open` flag, because `<dialog>` is
+ * an imperative API (`showModal()` throws if it is already open) and the element
+ * already tracks whether it is showing. A bound flag would mean shadowing that
+ * state in a signal and running an effect to keep the two in step — two sources of
+ * truth for one boolean. Callers use a template reference instead:
+ *
+ * ```html
+ * <button (click)="lightbox.open()">…</button>
+ * <ct-image-lightbox #lightbox [src]="photoUrl" [alt]="name" />
+ * ```
+ *
+ * Closing needs no caller involvement at all: the close button, the backdrop and
+ * Escape are all handled here.
  */
 @Component({
   selector: 'ct-image-lightbox',
@@ -36,8 +38,6 @@ import { Icon } from './icon';
       #dialog
       class="m-0 max-h-none max-w-none bg-transparent p-0 backdrop:bg-transparent"
       [attr.aria-label]="alt() || 'Photo'"
-      (close)="onDialogClose()"
-      (cancel)="onDialogClose()"
     >
       <div class="fixed inset-0 flex items-center justify-center bg-black/80 p-4 sm:p-8">
         <!-- Backdrop click closes. Deliberately NOT a <button>: a full-viewport control
@@ -45,11 +45,7 @@ import { Icon } from './icon';
              identical "Close photo" targets, one of them the size of the screen.
              Keyboard users already have the close button and Escape, so this is a
              pointer-only affordance and is hidden from the accessibility tree. -->
-        <div
-          class="absolute inset-0 cursor-zoom-out"
-          aria-hidden="true"
-          (click)="close()"
-        ></div>
+        <div class="absolute inset-0 cursor-zoom-out" aria-hidden="true" (click)="close()"></div>
 
         @if (src(); as source) {
           <img
@@ -79,42 +75,16 @@ export class ImageLightbox {
   /** Alt text; also names the dialog for screen readers. */
   readonly alt = input('');
 
-  /** Whether the viewer is showing. Two-way friendly via `openChange`. */
-  readonly open = input(false);
+  private readonly dialog = viewChild.required<ElementRef<HTMLDialogElement>>('dialog');
 
-  readonly openChange = output<boolean>();
-
-  private readonly dialog = viewChild<ElementRef<HTMLDialogElement>>('dialog');
-
-  /** Mirrors the real dialog state so we never call showModal/close twice. */
-  private readonly shown = signal(false);
-
-  constructor() {
-    effect(() => {
-      const el = this.dialog()?.nativeElement;
-      if (!el) return;
-
-      const shouldShow = this.open() && !!this.src();
-      if (shouldShow === this.shown()) return;
-
-      // showModal() throws if already open, and close() fires the close event — hence
-      // tracking actual state rather than trusting the input alone.
-      if (shouldShow) {
-        el.showModal();
-        this.shown.set(true);
-      } else {
-        el.close();
-      }
-    });
+  /** Shows the photo. No-op with nothing to show, or when already showing. */
+  open(): void {
+    const el = this.dialog().nativeElement;
+    if (el.open || !this.src()) return;
+    el.showModal();
   }
 
   close(): void {
-    this.dialog()?.nativeElement.close();
-  }
-
-  /** Fires for the close button, backdrop, and Escape (the dialog's own cancel). */
-  protected onDialogClose(): void {
-    this.shown.set(false);
-    this.openChange.emit(false);
+    this.dialog().nativeElement.close();
   }
 }

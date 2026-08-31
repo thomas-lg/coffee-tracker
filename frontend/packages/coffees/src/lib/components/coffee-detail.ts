@@ -27,9 +27,6 @@ import { BeanScene } from './bean-scene';
   templateUrl: './coffee-detail.html',
 })
 export class CoffeeDetail {
-  /** Whether the cropped bag photo has been opened at full size. */
-  protected readonly photoZoomed = signal(false);
-
   private readonly coffeesApi = inject(CoffeesApi);
   private readonly reviewsApi = inject(ReviewsApi);
   private readonly tagsApi = inject(FlavorTagsApi);
