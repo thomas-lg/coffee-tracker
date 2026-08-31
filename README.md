@@ -35,6 +35,23 @@ Development happens inside a dev container, so the only host prerequisites are
    `http://localhost:4200` (both forwarded automatically). `http://localhost` is a
    secure context, so the PWA service worker and camera work without HTTPS in dev.
 
+### Backend dependency bumps
+
+`backend/Directory.Build.props` enables NuGet lock files and CI restores with
+`--locked-mode`, so a bump can't land without a reviewed `packages.lock.json`. NuGet keeps
+one lock file per project, so changing a package in `Application` or `Infrastructure` also
+invalidates the ones in `Api` and `Tests` and the restore fails with **NU1004**. Refresh
+them all with:
+
+```powershell
+./scripts/refresh-lockfiles.ps1          # rewrites the lock files (--force-evaluate)
+./scripts/refresh-lockfiles.ps1 -Check   # just reproduce the CI restore (--locked-mode)
+```
+
+It uses a local .NET SDK if you have one and the pinned SDK container otherwise, so it
+works on a bare host too. Dependabot hits this on every backend PR — refresh those without
+a local checkout via `gh workflow run refresh-lockfiles.yml -f pr=<number>`.
+
 ## Install on Unraid (or any Docker host)
 
 The published image is **public** at `ghcr.io/thomas-lg/coffee-tracker`. On Unraid,
