@@ -46,15 +46,43 @@ $repoRoot = Resolve-Path (Join-Path $PSScriptRoot '..')
 $solution = 'CoffeeTracker.sln'
 $restoreArgs = if ($Check) { '--locked-mode' } else { '--force-evaluate' }
 
-# Keep this digest in step with the SDK stage in ./Dockerfile so a local refresh
-# resolves against the same SDK (and therefore the same bundled NuGet) as the image.
-$sdkImage = 'mcr.microsoft.com/dotnet/sdk:10.0@sha256:ed034a8bf0b24ded0cbbac07e17825d8e9ebfe21e308191d0f7421eaf5ad4664'
+# Read the SDK image straight out of ./Dockerfile rather than repeating the digest here.
+# Dependabot bumps that digest regularly, so a copy in this file would silently go stale
+# and start resolving against a different SDK (and a different bundled NuGet) than the
+# image builds with -- which is exactly the class of drift this script exists to prevent.
+function Get-SdkImage {
+    $dockerfile = Join-Path $repoRoot 'Dockerfile'
+    $match = Select-String -Path $dockerfile -Pattern '^FROM\s+(mcr\.microsoft\.com/dotnet/sdk:\S+)' |
+        Select-Object -First 1
+    if (-not $match) {
+        throw "Could not find the .NET SDK 'FROM' line in $dockerfile."
+    }
+    return $match.Matches[0].Groups[1].Value
+}
+
+# Windows PowerShell 5.1 wraps every line a native command writes to stderr in an
+# ErrorRecord, so with $ErrorActionPreference = 'Stop' ordinary progress output turns
+# fatal -- docker's "Unable to find image ... locally" pull message did exactly that on
+# the first run, before the SDK image is cached. Run natives with the preference relaxed
+# and judge them by their exit code instead.
+function Invoke-Native {
+    param([Parameter(Mandatory)][string[]]$Command)
+
+    $previous = $ErrorActionPreference
+    $ErrorActionPreference = 'Continue'
+    try {
+        & $Command[0] @($Command[1..($Command.Length - 1)])
+    }
+    finally {
+        $ErrorActionPreference = $previous
+    }
+}
 
 function Test-Sdk {
     $dotnet = Get-Command dotnet -ErrorAction SilentlyContinue
     if (-not $dotnet) { return $false }
     # The dotnet *host* is present on many machines without any SDK; only an SDK can restore.
-    $sdks = & $dotnet.Source --list-sdks 2>$null
+    $sdks = Invoke-Native @($dotnet.Source, '--list-sdks') 2>$null
     return [bool]$sdks
 }
 
@@ -78,15 +106,19 @@ try {
 
     if (Test-Sdk) {
         Write-Host "Restoring $solution with a local SDK ($restoreArgs)..."
-        & dotnet restore $solution $restoreArgs
+        Invoke-Native @('dotnet', 'restore', $solution, $restoreArgs)
     }
     else {
         Write-Host 'No .NET SDK on PATH; falling back to the SDK container.'
         if (-not (Get-Command docker -ErrorAction SilentlyContinue)) {
             throw 'Neither a .NET SDK nor docker is available. Install the .NET 10 SDK or start Docker.'
         }
+        $sdkImage = Get-SdkImage
         Write-Host "Restoring $solution in $sdkImage ($restoreArgs)..."
-        & docker run --rm -v "${repoRoot}:/src" -w /src $sdkImage dotnet restore $solution $restoreArgs
+        Invoke-Native @(
+            'docker', 'run', '--rm', '-v', "${repoRoot}:/src", '-w', '/src',
+            $sdkImage, 'dotnet', 'restore', $solution, $restoreArgs
+        )
     }
     if ($LASTEXITCODE -ne 0) { throw "dotnet restore failed with exit code $LASTEXITCODE." }
 
