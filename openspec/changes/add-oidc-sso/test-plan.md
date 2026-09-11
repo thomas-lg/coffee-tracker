@@ -113,19 +113,24 @@ agreed before touching it.**
 
 ## Results — run of 2026-09-11
 
-Phases 1 to 5 and 7 executed against a locally built Release image. Phase 6 is the only
-one outstanding: it needs an OIDC client registered at a real provider, which is a
-change to live infrastructure and has not been made.
+Executed against a locally built Release image, driving the API over HTTP. Every
+step below was run and its result observed.
+
+**Not run, and not claimed:** the browser steps (2.7, 3.9, 3.10, 3.11, 7.5) and the
+whole of phase 6. The UI steps need a running front-end and a person or a driver at the
+keyboard; phase 6 needs an OIDC client registered at a real provider, which is a change
+to live infrastructure and has not been made.
 
 | Phase | Result |
 |---|---|
 | 1 — Automated suites | **Pass.** Backend 193/193, frontend 24/24, production build clean, lint clean, generated types match a freshly regenerated `openapi.json`. |
-| 2 — Fresh instance | **Pass.** Booted with no OIDC and no `REGISTRATION_ENABLED`; the first account registered and came back `isAdmin: true`; `registrationEnabled` flipped to false by itself; a second registration got 403; the first account still signed in. |
-| 3 — Admin policy and guard | **Pass.** 401 anonymous, 403 non-admin, 200 admin. Disabling local sign-in refused with 409 and the explanation naming the identity provider, and the stored setting was unchanged afterwards. Registration reopened by the admin stayed open across two further registrations. |
+| 2 — Fresh instance (2.1–2.6) | **Pass.** Booted with no OIDC and no `REGISTRATION_ENABLED`; the first account registered and came back `isAdmin: true`; `registrationEnabled` flipped to false by itself; a second registration got 403; the first account still signed in. |
+| 3 — Admin policy and guard (3.1–3.8) | **Pass.** 401 anonymous, 403 non-admin, 200 admin. Disabling local sign-in refused with 409 and the explanation naming the identity provider, and the stored setting was unchanged afterwards. Registration reopened by the admin stayed open across two further registrations. |
 | 4 — Upgrade path | **Pass.** Against a database stripped back to the pre-change schema: with `REGISTRATION_ENABLED=false` the migration applied, **sign-in still worked**, and registration stayed closed; with `true`, registration stayed open. Restarting with the flag flipped changed nothing — it is spent. |
 | 5 — Provider configuration | **Pass.** Each half-configured start aborted with a message naming the pair that must be set together. An unresolvable authority still booted, reported `oidcAvailable: false`, and left local sign-in working. `POST /api/auth/oidc` returned 404 with no provider and 401 with an unreachable one. |
 | 6 — Real provider | **Not run.** Needs a client registered at a provider. |
-| 7 — Regression | **Pass.** Refresh, coffee create/edit/delete as owner, 403 for a non-admin on someone else's coffee, `/api/admin/photos` 403/200. |
+| UI steps (2.7, 3.9–3.11, 7.5) | **Not run.** Need a browser against a running front-end. |
+| 7 — Regression (7.1–7.4) | **Pass.** Refresh, coffee create/edit/delete as owner, 403 for a non-admin on someone else's coffee, `/api/admin/photos` 403/200. |
 
 Two expectations in this plan were wrong about the app rather than the other way round,
 and are corrected here rather than quietly passed:
