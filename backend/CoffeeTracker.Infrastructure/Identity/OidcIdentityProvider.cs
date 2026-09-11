@@ -43,7 +43,7 @@ public sealed class OidcIdentityProvider : IExternalIdentityProvider
 
     public async Task<ExternalProviderInfo?> GetClientInfoAsync(CancellationToken ct = default) =>
         await IsAvailableAsync(ct)
-            ? new ExternalProviderInfo(ConfiguredIssuer!, _options.ClientId!, _options.Scopes)
+            ? new ExternalProviderInfo(ConfiguredIssuer!, _options.ClientId!, _options.Scopes, _options.DisplayName)
             : null;
 
     /// <summary>

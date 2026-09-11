@@ -896,6 +896,7 @@ export interface components {
             authority: string;
             clientId: string;
             scopes: string;
+            displayName: null | string;
         };
         OidcSignInDto: {
             idToken: string;

@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@a
 import { rxResource } from '@angular/core/rxjs-interop';
 import { Router, RouterLink } from '@angular/router';
 import { FormField, FormRoot, email, form, required } from '@angular/forms/signals';
-import { Button, ToastService } from '@coffee-tracker/ui';
+import { Button, Icon, ToastService } from '@coffee-tracker/ui';
 import { ConfigApi } from '@coffee-tracker/data';
 import { AuthStore } from '../auth.store';
 import { ProviderSignIn } from '../provider-sign-in';
@@ -10,7 +10,7 @@ import { ProviderSignIn } from '../provider-sign-in';
 @Component({
   selector: 'ct-login',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormField, FormRoot, RouterLink, Button],
+  imports: [FormField, FormRoot, RouterLink, Button, Icon],
   templateUrl: './login.html',
 })
 export class Login {
@@ -48,6 +48,15 @@ export class Login {
     return this.configRes.value()?.oidcAvailable ?? false;
   });
 
+  /**
+   * What to call the provider on the button. The operator names it; unset, the label
+   * stays generic — the app never hard-codes which product it is talking to.
+   */
+  protected readonly providerName = computed<string>(() => {
+    if (this.configRes.error()) return '';
+    return this.configRes.value()?.oidc?.displayName?.trim() || 'your identity provider';
+  });
+
   /** Set when the API refused a provider sign-in we came back from. */
   protected readonly providerError = this.provider.error.asReadonly();
 
@@ -59,7 +68,11 @@ export class Login {
   });
   protected readonly submitting = signal(false);
 
+  /** Set on click and never cleared: the page is on its way out to the provider. */
+  protected readonly redirecting = signal(false);
+
   protected signInWithProvider(): void {
+    this.redirecting.set(true);
     this.provider.start();
   }
 

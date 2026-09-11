@@ -15,4 +15,4 @@ public record ConfigDto(
 /// What the browser needs to run the authorization flow. Present only when a provider
 /// is configured and reachable. Nothing here is secret.
 /// </summary>
-public record OidcClientConfigDto(string Authority, string ClientId, string Scopes);
+public record OidcClientConfigDto(string Authority, string ClientId, string Scopes, string? DisplayName);

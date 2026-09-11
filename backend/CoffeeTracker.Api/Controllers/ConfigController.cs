@@ -26,6 +26,6 @@ public class ConfigController(IAccountPolicy accountPolicy, IExternalIdentityPro
             policy.LocalLoginEnabled,
             policy.LocalRegistrationEnabled,
             info is not null,
-            info is null ? null : new OidcClientConfigDto(info.Authority, info.ClientId, info.Scopes)));
+            info is null ? null : new OidcClientConfigDto(info.Authority, info.ClientId, info.Scopes, info.DisplayName)));
     }
 }

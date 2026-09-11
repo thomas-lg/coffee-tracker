@@ -66,7 +66,19 @@ describe('Login', () => {
   it('offers the provider action when one is available', async () => {
     const el = await render({ oidcAvailable: true });
 
+    // No name configured: the label stays generic rather than naming a product the
+    // app has no business knowing about.
     expect(providerButton(el)).toBeDefined();
+  });
+
+  it('names the provider when the operator configured a name', async () => {
+    const el = await render({
+      oidcAvailable: true,
+      oidc: { authority: 'https://id.example.com', clientId: 'c', scopes: 'openid', displayName: 'Authelia' },
+    });
+
+    const button = [...el.querySelectorAll('ct-button')].find((b) => /Authelia/.test(b.textContent ?? ''));
+    expect(button).toBeDefined();
   });
 
   it('hides the local form when local sign-in is disabled', async () => {

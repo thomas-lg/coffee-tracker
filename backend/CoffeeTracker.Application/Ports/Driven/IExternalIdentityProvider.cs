@@ -32,4 +32,4 @@ public interface IExternalIdentityProvider
 }
 
 /// <summary>The provider coordinates a browser client needs.</summary>
-public sealed record ExternalProviderInfo(string Authority, string ClientId, string Scopes);
+public sealed record ExternalProviderInfo(string Authority, string ClientId, string Scopes, string? DisplayName);

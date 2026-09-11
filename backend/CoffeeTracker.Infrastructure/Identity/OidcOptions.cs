@@ -23,6 +23,13 @@ public class OidcOptions
     public string Scopes { get; set; } = "openid profile email";
 
     /// <summary>
+    /// What to call the provider on the sign-in button — "Authelia", "Keycloak", the
+    /// name of a company. Optional: unset, the client falls back to a generic label, so
+    /// the app never has to know which product it is talking to.
+    /// </summary>
+    public string? DisplayName { get; set; }
+
+    /// <summary>
     /// Claim carrying the administrator assertion (e.g. <c>groups</c>). Leave unset to
     /// fall back to promoting the first user who signs in through the provider.
     /// </summary>

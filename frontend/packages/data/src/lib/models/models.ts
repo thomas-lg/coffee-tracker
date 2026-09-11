@@ -146,6 +146,8 @@ export interface OidcClientConfig {
   authority: string;
   clientId: string;
   scopes: string;
+  /** What to call the provider on the button. Null falls back to a generic label. */
+  displayName: string | null;
 }
 
 /** The provider ID token, presented for an app session. */

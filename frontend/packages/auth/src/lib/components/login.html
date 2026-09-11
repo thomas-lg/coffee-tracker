@@ -10,20 +10,6 @@
     </p>
   }
 
-  @if (providerAvailable()) {
-    <ct-button type="button" (click)="signInWithProvider()" class="mb-2">
-      Sign in with your identity provider
-    </ct-button>
-  }
-
-  @if (providerAvailable() && localLoginEnabled()) {
-    <div class="my-4 flex items-center gap-3 text-xs uppercase tracking-widest text-muted">
-      <span class="h-px flex-1 bg-line"></span>
-      or
-      <span class="h-px flex-1 bg-line"></span>
-    </div>
-  }
-
   @if (localLoginEnabled()) {
     <form [formRoot]="f" (submit)="$event.preventDefault(); onSubmit()" class="flex flex-col gap-4">
       <label class="flex flex-col gap-1.5">
@@ -58,6 +44,22 @@
         {{ submitting() ? 'Signing in…' : 'Sign in' }}
       </ct-button>
     </form>
+  }
+
+  @if (providerAvailable()) {
+    @if (localLoginEnabled()) {
+      <div class="my-6 flex items-center gap-3">
+        <span class="h-px flex-1 bg-line"></span>
+        <span class="text-xs font-medium uppercase tracking-widest text-muted">or continue with</span>
+        <span class="h-px flex-1 bg-line"></span>
+      </div>
+    }
+
+    <!-- Leaving for the provider takes a moment; without this the button looks dead. -->
+    <ct-button type="button" variant="ghost" [disabled]="redirecting()" (click)="signInWithProvider()">
+      <ct-icon name="id-card" [size]="18" />
+      {{ redirecting() ? 'Redirecting to ' + providerName() + '…' : providerName() }}
+    </ct-button>
   }
 
   @if (registrationEnabled()) {

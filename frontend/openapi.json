@@ -1362,7 +1362,8 @@
         "required": [
           "authority",
           "clientId",
-          "scopes"
+          "scopes",
+          "displayName"
         ],
         "type": "object",
         "properties": {
@@ -1374,6 +1375,12 @@
           },
           "scopes": {
             "type": "string"
+          },
+          "displayName": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },

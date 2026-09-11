@@ -6,6 +6,7 @@ import {
   Check,
   ChevronDown,
   Coffee,
+  IdCard,
   type IconNode,
   LogOut,
   Pencil,
@@ -44,6 +45,7 @@ const ICONS = {
   back: ArrowLeft,
   'arrow-right': ArrowRight,
   'chevron-down': ChevronDown,
+  'id-card': IdCard,
 } satisfies Record<string, IconNode>;
 
 export type IconName = keyof typeof ICONS;
