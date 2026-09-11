@@ -23,7 +23,10 @@ public class AdminSettingsController(IAccountSettingsService settings) : Control
     [HttpPut]
     public async Task<ActionResult<AccountSettingsDto>> Update(AccountSettingsDto request, CancellationToken ct)
     {
-        var result = await settings.UpdateAsync(request, ct);
+        // Model validation has already rejected a missing field, so both are present.
+        var result = await settings.UpdateAsync(
+            new AccountSettings(request.LocalLoginEnabled!.Value, request.LocalRegistrationEnabled!.Value),
+            ct);
         return result.Status switch
         {
             AccountSettingsStatus.Applied => Ok(result.Settings),

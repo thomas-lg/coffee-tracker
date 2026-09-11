@@ -53,7 +53,7 @@ public sealed class AccountSettingsServiceTests
     {
         var (service, policy) = Build(issuer: null);
 
-        var result = await service.UpdateAsync(new AccountSettingsDto(LocalLoginEnabled: false, LocalRegistrationEnabled: true));
+        var result = await service.UpdateAsync(new AccountSettings(LocalLoginEnabled: false, LocalRegistrationEnabled: true));
 
         Assert.Equal(AccountSettingsStatus.WouldLockEveryoneOut, result.Status);
         Assert.True(policy.Current.LocalLoginEnabled);
@@ -65,7 +65,7 @@ public sealed class AccountSettingsServiceTests
     {
         var (service, policy) = Build(hasAdminWithExternalLogin: false);
 
-        var result = await service.UpdateAsync(new AccountSettingsDto(LocalLoginEnabled: false, LocalRegistrationEnabled: true));
+        var result = await service.UpdateAsync(new AccountSettings(LocalLoginEnabled: false, LocalRegistrationEnabled: true));
 
         // A configured provider is not proof it works, or that anyone with admin rights
         // can actually get through it.
@@ -78,7 +78,7 @@ public sealed class AccountSettingsServiceTests
     {
         var (service, policy) = Build();
 
-        var result = await service.UpdateAsync(new AccountSettingsDto(LocalLoginEnabled: false, LocalRegistrationEnabled: false));
+        var result = await service.UpdateAsync(new AccountSettings(LocalLoginEnabled: false, LocalRegistrationEnabled: false));
 
         Assert.Equal(AccountSettingsStatus.Applied, result.Status);
         Assert.False(policy.Current.LocalLoginEnabled);
@@ -89,7 +89,7 @@ public sealed class AccountSettingsServiceTests
     {
         var (service, policy) = Build(localLoginEnabled: false, issuer: null, hasAdminWithExternalLogin: false);
 
-        var result = await service.UpdateAsync(new AccountSettingsDto(LocalLoginEnabled: true, LocalRegistrationEnabled: false));
+        var result = await service.UpdateAsync(new AccountSettings(LocalLoginEnabled: true, LocalRegistrationEnabled: false));
 
         // The guard exists to keep a door open; it must never stand in the way of
         // opening one.
@@ -102,7 +102,7 @@ public sealed class AccountSettingsServiceTests
     {
         var (service, policy) = Build(localLoginEnabled: false, issuer: null, hasAdminWithExternalLogin: false);
 
-        var result = await service.UpdateAsync(new AccountSettingsDto(LocalLoginEnabled: false, LocalRegistrationEnabled: true));
+        var result = await service.UpdateAsync(new AccountSettings(LocalLoginEnabled: false, LocalRegistrationEnabled: true));
 
         // The guard fires on the transition, not on the state: an admin already signed
         // in through some other means must still be able to change registration.
@@ -115,7 +115,7 @@ public sealed class AccountSettingsServiceTests
     {
         var (service, policy) = Build(issuer: null, hasAdminWithExternalLogin: false);
 
-        var result = await service.UpdateAsync(new AccountSettingsDto(LocalLoginEnabled: true, LocalRegistrationEnabled: false));
+        var result = await service.UpdateAsync(new AccountSettings(LocalLoginEnabled: true, LocalRegistrationEnabled: false));
 
         // Closing registration cannot lock anyone out — only sign-in can.
         Assert.Equal(AccountSettingsStatus.Applied, result.Status);
@@ -135,7 +135,7 @@ public sealed class AccountSettingsServiceTests
             new StubIdentityProvider(Issuer),
             NullLogger<AccountSettingsService>.Instance);
 
-        await service.UpdateAsync(new AccountSettingsDto(LocalLoginEnabled: true, LocalRegistrationEnabled: true));
+        await service.UpdateAsync(new AccountSettings(LocalLoginEnabled: true, LocalRegistrationEnabled: true));
 
         // Registration an admin has now taken ownership of must not close itself after
         // the next account.

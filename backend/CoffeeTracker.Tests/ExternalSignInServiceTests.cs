@@ -94,15 +94,32 @@ public sealed class ExternalSignInServiceTests
         string tokenId = TokenId) =>
         new(Issuer, Subject, tokenId, DateTimeOffset.UtcNow.AddMinutes(5), email, emailVerified, "A Person", adminAssertion);
 
+    /// <summary>Tracks what the service does to the account policy, if anything.</summary>
+    private sealed class FakePolicy(AccountPolicy? initial = null) : IAccountPolicy
+    {
+        public AccountPolicy Current { get; private set; } =
+            initial ?? new AccountPolicy(LocalLoginEnabled: true, LocalRegistrationEnabled: false);
+
+        public Task<AccountPolicy> GetAsync(CancellationToken ct = default) => Task.FromResult(Current);
+
+        public Task SetAsync(AccountPolicy policy, CancellationToken ct = default)
+        {
+            Current = policy;
+            return Task.CompletedTask;
+        }
+    }
+
     private static (ExternalSignInService Service, FakeUsers Users) Build(
         ExternalIdentity? identity,
-        FakeUsers users)
+        FakeUsers users,
+        FakePolicy? policy = null)
     {
         var service = new ExternalSignInService(
             new StubIdentityProvider(Issuer),
             new FakeValidator(identity),
             new FakeUsedTokens(),
             users,
+            policy ?? new FakePolicy(),
             new FakeTokens(),
             new FakeRefreshTokens(),
             NullLogger<ExternalSignInService>.Instance);
@@ -201,6 +218,79 @@ public sealed class ExternalSignInServiceTests
         Assert.True(result.Response!.IsAdmin);
         // Silence from an unconfigured mapping must not be read as "not an admin".
         Assert.Empty(users.AdminChanges);
+    }
+
+    [Fact]
+    public async Task Creating_the_first_account_closes_the_bootstrap_registration()
+    {
+        var created = new AuthUser("user-new", "person@example.com", "A Person", IsAdmin: true);
+        var policy = new FakePolicy(new AccountPolicy(
+            LocalLoginEnabled: true,
+            LocalRegistrationEnabled: true,
+            RegistrationOpenedForBootstrap: true));
+        var (service, _) = Build(Identity(), new FakeUsers { Created = created }, policy);
+
+        await service.SignInAsync("token");
+
+        // An instance whose first account arrives through the provider must close the
+        // door behind it, exactly as a local registration does — otherwise it sits on
+        // the internet accepting sign-ups nobody meant to allow.
+        Assert.False(policy.Current.LocalRegistrationEnabled);
+        Assert.False(policy.Current.RegistrationOpenedForBootstrap);
+    }
+
+    [Fact]
+    public async Task Registration_an_admin_opened_is_not_closed_by_a_provider_sign_in()
+    {
+        var created = new AuthUser("user-new", "person@example.com", "A Person", IsAdmin: true);
+        var policy = new FakePolicy(new AccountPolicy(
+            LocalLoginEnabled: true,
+            LocalRegistrationEnabled: true,
+            RegistrationOpenedForBootstrap: false));
+        var (service, _) = Build(Identity(), new FakeUsers { Created = created }, policy);
+
+        await service.SignInAsync("token");
+
+        Assert.True(policy.Current.LocalRegistrationEnabled);
+    }
+
+    [Fact]
+    public async Task The_claim_does_not_strip_the_administrator_it_was_just_bootstrapped_into()
+    {
+        var created = new AuthUser("user-new", "person@example.com", "A Person", IsAdmin: true);
+        var users = new FakeUsers { Created = created };
+        var (service, _) = Build(Identity(adminAssertion: false), users);
+
+        var result = await service.SignInAsync("token");
+
+        // The bootstrap promoted this account and the claim mapping would take it back
+        // in the same request, leaving the instance with no administrator and no way to
+        // appoint one from inside the app.
+        Assert.True(result.Response!.IsAdmin);
+        Assert.Empty(users.AdminChanges);
+    }
+
+    [Fact]
+    public async Task An_issuer_that_is_not_a_url_does_not_blow_up_account_creation()
+    {
+        var created = new AuthUser("user-new", null, "A Person", IsAdmin: false);
+        var identity = new ExternalIdentity(
+            Issuer: "urn:example:issuer",
+            Subject: Subject,
+            TokenId: TokenId,
+            ExpiresAt: DateTimeOffset.UtcNow.AddMinutes(5),
+            Email: null,
+            EmailVerified: false,
+            DisplayName: null,
+            AdminAssertion: null);
+        var (service, users) = Build(identity, new FakeUsers { Created = created });
+
+        var result = await service.SignInAsync("token");
+
+        // An issuer only has to be a case-sensitive string; parsing one as a URI
+        // unguarded turned a compliant provider into a 500.
+        Assert.Equal(ExternalSignInStatus.Success, result.Status);
+        Assert.True(users.CreateCalled);
     }
 
     [Fact]

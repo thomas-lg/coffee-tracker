@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { rxResource } from '@angular/core/rxjs-interop';
 import { firstValueFrom } from 'rxjs';
 import { AdminSettingsApi, type AccountSettings } from '@coffee-tracker/data';
@@ -15,7 +15,14 @@ export class AccountSettingsScreen {
 
   private readonly settingsRes = rxResource({ stream: () => this.api.get() });
 
-  protected readonly settings = this.settingsRes.value;
+  /**
+   * Reading value() on an errored resource throws, and this one is read straight from
+   * the template — so a failed GET would throw during change detection and take the
+   * screen down instead of reaching its own "could not load" branch.
+   */
+  protected readonly settings = computed(() =>
+    this.settingsRes.error() ? undefined : this.settingsRes.value(),
+  );
   protected readonly loading = this.settingsRes.isLoading;
   protected readonly saving = signal(false);
 

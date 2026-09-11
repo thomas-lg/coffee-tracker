@@ -59,6 +59,20 @@ describe('AccountSettingsScreen', () => {
     return found;
   }
 
+  it('degrades to its own message when the settings cannot be read', async () => {
+    fixture = TestBed.createComponent(AccountSettingsScreen);
+    fixture.detectChanges();
+    httpCtrl.expectOne('/api/admin/settings').error(new ProgressEvent('network error'));
+    await settle();
+
+    // Reading value() on an errored resource throws. Unguarded, that throw happens
+    // during change detection and takes the screen down before it can render the
+    // branch written for exactly this case.
+    const el = fixture.nativeElement as HTMLElement;
+    expect(el.textContent).toContain('Could not load');
+    expect(switches(el)).toHaveLength(0);
+  });
+
   it('shows both settings together', async () => {
     const el = await render({ localLoginEnabled: true, localRegistrationEnabled: false });
     const signIn = toggle(el, 0);

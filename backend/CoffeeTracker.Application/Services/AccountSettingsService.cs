@@ -22,7 +22,7 @@ public sealed class AccountSettingsService(
         return new AccountSettingsDto(policy.LocalLoginEnabled, policy.LocalRegistrationEnabled);
     }
 
-    public async Task<AccountSettingsUpdate> UpdateAsync(AccountSettingsDto settings, CancellationToken ct = default)
+    public async Task<AccountSettingsUpdate> UpdateAsync(AccountSettings settings, CancellationToken ct = default)
     {
         var current = await accountPolicy.GetAsync(ct);
 
@@ -50,7 +50,9 @@ public sealed class AccountSettingsService(
             settings.LocalLoginEnabled ? "enabled" : "disabled",
             settings.LocalRegistrationEnabled ? "enabled" : "disabled");
 
-        return new AccountSettingsUpdate(AccountSettingsStatus.Applied, settings);
+        return new AccountSettingsUpdate(
+            AccountSettingsStatus.Applied,
+            new AccountSettingsDto(settings.LocalLoginEnabled, settings.LocalRegistrationEnabled));
     }
 
     /// <summary>

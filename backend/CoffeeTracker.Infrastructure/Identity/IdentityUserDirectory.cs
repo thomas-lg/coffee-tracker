@@ -182,7 +182,15 @@ public sealed class IdentityUserDirectory(
             ?? throw new InvalidOperationException($"Cannot set admin on unknown user {userId}.");
 
         user.IsAdmin = isAdmin;
-        await userManager.UpdateAsync(user);
+        var result = await userManager.UpdateAsync(user);
+        if (!result.Succeeded)
+        {
+            // Swallowing this would mint an access token whose admin claim contradicts
+            // the database — granting rights the store never recorded.
+            throw new InvalidOperationException(
+                $"Failed to set administrator status on {userId}: " +
+                string.Join("; ", result.Errors.Select(e => e.Description)));
+        }
     }
 
     private static AuthUser Map(AppUser user) => new(user.Id, user.Email, user.DisplayName, user.IsAdmin);

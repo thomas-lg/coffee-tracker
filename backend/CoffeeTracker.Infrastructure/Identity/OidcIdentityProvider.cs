@@ -17,6 +17,7 @@ namespace CoffeeTracker.Infrastructure.Identity;
 public sealed class OidcIdentityProvider : IExternalIdentityProvider
 {
     private readonly OidcOptions _options;
+    private readonly string _authority;
     private readonly ConfigurationManager<OpenIdConnectConfiguration> _configuration;
     private readonly ILogger<OidcIdentityProvider> _logger;
 
@@ -28,7 +29,7 @@ public sealed class OidcIdentityProvider : IExternalIdentityProvider
                 $"{nameof(OidcIdentityProvider)} was constructed without an authority. It must only be resolved " +
                 "when the provider is configured; see AddExternalIdentityProvider."))
             .TrimEnd('/');
-        ConfiguredIssuer = authority;
+        _authority = authority;
         _logger = logger;
         _configuration = new ConfigurationManager<OpenIdConnectConfiguration>(
             $"{authority}/.well-known/openid-configuration",
@@ -36,7 +37,17 @@ public sealed class OidcIdentityProvider : IExternalIdentityProvider
             new HttpDocumentRetriever { RequireHttps = authority.StartsWith("https://", StringComparison.OrdinalIgnoreCase) });
     }
 
-    public string? ConfiguredIssuer { get; }
+    /// <summary>
+    /// The key external logins are recorded under — the configured authority, not the
+    /// discovery document's issuer. The two are allowed to differ (a trailing slash, a
+    /// path prefix), so the validator stamps this same value rather than the token's
+    /// issuer: the lock-out guard compares them, and deriving one from discovery would
+    /// mean a blocking network call behind a property.
+    ///
+    /// The token's own `iss` is still validated against the discovery issuer — this is
+    /// a local namespace for identities, not a trust decision.
+    /// </summary>
+    public string? ConfiguredIssuer => _authority;
 
     public async Task<bool> IsAvailableAsync(CancellationToken ct = default) =>
         await GetConfigurationAsync(ct) is not null;

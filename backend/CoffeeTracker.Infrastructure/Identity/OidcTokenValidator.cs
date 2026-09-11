@@ -72,7 +72,10 @@ public sealed class OidcTokenValidator(
         }
 
         return new ExternalIdentity(
-            Issuer: configuration.Issuer,
+            // The authority, matching what the guard looks logins up by — see
+            // OidcIdentityProvider.ConfiguredIssuer. The token's own issuer was just
+            // validated against the discovery document above.
+            Issuer: provider.ConfiguredIssuer!,
             Subject: subject,
             // The jti when the provider mints one, otherwise a hash of the token itself.
             // Hashing rather than storing the token keeps a spent-token set from being a

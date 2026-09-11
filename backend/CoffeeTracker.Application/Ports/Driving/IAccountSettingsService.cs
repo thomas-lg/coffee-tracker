@@ -11,7 +11,7 @@ public interface IAccountSettingsService
 {
     Task<AccountSettingsDto> GetAsync(CancellationToken ct = default);
 
-    Task<AccountSettingsUpdate> UpdateAsync(AccountSettingsDto settings, CancellationToken ct = default);
+    Task<AccountSettingsUpdate> UpdateAsync(AccountSettings settings, CancellationToken ct = default);
 }
 
 public enum AccountSettingsStatus
@@ -33,3 +33,6 @@ public sealed record AccountSettingsUpdate(
     AccountSettingsStatus Status,
     AccountSettingsDto Settings,
     string? Reason = null);
+
+/// <summary>The same two flags, once validation has established both are present.</summary>
+public sealed record AccountSettings(bool LocalLoginEnabled, bool LocalRegistrationEnabled);
