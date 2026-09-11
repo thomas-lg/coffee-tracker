@@ -1,4 +1,5 @@
-import { type Page } from '@playwright/test';
+import { type APIRequestContext, type Page } from '@playwright/test';
+import { readFile } from 'node:fs/promises';
 
 /** Helpers shared across e2e specs. The suite deliberately makes very few auth
  *  calls — the API rate-limits /api/auth to 10/min — so most setup is done by
@@ -39,4 +40,52 @@ export async function injectSession(page: Page, session: StoredSession): Promise
     ([key, value]) => window.localStorage.setItem(key, value),
     [SESSION_KEY, JSON.stringify(session)] as const,
   );
+}
+
+/** Where global setup leaves the suite's administrator, for tests that need one. */
+export const ADMIN_STATE_FILE = 'e2e/.auth/admin.json';
+
+/** What the API hands back on register/login, trimmed to what the suite uses. */
+export interface ProvisionedUser {
+  token: string;
+  userId: string;
+  displayName: string | null;
+  expiresAt: string;
+  refreshToken: string;
+  refreshExpiresAt: string;
+}
+
+/** The administrator claimed by global setup. */
+export async function suiteAdmin(): Promise<ProvisionedUser & { email: string }> {
+  return JSON.parse(await readFile(ADMIN_STATE_FILE, 'utf8'));
+}
+
+/**
+ * Registers a fresh account through the API and returns its real tokens.
+ *
+ * Real rather than fabricated because the refresh flow has to be exercised against
+ * a token the server actually issued — a made-up one proves nothing about it.
+ */
+export async function provisionUser(api: APIRequestContext, prefix: string): Promise<ProvisionedUser> {
+  const res = await api.post('/api/auth/register', {
+    data: { email: uniqueEmail(prefix), password: E2E_PASSWORD, displayName: `E2E ${prefix}` },
+  });
+  if (!res.ok()) {
+    throw new Error(`could not provision an e2e user (${res.status()}); is registration still open?`);
+  }
+  return (await res.json()) as ProvisionedUser;
+}
+
+/** Turns a provisioned user into the session shape AuthStore restores. */
+export function sessionFor(user: ProvisionedUser, overrides: Partial<StoredSession> = {}): StoredSession {
+  return {
+    token: user.token,
+    userId: user.userId,
+    displayName: user.displayName,
+    isAdmin: false,
+    expiresAt: user.expiresAt,
+    refreshToken: user.refreshToken,
+    refreshExpiresAt: user.refreshExpiresAt,
+    ...overrides,
+  };
 }
