@@ -95,6 +95,82 @@
         }
       }
     },
+    "/api/admin/settings": {
+      "get": {
+        "tags": [
+          "AdminSettings"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountSettingsDto"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountSettingsDto"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountSettingsDto"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "AdminSettings"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AccountSettingsDto"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AccountSettingsDto"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/AccountSettingsDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountSettingsDto"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountSettingsDto"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountSettingsDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/Auth/register": {
       "post": {
         "tags": [
@@ -164,6 +240,55 @@
             "application/*+json": {
               "schema": {
                 "$ref": "#/components/schemas/LoginDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthResponseDto"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthResponseDto"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthResponseDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/Auth/oidc": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OidcSignInDto"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OidcSignInDto"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/OidcSignInDto"
               }
             }
           },
@@ -895,6 +1020,21 @@
   },
   "components": {
     "schemas": {
+      "AccountSettingsDto": {
+        "required": [
+          "localLoginEnabled",
+          "localRegistrationEnabled"
+        ],
+        "type": "object",
+        "properties": {
+          "localLoginEnabled": {
+            "type": "boolean"
+          },
+          "localRegistrationEnabled": {
+            "type": "boolean"
+          }
+        }
+      },
       "AuthResponseDto": {
         "required": [
           "token",
@@ -1151,12 +1291,31 @@
       },
       "ConfigDto": {
         "required": [
-          "registrationEnabled"
+          "localLoginEnabled",
+          "registrationEnabled",
+          "oidcAvailable",
+          "oidc"
         ],
         "type": "object",
         "properties": {
+          "localLoginEnabled": {
+            "type": "boolean"
+          },
           "registrationEnabled": {
             "type": "boolean"
+          },
+          "oidcAvailable": {
+            "type": "boolean"
+          },
+          "oidc": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/OidcClientConfigDto"
+              }
+            ]
           }
         }
       },
@@ -1195,6 +1354,36 @@
             "type": "string"
           },
           "password": {
+            "type": "string"
+          }
+        }
+      },
+      "OidcClientConfigDto": {
+        "required": [
+          "authority",
+          "clientId",
+          "scopes"
+        ],
+        "type": "object",
+        "properties": {
+          "authority": {
+            "type": "string"
+          },
+          "clientId": {
+            "type": "string"
+          },
+          "scopes": {
+            "type": "string"
+          }
+        }
+      },
+      "OidcSignInDto": {
+        "required": [
+          "idToken"
+        ],
+        "type": "object",
+        "properties": {
+          "idToken": {
             "type": "string"
           }
         }
@@ -1583,6 +1772,9 @@
   "tags": [
     {
       "name": "AdminPhotos"
+    },
+    {
+      "name": "AdminSettings"
     },
     {
       "name": "Auth"

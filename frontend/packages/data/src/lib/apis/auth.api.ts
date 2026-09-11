@@ -1,14 +1,7 @@
 import { HttpClient, HttpContext } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
-import type {
-  AuthResponse,
-  Login,
-  OidcSignIn,
-  RefreshRequest,
-  Register,
-  SignInChallenge,
-} from '../models/models';
+import type { AuthResponse, Login, OidcSignIn, RefreshRequest, Register } from '../models/models';
 import { SKIP_AUTH_REDIRECT } from '../http-context';
 
 /** Anonymous auth endpoints. The session/token lives in @coffee-tracker/auth. */
@@ -23,14 +16,6 @@ export class AuthApi {
 
   register(dto: Register): Observable<AuthResponse> {
     return this.http.post<AuthResponse>('/api/auth/register', dto, this.anon);
-  }
-
-  /**
-   * Starts a provider sign-in. The nonce comes from the server on purpose: one the
-   * client generated itself would prove nothing about who started the sign-in.
-   */
-  oidcChallenge(): Observable<SignInChallenge> {
-    return this.http.post<SignInChallenge>('/api/auth/oidc/challenge', {}, this.anon);
   }
 
   /** Exchanges a provider ID token for an app session. */

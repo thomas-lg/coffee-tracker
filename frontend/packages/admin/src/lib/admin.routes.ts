@@ -7,5 +7,10 @@ export const ADMIN_ROUTES: Routes = [
     canActivate: [adminGuard],
     loadComponent: () => import('./components/photo-cleanup').then((m) => m.PhotoCleanup),
   },
+  {
+    path: 'settings',
+    canActivate: [adminGuard],
+    loadComponent: () => import('./components/account-settings').then((m) => m.AccountSettingsScreen),
+  },
   { path: '', pathMatch: 'full', redirectTo: 'photos' },
 ];

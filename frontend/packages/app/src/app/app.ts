@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
-import { AuthStore } from '@coffee-tracker/auth';
+import { AuthStore, ProviderSignIn } from '@coffee-tracker/auth';
 import { Icon, Toast } from '@coffee-tracker/ui';
 import { applyTheme, initialTheme, persistTheme, type ThemeMode } from '@coffee-tracker/util';
 
@@ -25,8 +25,23 @@ export class App {
     return ((parts[0]?.[0] ?? '?') + (parts[1]?.[0] ?? '')).toUpperCase();
   });
 
+  private readonly provider = inject(ProviderSignIn);
+
   constructor() {
     applyTheme(this.theme());
+
+    // The provider redirects back to the app root, so the callback has to be picked up
+    // here rather than on a dedicated route. On an ordinary page load there is nothing
+    // to complete and this is a no-op.
+    void this.completeProviderSignIn();
+  }
+
+  private async completeProviderSignIn(): Promise<void> {
+    if (await this.provider.complete()) {
+      await this.router.navigateByUrl('/');
+    } else if (this.provider.error()) {
+      await this.router.navigateByUrl('/login');
+    }
   }
 
   protected toggleTheme(): void {

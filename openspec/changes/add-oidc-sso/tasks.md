@@ -33,16 +33,16 @@
 
 ## 5. Web client — sign-in
 
-- [ ] 5.1 Add `angular-auth-oidc-client` pinned to an exact 22.x version, configured for Authorization Code + PKCE against the discovered provider.
-- [ ] 5.2 Read the three config flags at bootstrap and render the provider action, the local form, and the register link accordingly.
-- [ ] 5.3 Run the provider flow and exchange its ID token at `POST /api/auth/oidc`, storing the resulting session through the existing `AuthStore` path.
-- [ ] 5.4 Surface a refused provider sign-in on the sign-in screen without storing a session.
+- [x] 5.1 Add `angular-auth-oidc-client` pinned to an exact 22.x version, configured for Authorization Code + PKCE against the discovered provider.
+- [x] 5.2 Read the three config flags at bootstrap and render the provider action, the local form, and the register link accordingly.
+- [x] 5.3 Run the provider flow and exchange its ID token at `POST /api/auth/oidc`, storing the resulting session through the existing `AuthStore` path.
+- [x] 5.4 Surface a refused provider sign-in on the sign-in screen without storing a session.
 - [ ] 5.5 Tests: provider action hidden when unconfigured; local form hidden when local sign-in is disabled; register link hidden when registration is closed; session persists across reload after provider sign-in; refusal is shown.
 
 ## 6. Web client — admin control
 
-- [ ] 6.1 Add the admin settings screen with both local-account controls shown together, reachable only by admins, alongside the existing photo-cleanup screen.
-- [ ] 6.2 Apply changes through the API and reflect the stored values; render the `409` refusal inline and leave the sign-in control enabled.
+- [x] 6.1 Add the admin settings screen with both local-account controls shown together, reachable only by admins, alongside the existing photo-cleanup screen.
+- [x] 6.2 Apply changes through the API and reflect the stored values; render the `409` refusal inline and leave the sign-in control enabled.
 - [ ] 6.3 Tests: non-admin is redirected and sees no navigation entry; toggling persists; the refusal is explained.
 
 ## 7. Documentation and release

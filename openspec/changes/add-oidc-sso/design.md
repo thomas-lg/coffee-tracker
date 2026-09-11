@@ -104,6 +104,12 @@ If `Oidc:Authority` or `Oidc:ClientId` is missing, the OIDC services are not reg
 - **Admin re-evaluated from the claim on every sign-in can demote the only admin** → If the claim mapping is configured and nobody carries the value, the deployment ends up with no admin. Mitigated by the bootstrap fallback applying only when no mapping is configured, and by the lock-out guard keeping local sign-in available in exactly that scenario.
 - **Discovery makes a network call at startup** → A provider that is slow or down must not prevent the app from booting. Discovery is lazy and cached, and a failure degrades to "provider unavailable" in `GET /api/config` rather than a failed startup.
 
+### 7. Every deployment carries the OIDC library, configured or not
+
+`provideAuth` has to run in the root injector, so `angular-auth-oidc-client` lands in the initial bundle even on an instance with no provider. That is roughly 43 kB raw (~13 kB transferred), and the initial-bundle warning threshold moves from 500 kB to 560 kB to account for it.
+
+*Why accept it:* moving the library behind a dynamic import would mean building the flow around a lazily-resolved service and losing the library's own bootstrap handling — real complexity for a cost that is a fraction of a single photo. Recorded here rather than absorbed silently, so the trade is visible if the bundle ever becomes the constraint.
+
 ## Migration Plan
 
 1. Ship the migration (settings table) and the seeding from `REGISTRATION_ENABLED`. At this point behaviour is identical and OIDC is dormant.

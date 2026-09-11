@@ -148,11 +148,6 @@ export interface OidcClientConfig {
   scopes: string;
 }
 
-/** A single-use nonce the provider must echo back in its ID token. */
-export interface SignInChallenge {
-  nonce: string;
-}
-
 /** The provider ID token, presented for an app session. */
 export interface OidcSignIn {
   idToken: string;
@@ -204,7 +199,6 @@ type _GLogin = Assert<SameKeys<Login, Schemas['LoginDto']>>;
 type _GRegister = Assert<SameKeys<Register, Schemas['RegisterDto']>>;
 type _GClientConfig = Assert<SameKeys<ClientConfig, Schemas['ConfigDto']>>;
 type _GOidcClientConfig = Assert<SameKeys<OidcClientConfig, Schemas['OidcClientConfigDto']>>;
-type _GSignInChallenge = Assert<SameKeys<SignInChallenge, Schemas['SignInChallengeDto']>>;
 type _GOidcSignIn = Assert<SameKeys<OidcSignIn, Schemas['OidcSignInDto']>>;
 type _GAccountSettings = Assert<SameKeys<AccountSettings, Schemas['AccountSettingsDto']>>;
 type _GPhotoListItem = Assert<SameKeys<PhotoListItem, Schemas['PhotoListItemDto']>>;

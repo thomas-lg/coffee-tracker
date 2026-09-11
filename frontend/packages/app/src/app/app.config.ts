@@ -12,7 +12,7 @@ import {
   withViewTransitions,
 } from '@angular/router';
 import { provideHttpClient, withFetch, withInterceptors } from '@angular/common/http';
-import { authInterceptor } from '@coffee-tracker/auth';
+import { authInterceptor, provideProviderSignIn } from '@coffee-tracker/auth';
 
 import { routes } from './app.routes';
 import { provideServiceWorker } from '@angular/service-worker';
@@ -31,6 +31,7 @@ export const appConfig: ApplicationConfig = {
       withPreloading(PreloadAllModules),
     ),
     provideHttpClient(withFetch(), withInterceptors([authInterceptor])),
+    provideProviderSignIn(),
     provideServiceWorker('ngsw-worker.js', {
       enabled: !isDevMode(),
       registrationStrategy: 'registerWhenStable:30000',
