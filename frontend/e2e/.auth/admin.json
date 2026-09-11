@@ -1,0 +1,10 @@
+{
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1laWRlbnRpZmllciI6ImM2NmViYWQzLTUzMGUtNDc0Yy05ZGU5LTc4ODU1NzYxZmU5NSIsImlzQWRtaW4iOiJ0cnVlIiwiaHR0cDovL3NjaGVtYXMueG1sc29hcC5vcmcvd3MvMjAwNS8wNS9pZGVudGl0eS9jbGFpbXMvZW1haWxhZGRyZXNzIjoiZTJlLXN1aXRlLWFkbWluLTE3ODkxNTg1Mjc0ODQtNDcwNTcxQGV4YW1wbGUuY29tIiwiZGlzcGxheU5hbWUiOiJTdWl0ZSBBZG1pbiIsIm5iZiI6MTc4OTE1ODUyNywiZXhwIjoxNzg5MTU5NDI3LCJpc3MiOiJjb2ZmZWUtdHJhY2tlciIsImF1ZCI6ImNvZmZlZS10cmFja2VyIn0.Bzj-1nGqBUwP0MPL-aIVB4JC8tJbCndPhikulzetZi4",
+  "expiresAt": "2026-09-11T20:43:47.586237+00:00",
+  "refreshToken": "gOnZiPbe95ZXAZNlT7DnSuhsXEGg24qXukr27NZUrbA",
+  "refreshExpiresAt": "2026-09-25T20:28:47.592545+00:00",
+  "userId": "c66ebad3-530e-474c-9de9-78855761fe95",
+  "displayName": "Suite Admin",
+  "isAdmin": true,
+  "email": "e2e-suite-admin-1789158527484-470571@example.com"
+}
