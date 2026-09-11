@@ -31,6 +31,14 @@ public interface IUserDirectory
     /// email doesn't finish measurably faster (account-enumeration defence).
     /// </summary>
     void SpendDecoyVerification(string password);
+
+    /// <summary>
+    /// Whether any administrator has an external identity recorded for
+    /// <paramref name="issuer"/> — i.e. has actually signed in through the provider.
+    /// The lock-out guard turns on this: it is the proof that disabling local sign-in
+    /// leaves a door open.
+    /// </summary>
+    Task<bool> HasAdminWithExternalLoginAsync(string issuer, CancellationToken ct = default);
 }
 
 /// <summary>A user as the application layer sees it (no framework types).</summary>

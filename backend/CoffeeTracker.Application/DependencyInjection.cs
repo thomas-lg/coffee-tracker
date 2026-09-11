@@ -12,6 +12,7 @@ public static class DependencyInjection
     {
         services.TryAddSingleton(TimeProvider.System);
         services.AddScoped<IAuthService, AuthService>();
+        services.AddScoped<IAccountSettingsService, AccountSettingsService>();
         services.AddScoped<ICoffeeCatalogService, CoffeeCatalogService>();
         services.AddScoped<IReviewService, ReviewService>();
         services.AddScoped<ICoffeeScanService, CoffeeScanService>();

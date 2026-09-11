@@ -10,10 +10,10 @@
 
 ## 2. Local-account policy — admin surface
 
-- [ ] 2.1 Add `GET` and `PUT /api/admin/settings` behind the existing `AuthorizationPolicies.Admin`.
-- [ ] 2.2 Implement the lock-out guard on the sign-in setting: refuse a disable with `409` and an explanatory message unless an admin holds a login row for the configured issuer; never refuse a re-enable; registration carries no such condition.
-- [ ] 2.3 Extend `ConfigDto` and `GET /api/config` with local sign-in, local registration and provider-availability flags.
-- [ ] 2.4 Tests: non-admin is refused; disabling sign-in is refused without a proven provider admin and allowed with one; re-enable always allowed; disabling registration is never blocked; `/api/config` reflects all three flags.
+- [x] 2.1 Add `GET` and `PUT /api/admin/settings` behind the existing `AuthorizationPolicies.Admin`.
+- [x] 2.2 Implement the lock-out guard on the sign-in setting: refuse a disable with `409` and an explanatory message unless an admin holds a login row for the configured issuer; never refuse a re-enable; registration carries no such condition.
+- [x] 2.3 Extend `ConfigDto` and `GET /api/config` with local sign-in, local registration and provider-availability flags.
+- [x] 2.4 Tests: non-admin is refused; disabling sign-in is refused without a proven provider admin and allowed with one; re-enable always allowed; disabling registration is never blocked; `/api/config` reflects all three flags.
 
 ## 3. OIDC — configuration and discovery
 

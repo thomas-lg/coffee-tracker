@@ -10,4 +10,6 @@ namespace CoffeeTracker.Infrastructure.Identity;
 public sealed class UnconfiguredIdentityProvider : IExternalIdentityProvider
 {
     public Task<bool> IsAvailableAsync(CancellationToken ct = default) => Task.FromResult(false);
+
+    public string? ConfiguredIssuer => null;
 }

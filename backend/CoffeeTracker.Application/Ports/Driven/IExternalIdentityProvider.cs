@@ -14,4 +14,11 @@ public interface IExternalIdentityProvider
     /// cannot complete.
     /// </summary>
     Task<bool> IsAvailableAsync(CancellationToken ct = default);
+
+    /// <summary>
+    /// The issuer external identities are recorded under, or null when no provider is
+    /// configured. Read from configuration, never from discovery, so a provider that is
+    /// momentarily unreachable does not make the app forget which identities it trusts.
+    /// </summary>
+    string? ConfiguredIssuer { get; }
 }

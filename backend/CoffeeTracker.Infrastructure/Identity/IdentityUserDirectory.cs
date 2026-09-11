@@ -99,5 +99,17 @@ public sealed class IdentityUserDirectory(
     public void SpendDecoyVerification(string password) =>
         passwordHasher.VerifyHashedPassword(new AppUser(), DecoyHash.Value, password);
 
+    /// <summary>
+    /// Joins AspNetUserLogins to AspNetUsers rather than loading users: the guard only
+    /// needs to know whether such a pair exists, and this stays one query as the table
+    /// grows.
+    /// </summary>
+    public async Task<bool> HasAdminWithExternalLoginAsync(string issuer, CancellationToken ct = default) =>
+        await (from login in db.UserLogins
+               join user in db.Users on login.UserId equals user.Id
+               where login.LoginProvider == issuer && user.IsAdmin
+               select login.UserId)
+            .AnyAsync(ct);
+
     private static AuthUser Map(AppUser user) => new(user.Id, user.Email, user.DisplayName, user.IsAdmin);
 }
