@@ -61,6 +61,15 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+      # docker/metadata-action derives type=sha from the git context, which on a
+      # workflow_run event is the DEFAULT branch — so it cannot be trusted to describe
+      # what was actually checked out. Resolve the commit once here and build the tag
+      # from it.
+      - id: ctx
+        name: Resolve the commit being built
+        run: |
+          SHA='${{ github.event.workflow_run.head_sha || github.sha }}'
+          echo "short_sha=${SHA:0:7}" >> "$GITHUB_OUTPUT"
       - id: meta
         uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302 # v6
         with:
@@ -68,10 +77,17 @@ jobs:
           # The channel is read from the triggering run's branch, never from
           # is_default_branch: on a workflow_run event that flag describes the default
           # branch regardless of what actually built.
+          #
+          # The sha tag is raw, not type=sha: type=sha has no `value` attribute, so
+          # passing one is silently ignored and the tag is computed from the git
+          # context — which would label a beta image with the default branch's sha and
+          # overwrite the identically-named tag main had already published. priority
+          # keeps it below the channel tags so outputs.version stays the channel, which
+          # is what the Trivy step scans.
           tags: |
             type=raw,value=latest,enable=${{ github.event.workflow_run.head_branch == 'main' }}
             type=raw,value=beta,enable=${{ github.event.workflow_run.head_branch == 'beta' }}
-            type=sha,value=${{ github.event.workflow_run.head_sha || github.sha }}
+            type=raw,value=sha-${{ steps.ctx.outputs.short_sha }},priority=100
             type=semver,pattern={{version}}
       # Build first WITHOUT pushing so Trivy can gate on the exact image; the push
       # step below reuses the warm buildx cache, so it doesn't rebuild.
