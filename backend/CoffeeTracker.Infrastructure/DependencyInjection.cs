@@ -26,6 +26,7 @@ public static class DependencyInjection
         services.AddScoped<IReviewRepository, EfReviewRepository>();
         services.AddScoped<IFlavorTagRepository, EfFlavorTagRepository>();
         services.AddScoped<IRefreshTokenStore, EfRefreshTokenStore>();
+        services.AddScoped<IAccountPolicy, EfAccountPolicy>();
         services.AddSingleton<IPhotoStorage, FileSystemPhotoStorage>();
         services.AddSingleton<IPhotoUrlSigner, PhotoUrlSigner>();
 
@@ -59,7 +60,7 @@ public static class DependencyInjection
     /// JWTs, not cookies) and the auth driven-port adapters. JWT bearer *validation*
     /// is wired in the Api project (it owns the HTTP pipeline); the auth use case lives
     /// in the Application layer and drives these adapters (user store, token issuer,
-    /// registration policy; the refresh-token store is registered above).
+    /// the refresh-token store and account policy are registered above).
     /// </summary>
     private static void AddAuth(IServiceCollection services, IConfiguration configuration)
     {
@@ -84,12 +85,10 @@ public static class DependencyInjection
             .AddEntityFrameworkStores<AppDbContext>();
 
         services.Configure<JwtOptions>(configuration.GetSection(JwtOptions.SectionName));
-        // REGISTRATION_ENABLED is a flat env var / key (default off), per the deploy docs.
-        services.Configure<RegistrationOptions>(o => o.Enabled = configuration.GetValue<bool>("REGISTRATION_ENABLED"));
 
         services.AddSingleton<ITokenIssuer, TokenService>();
-        services.AddSingleton<IRegistrationPolicy, RegistrationPolicy>();
         services.AddScoped<IUserDirectory, IdentityUserDirectory>();
+        services.AddSingleton<IExternalIdentityProvider, UnconfiguredIdentityProvider>();
     }
 
     /// <summary>
@@ -101,6 +100,13 @@ public static class DependencyInjection
         using var scope = services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         await db.Database.MigrateAsync(ct);
+
+        // REGISTRATION_ENABLED is legacy: read once, only to preserve the posture of a
+        // deployment that predates the persisted policy. See AccountPolicySeeder.
+        await AccountPolicySeeder.SeedAsync(
+            db,
+            scope.ServiceProvider.GetRequiredService<IConfiguration>().GetValue<bool>("REGISTRATION_ENABLED"),
+            ct);
 
         // Switch SQLite to Write-Ahead Logging. Unlike the default rollback journal,
         // WAL lets readers proceed concurrently with a writer, which cuts down on

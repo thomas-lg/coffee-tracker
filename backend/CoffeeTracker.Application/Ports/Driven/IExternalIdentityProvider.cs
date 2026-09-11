@@ -1,0 +1,17 @@
+namespace CoffeeTracker.Application.Ports.Driven;
+
+/// <summary>
+/// The external OpenID Connect provider, when one is configured. Deployments without
+/// one get an implementation that reports itself unavailable, so the rest of the app
+/// never branches on configuration.
+/// </summary>
+public interface IExternalIdentityProvider
+{
+    /// <summary>
+    /// Whether a provider is configured *and* its discovery document has been
+    /// resolved. False while discovery has not yet succeeded, so a provider that is
+    /// slow or down degrades to "no provider" instead of offering a sign-in that
+    /// cannot complete.
+    /// </summary>
+    Task<bool> IsAvailableAsync(CancellationToken ct = default);
+}

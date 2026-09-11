@@ -38,6 +38,7 @@ public class AuthController(IAuthService auth) : ControllerBase
         return result.Status switch
         {
             AuthStatus.Success => Ok(result.Response),
+            AuthStatus.LocalLoginDisabled => Problem(statusCode: StatusCodes.Status403Forbidden, detail: "This instance does not accept sign-in with an app account."),
             AuthStatus.LockedOut => Problem(statusCode: StatusCodes.Status423Locked, detail: "Account locked due to repeated failed logins. Try again later."),
             AuthStatus.InvalidCredentials => Problem(statusCode: StatusCodes.Status401Unauthorized, detail: "Invalid email or password."),
             _ => throw new InvalidOperationException($"Unexpected login status: {result.Status}"),

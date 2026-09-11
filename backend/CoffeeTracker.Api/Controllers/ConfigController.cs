@@ -8,15 +8,22 @@ namespace CoffeeTracker.Api.Controllers;
 /// <summary>
 /// Public client bootstrap config. Anonymous so the SPA can fetch it before the
 /// user authenticates (otherwise the global auth fallback policy would 401 it).
-/// Depends on the lightweight <see cref="IRegistrationPolicy"/> rather than the full
+/// Depends on the lightweight account-policy and provider ports rather than the full
 /// auth use case, so this hot, anonymous endpoint doesn't construct the auth stack.
 /// </summary>
 [ApiController]
 [Route("api/[controller]")]
 [AllowAnonymous]
-public class ConfigController(IRegistrationPolicy registration) : ControllerBase
+public class ConfigController(IAccountPolicy accountPolicy, IExternalIdentityProvider provider) : ControllerBase
 {
     /// <summary>Returns settings the client needs before sign-in.</summary>
     [HttpGet]
-    public ActionResult<ConfigDto> Get() => Ok(new ConfigDto(registration.Enabled));
+    public async Task<ActionResult<ConfigDto>> Get(CancellationToken ct)
+    {
+        var policy = await accountPolicy.GetAsync(ct);
+        return Ok(new ConfigDto(
+            policy.LocalLoginEnabled,
+            policy.LocalRegistrationEnabled,
+            await provider.IsAvailableAsync(ct)));
+    }
 }

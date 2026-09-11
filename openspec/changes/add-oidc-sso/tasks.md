@@ -1,12 +1,12 @@
 ## 1. Local-account policy — storage and enforcement
 
-- [ ] 1.1 Add an `AppSettings` single-row entity (`LocalLoginEnabled`, `LocalRegistrationEnabled`) and an EF migration creating its table.
-- [ ] 1.2 Seed the row on startup when absent: on an instance with users, sign-in enabled and registration from the legacy `REGISTRATION_ENABLED`; on an empty instance, both enabled.
-- [ ] 1.3 Add an `IAccountPolicy` driven port (read + update both settings) in `CoffeeTracker.Application/Ports/Driven` and its EF adapter in `CoffeeTracker.Infrastructure`.
-- [ ] 1.4 Gate `AuthService.RegisterAsync` on the registration setting, keeping the existing `AuthStatus.RegistrationDisabled` outcome, and close registration once the first account exists.
-- [ ] 1.5 Gate `AuthService.LoginAsync` on the sign-in setting with a new `AuthStatus.LocalLoginDisabled`, distinct from invalid credentials.
-- [ ] 1.6 Delete `IRegistrationPolicy`, `RegistrationPolicy`, `RegistrationOptions` and `IAuthService.RegistrationEnabled`, now unused.
-- [ ] 1.7 Tests: registration and login each refused by their own setting; the two settings are independent; a fresh instance registers its first account with no configuration and closes registration afterwards; an upgraded instance keeps its posture; the legacy variable is read once.
+- [x] 1.1 Add an `AppSettings` single-row entity (`LocalLoginEnabled`, `LocalRegistrationEnabled`) and an EF migration creating its table.
+- [x] 1.2 Seed the row on startup when absent: on an instance with users, sign-in enabled and registration from the legacy `REGISTRATION_ENABLED`; on an empty instance, both enabled.
+- [x] 1.3 Add an `IAccountPolicy` driven port (read + update both settings) in `CoffeeTracker.Application/Ports/Driven` and its EF adapter in `CoffeeTracker.Infrastructure`.
+- [x] 1.4 Gate `AuthService.RegisterAsync` on the registration setting, keeping the existing `AuthStatus.RegistrationDisabled` outcome, and close registration once the first account exists.
+- [x] 1.5 Gate `AuthService.LoginAsync` on the sign-in setting with a new `AuthStatus.LocalLoginDisabled`, distinct from invalid credentials.
+- [x] 1.6 Delete `IRegistrationPolicy`, `RegistrationPolicy`, `RegistrationOptions` and `IAuthService.RegistrationEnabled`, now unused.
+- [x] 1.7 Tests: registration and login each refused by their own setting; the two settings are independent; a fresh instance registers its first account with no configuration and closes registration afterwards; an upgraded instance keeps its posture; the legacy variable is read once.
 
 ## 2. Local-account policy — admin surface
 
