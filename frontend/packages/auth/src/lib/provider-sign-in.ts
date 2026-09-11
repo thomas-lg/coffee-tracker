@@ -65,9 +65,14 @@ export class ProviderSignIn {
       return false;
     }
 
-    // Drop ?code=… before anything can reload with it: the API spends a token once, so
-    // a refresh carrying a used code would surface as a failed sign-in.
-    history.replaceState(null, '', window.location.pathname);
+    // Send the router to the app root, and drop ?code=… while we are at it: the API
+    // spends a token once, so a refresh carrying a used code would read as a failed
+    // sign-in.
+    //
+    // Explicitly '/', not window.location.pathname: checkAuth() restores the route the
+    // user left from, which is /login — reading the pathname back here would park the
+    // router on the login screen with a perfectly valid session behind it.
+    history.replaceState(null, '', '/');
 
     try {
       await this.auth.signInWithProviderToken(result.idToken);
