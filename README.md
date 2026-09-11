@@ -112,6 +112,25 @@ port directly to the internet.
 Pull the new `:latest` (or a pinned `:sha-…` / `:vX.Y.Z`) tag in your Docker GUI
 and recreate the container. Volumes persist your data across the update.
 
+### Release channels
+
+| Tag | Built from | Who gets it |
+|---|---|---|
+| `:latest` | `main`, once CI passes | The default. Nothing else moves it. |
+| `:beta` | the `beta` branch, once CI passes | Only containers pinned to `:beta`. |
+| `:vX.Y.Z` | a version tag | Pinned, immutable. |
+| `:sha-…` | any published build | Pinned, immutable; pruned after 30 days. |
+
+`beta` is for trying a change on real hardware before it reaches anyone. Merge into the
+`beta` branch, wait for CI, and point a container at `:beta`. Nothing tracking `:latest`
+sees it, and the two channels never share a build — a publish always builds the commit
+whose CI passed, not whatever is on the default branch.
+
+Going back is repointing the container at `:latest`. **Take a copy of `coffee.db`
+first** if the beta carried a database migration: the schema change survives the
+rollback, and while the old code tolerates a table it does not know about, restoring a
+pre-migration file is the only way to truly undo one.
+
 ## Security notes
 
 This app is designed to be internet-exposed and shared, so: no secrets are baked
