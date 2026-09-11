@@ -47,6 +47,6 @@
 
 ## 7. Documentation and release
 
-- [ ] 7.1 Document the optional OIDC variables in the README, with a worked example for one provider and a note that any OIDC-compliant provider works, plus the removal of `REGISTRATION_ENABLED` and the self-closing first-account bootstrap.
-- [ ] 7.2 Note the breaking change and the seeding behaviour in the deployment docs.
+- [x] 7.1 Document the optional OIDC variables in the README, with a worked example for one provider and a note that any OIDC-compliant provider works, plus the removal of `REGISTRATION_ENABLED` and the self-closing first-account bootstrap.
+- [x] 7.2 Note the breaking change and the seeding behaviour in the deployment docs.
 - [ ] 7.3 Run the full backend and frontend test suites and the production image build before proposing the change for review.

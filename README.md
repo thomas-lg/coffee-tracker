@@ -97,7 +97,12 @@ port directly to the internet.
 | `Jwt__AccessTokenMinutes`         | no       | `15`             | Access-token lifetime (minutes). Kept short; sessions persist via a rotating refresh token, so a stolen access token expires quickly. |
 | `Jwt__RefreshTokenDays`           | no       | `14`             | Refresh-token lifetime (days) — the effective session length. Refresh tokens rotate on use and are revoked on logout. |
 | `Storage__SignedUrlLifetimeMinutes` | no     | `60`             | How long a signed `/photos/…` URL stays valid (minutes). Photos are served only via short-lived signed URLs, never anonymously. |
-| `REGISTRATION_ENABLED`            | no       | `false`          | When `false`, new signups are blocked (safe default for a public instance). Set `true` to allow registration; the first user becomes admin. |
+| `Oidc__Authority`                 | no       | —                | Base URL of an OpenID Connect provider (Authelia, Keycloak, Authentik, Google…). Set it with `Oidc__ClientId` to offer sign-in through that provider; leave both unset to run with app accounts only. Endpoints are discovered from `/.well-known/openid-configuration`. |
+| `Oidc__ClientId`                  | no       | —                | The client id registered with that provider. Required whenever `Oidc__Authority` is set — the app refuses to start with only one of the two. |
+| `Oidc__Scopes`                    | no       | `openid profile email` | Scopes requested from the provider. |
+| `Oidc__AdminClaim`                | no       | —                | Claim carrying the admin assertion (e.g. `groups`). Set with `Oidc__AdminClaimValue`; both or neither. Unset, the first user to sign in through the provider becomes admin. |
+| `Oidc__AdminClaimValue`           | no       | —                | Value `Oidc__AdminClaim` must carry to grant admin. Re-evaluated on every sign-in, so removing someone from the group revokes their rights at their next sign-in. |
+| `REGISTRATION_ENABLED`            | legacy   | —                | **No longer needed.** A fresh instance accepts its first account with nothing configured, then closes registration by itself; afterwards both settings live in **Admin → Account settings**. On an instance that already had users when it was upgraded, this variable is read once to preserve its registration posture, and ignored from then on. |
 | `ForwardedHeaders__KnownProxies`  | recommended | —             | Comma-separated IP(s) of your reverse proxy (SWAG/Authelia), so the app trusts `X-Forwarded-For`/`-Proto`. **Set this** behind a proxy — otherwise auth rate-limiting keys off the proxy's single IP and throttles all clients together. |
 | `Ocr__Engine`                     | no       | `tesseract`      | OCR engine for `/api/coffees/scan`: `tesseract` (uses the bundled native libs) or `none` (disables scanning → 503). |
 | `Ocr__TessdataPath`               | no       | system path      | Override the tessdata directory; defaults to the `TESSDATA_PREFIX` system path (the image ships English data). |
@@ -106,6 +111,31 @@ port directly to the internet.
 | `Ocr__MaxConcurrency`             | no       | `0` (≈ 2× CPUs)  | Max OCR processes running at once; extra scans queue instead of spawning unbounded `tesseract` processes. `0` resolves to twice the processor count. |
 | `PUID`                            | no       | `99`             | User ID the app runs as. Set to match your host volume owner so `/config`/`/photos` are writable (Unraid default `99` = `nobody`). |
 | `PGID`                            | no       | `100`            | Group ID the app runs as (Unraid default `100` = `users`). |
+
+## Signing in
+
+Two ways in, and an instance can offer either or both.
+
+**App accounts** work out of the box. A brand-new instance accepts registrations until
+its first account exists — that account becomes the administrator — and then closes
+registration by itself, so an instance left on the internet is never sitting open by
+accident. An administrator reopens it from **Admin → Account settings** to add people,
+and registration reopened deliberately stays open until it is turned off again.
+
+**An identity provider**, if you run one. Set `Oidc__Authority` and `Oidc__ClientId` to
+any OpenID Connect provider and the sign-in screen gains a provider button. Register the
+app as a *public* client using the authorization code flow with PKCE, with your app's
+root URL as the redirect URI. Nothing in the app is specific to any provider: everything
+else comes from its discovery document.
+
+Identities are matched on the provider's stable subject, so someone changing their email
+keeps their coffees. A first sign-in whose email matches an existing app account is
+linked to it only when the provider asserts the address is verified; otherwise the
+sign-in is refused rather than quietly creating a second account.
+
+Once an administrator has signed in through the provider at least once, you can switch
+app-account sign-in off entirely. Before that the app refuses to — it would be the last
+way in.
 
 ## Updating
 
@@ -151,8 +181,8 @@ All planned milestones (**M0–M8**) are shipped and merged:
   **hexagonal architecture** (Domain ← Application ← {Infrastructure, Api})
 - ✅ **M2** — coffee CRUD + photo upload behind an `IPhotoStorage` port
   (content-type allowlist, 5 MB cap, server-generated names), served at `/photos`
-- ✅ **M3** — auth: ASP.NET Identity + JWT, `REGISTRATION_ENABLED` gate (first user
-  is admin), password policy + lockout, rate-limited endpoints, `Jwt__Key` required
+- ✅ **M3** — auth: ASP.NET Identity + JWT, first user is admin, password policy +
+  lockout, rate-limited endpoints, `Jwt__Key` required
 - ✅ **M4** — reviews, ratings & flavor tags, with `averageRating`/`reviewCount`
 - ✅ **M5** — snap-to-fill OCR (backend): `POST /api/coffees/scan` over a swappable
   `IOcrService` + a pure `CoffeeLabelParser`
