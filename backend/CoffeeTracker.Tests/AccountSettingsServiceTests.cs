@@ -102,12 +102,27 @@ public sealed class AccountSettingsServiceTests
     {
         var (service, policy) = Build(localLoginEnabled: false, issuer: null, hasAdminWithExternalLogin: false);
 
-        var result = await service.UpdateAsync(new AccountSettings(LocalLoginEnabled: false, LocalRegistrationEnabled: true));
+        var result = await service.UpdateAsync(new AccountSettings(LocalLoginEnabled: false, LocalRegistrationEnabled: false));
 
         // The guard fires on the transition, not on the state: an admin already signed
-        // in through some other means must still be able to change registration.
+        // in through some other means must still be able to change the policy.
         Assert.Equal(AccountSettingsStatus.Applied, result.Status);
-        Assert.True(policy.Current.LocalRegistrationEnabled);
+        Assert.False(policy.Current.LocalLoginEnabled);
+    }
+
+    [Fact]
+    public async Task Registration_cannot_be_left_open_once_local_sign_in_is_off()
+    {
+        var (service, policy) = Build(localLoginEnabled: false, issuer: null, hasAdminWithExternalLogin: false);
+
+        var result = await service.UpdateAsync(new AccountSettings(LocalLoginEnabled: false, LocalRegistrationEnabled: true));
+
+        // Accounts that can never sign in are worth nothing to their owner and something
+        // to an attacker: each one squats an email a provider identity would later
+        // collide with. The combination is accepted and corrected, not refused.
+        Assert.Equal(AccountSettingsStatus.Applied, result.Status);
+        Assert.False(policy.Current.LocalRegistrationEnabled);
+        Assert.False(result.Settings.LocalRegistrationEnabled);
     }
 
     [Fact]

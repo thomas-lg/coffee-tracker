@@ -19,7 +19,7 @@ public sealed class LocalAccountPolicyTests
         var client = factory.CreateClient();
         await client.RegisterAsync("user@example.com", "User");
 
-        await factory.SetPolicyAsync(new AccountPolicy(LocalLoginEnabled: false, LocalRegistrationEnabled: true));
+        factory.SetPolicy(new AccountPolicy(LocalLoginEnabled: false, LocalRegistrationEnabled: true));
 
         var res = await client.Post("/api/auth/login", new LoginDto("user@example.com", ApiClient.DefaultPassword));
 
@@ -50,7 +50,7 @@ public sealed class LocalAccountPolicyTests
 
         // Registration open, sign-in closed: an odd combination, but a representable and
         // harmless one — the account is created and simply cannot sign in yet.
-        await factory.SetPolicyAsync(new AccountPolicy(LocalLoginEnabled: false, LocalRegistrationEnabled: true));
+        factory.SetPolicy(new AccountPolicy(LocalLoginEnabled: false, LocalRegistrationEnabled: true));
 
         var registered = await client.Post(
             "/api/auth/register",
@@ -60,7 +60,7 @@ public sealed class LocalAccountPolicyTests
         var login = await client.Post("/api/auth/login", new LoginDto("late@example.com", ApiClient.DefaultPassword));
         Assert.Equal(HttpStatusCode.Forbidden, login.StatusCode);
 
-        await factory.SetPolicyAsync(new AccountPolicy(LocalLoginEnabled: true, LocalRegistrationEnabled: true));
+        factory.SetPolicy(new AccountPolicy(LocalLoginEnabled: true, LocalRegistrationEnabled: true));
         var afterReopen = await client.Post("/api/auth/login", new LoginDto("late@example.com", ApiClient.DefaultPassword));
         Assert.Equal(HttpStatusCode.OK, afterReopen.StatusCode);
     }
@@ -96,7 +96,7 @@ public sealed class LocalAccountPolicyTests
 
         // The admin reopens it. This is not a bootstrap, so the next account must not
         // slam the door again behind them.
-        await factory.SetPolicyAsync(new AccountPolicy(LocalLoginEnabled: true, LocalRegistrationEnabled: true));
+        factory.SetPolicy(new AccountPolicy(LocalLoginEnabled: true, LocalRegistrationEnabled: true));
 
         await client.RegisterAsync("guest1@example.com", "Guest One");
         await client.RegisterAsync("guest2@example.com", "Guest Two");
@@ -111,7 +111,7 @@ public sealed class LocalAccountPolicyTests
         using var factory = new ApiFactory();
         var client = factory.CreateClient();
 
-        await factory.SetPolicyAsync(new AccountPolicy(LocalLoginEnabled: false, LocalRegistrationEnabled: false));
+        factory.SetPolicy(new AccountPolicy(LocalLoginEnabled: false, LocalRegistrationEnabled: false));
 
         var config = await (await client.Get("/api/config")).Content.ReadFromJsonAsync<ConfigDto>();
 

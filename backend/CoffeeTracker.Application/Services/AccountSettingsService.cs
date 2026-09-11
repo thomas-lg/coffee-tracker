@@ -36,23 +36,28 @@ public sealed class AccountSettingsService(
                 "otherwise disabling local sign-in would leave no way into this instance.");
         }
 
+        // An account that cannot sign in is not worth creating: leaving registration on
+        // with local sign-in off would let anyone fill the instance with dead accounts,
+        // each one holding an email a provider identity would later collide with.
+        var registrationEnabled = settings.LocalLoginEnabled && settings.LocalRegistrationEnabled;
+
         // A deliberate change is never a bootstrap: registration an administrator turns
         // on stays on until they turn it off (see AccountPolicy).
         await accountPolicy.SetAsync(
             new AccountPolicy(
                 settings.LocalLoginEnabled,
-                settings.LocalRegistrationEnabled,
+                registrationEnabled,
                 RegistrationOpenedForBootstrap: false),
             ct);
 
         logger.LogWarning(
             "Account policy changed: local sign-in {LoginState}, local registration {RegistrationState}.",
             settings.LocalLoginEnabled ? "enabled" : "disabled",
-            settings.LocalRegistrationEnabled ? "enabled" : "disabled");
+            registrationEnabled ? "enabled" : "disabled");
 
         return new AccountSettingsUpdate(
             AccountSettingsStatus.Applied,
-            new AccountSettingsDto(settings.LocalLoginEnabled, settings.LocalRegistrationEnabled));
+            new AccountSettingsDto(settings.LocalLoginEnabled, registrationEnabled));
     }
 
     /// <summary>

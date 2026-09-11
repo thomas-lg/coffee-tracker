@@ -134,9 +134,24 @@ keeps their coffees. A first sign-in whose email matches an existing app account
 linked to it only when the provider asserts the address is verified; otherwise the
 sign-in is refused rather than quietly creating a second account.
 
+**The provider is the guest list.** Anyone the provider lets through gets an account on
+first sign-in, so point the app at a provider you control and that gates who may use it
+(Authelia's `access_control`, a Keycloak client role, a Google Workspace domain…). A
+provider that accepts the whole world — plain Google, for instance — makes the app accept
+the whole world with it. Only an email the provider asserts as verified is recorded;
+otherwise the account gets a placeholder address, so nobody can claim someone else's.
+
 Once an administrator has signed in through the provider at least once, you can switch
 app-account sign-in off entirely. Before that the app refuses to — it would be the last
 way in.
+
+**If the provider later disappears** (URL changed, certificate expired, instance gone)
+and app-account sign-in is off, nobody can get in. Turn it back on directly in the
+database, then restart the container:
+
+```sh
+sqlite3 /config/coffee.db "UPDATE AppSettings SET LocalLoginEnabled = 1;"
+```
 
 ## Updating
 
@@ -202,7 +217,6 @@ test** for the admin authorization policy.
 
 Nothing committed — a parking lot for when the mood strikes:
 
-- **OIDC / SSO** via Authelia (keep the app's own login as a fallback).
 - **Brew log** — per-cup extraction notes (grind, dose, yield, time) beyond a rating.
 - **Wishlist & "finished bag"** states; optional low-stock nudges.
 - **Stats & charts** — rating trends over time, favourite roasters/origins.

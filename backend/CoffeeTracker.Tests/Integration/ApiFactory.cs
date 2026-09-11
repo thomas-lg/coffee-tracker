@@ -91,11 +91,7 @@ public sealed class ApiFactory(
     }
 
     /// <summary>Sets the policy mid-test, standing in for an admin changing it.</summary>
-    public Task SetPolicyAsync(AccountPolicy policy)
-    {
-        SetPolicy(Services, policy);
-        return Task.CompletedTask;
-    }
+    public void SetPolicy(AccountPolicy policy) => SetPolicy(Services, policy);
 
     /// <summary>Reads the policy back, to assert on what the app actually persisted.</summary>
     public async Task<AccountPolicy> GetPolicyAsync()

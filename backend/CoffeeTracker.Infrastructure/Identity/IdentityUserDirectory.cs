@@ -111,6 +111,9 @@ public sealed class IdentityUserDirectory(
                select login.UserId)
             .AnyAsync(ct);
 
+    public async Task<bool> HasOtherAdminAsync(string userId, CancellationToken ct = default) =>
+        await db.Users.AnyAsync(u => u.IsAdmin && u.Id != userId, ct);
+
     public async Task<AuthUser?> FindByExternalLoginAsync(string issuer, string subject, CancellationToken ct = default)
     {
         var user = await userManager.FindByLoginAsync(issuer, subject);

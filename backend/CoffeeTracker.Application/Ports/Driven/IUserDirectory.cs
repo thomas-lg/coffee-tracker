@@ -40,6 +40,13 @@ public interface IUserDirectory
     /// </summary>
     Task<bool> HasAdminWithExternalLoginAsync(string issuer, CancellationToken ct = default);
 
+    /// <summary>
+    /// Whether an administrator other than <paramref name="userId"/> exists. The
+    /// provider's claim mapping revokes as well as grants, and an instance with no
+    /// administrator left cannot appoint one from inside the app.
+    /// </summary>
+    Task<bool> HasOtherAdminAsync(string userId, CancellationToken ct = default);
+
     /// <summary>Finds the account an external identity is already attached to, if any.</summary>
     Task<AuthUser?> FindByExternalLoginAsync(string issuer, string subject, CancellationToken ct = default);
 

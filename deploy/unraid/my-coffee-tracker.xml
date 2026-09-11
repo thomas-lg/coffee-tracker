@@ -33,7 +33,7 @@
   <CPUset/>
   <DonateText/>
   <DonateLink/>
-  <Requires>Set a strong Jwt__Key (e.g. `openssl rand -base64 48`) — the app refuses to start without one. To create the first account, set REGISTRATION_ENABLED=true, register (the first user to sign up becomes admin), then set it back to false. Put the container behind a TLS-terminating reverse proxy and set ForwardedHeaders__KnownProxies to the proxy IP.</Requires>
+  <Requires>Set a strong Jwt__Key (e.g. `openssl rand -base64 48`) — the app refuses to start without one. A fresh instance accepts exactly one account: register, and the first user becomes admin while registration closes behind them. Put the container behind a TLS-terminating reverse proxy and set ForwardedHeaders__KnownProxies to the proxy's name or IP.</Requires>
 
   <!-- WebUI / app port (container listens on 8080). Keep this LAN-only behind the
        TLS-terminating reverse proxy; never port-forward it to the internet. -->
@@ -48,11 +48,16 @@
   <Config Name="JWT Issuer" Target="Jwt__Issuer" Default="coffee-tracker" Mode="" Description="JWT issuer claim." Type="Variable" Display="advanced" Required="false" Mask="false">coffee-tracker</Config>
   <Config Name="JWT Audience" Target="Jwt__Audience" Default="coffee-tracker" Mode="" Description="JWT audience claim." Type="Variable" Display="advanced" Required="false" Mask="false">coffee-tracker</Config>
 
-  <!-- Behaviour flags -->
-  <Config Name="Registration Enabled" Target="REGISTRATION_ENABLED" Default="false" Mode="" Description="When false (default) new signups are blocked — safe for a public/shared instance. Set true to allow registration; the first user to register becomes admin." Type="Variable" Display="always" Required="false" Mask="false">false</Config>
+  <!-- Optional OpenID Connect provider. Nothing here names a product: the endpoints come from the provider's discovery document, and leaving these empty runs the app on its own accounts. -->
+  <Config Name="OIDC Authority" Target="Oidc__Authority" Default="" Mode="" Description="Base URL of an OpenID Connect provider (Authelia, Keycloak, Authentik...). Set it together with OIDC Client Id to offer sign-in through that provider; leave both empty for app accounts only. Must be https (http is accepted on loopback only). Anyone the provider lets through gets an account, so use a provider that gates who may sign in." Type="Variable" Display="always" Required="false" Mask="false"/>
+  <Config Name="OIDC Client Id" Target="Oidc__ClientId" Default="" Mode="" Description="The client id registered with that provider — a public client using the authorization code flow with PKCE, with this app's root URL as its redirect URI. Required whenever OIDC Authority is set." Type="Variable" Display="always" Required="false" Mask="false"/>
+  <Config Name="OIDC Display Name" Target="Oidc__DisplayName" Default="" Mode="" Description="What to call the provider on the sign-in button (e.g. Authelia). Left empty, the button reads 'your identity provider'." Type="Variable" Display="advanced" Required="false" Mask="false"/>
+  <Config Name="OIDC Scopes" Target="Oidc__Scopes" Default="openid profile email" Mode="" Description="Scopes requested from the provider. Add 'groups' if you use the admin claim mapping." Type="Variable" Display="advanced" Required="false" Mask="false">openid profile email</Config>
+  <Config Name="OIDC Admin Claim" Target="Oidc__AdminClaim" Default="" Mode="" Description="Claim carrying the administrator assertion (e.g. groups). Set together with OIDC Admin Claim Value; both or neither. Left empty, the first user to sign in through the provider becomes admin." Type="Variable" Display="advanced" Required="false" Mask="false"/>
+  <Config Name="OIDC Admin Claim Value" Target="Oidc__AdminClaimValue" Default="" Mode="" Description="Value the admin claim must carry to grant administrator rights. Re-evaluated on every sign-in, so removing someone from the group revokes their rights at their next sign-in." Type="Variable" Display="advanced" Required="false" Mask="false"/>
 
   <!-- Reverse-proxy support: honor X-Forwarded-Proto so auth redirects / Secure cookies work behind TLS termination -->
-  <Config Name="Known Proxies" Target="ForwardedHeaders__KnownProxies" Default="" Mode="" Description="Comma-separated IPs of your reverse proxy (e.g. 172.17.0.1). Lets the app trust X-Forwarded-* headers." Type="Variable" Display="advanced" Required="false" Mask="false"/>
+  <Config Name="Known Proxies" Target="ForwardedHeaders__KnownProxies" Default="" Mode="" Description="Comma-separated host names or IPs of your reverse proxy (e.g. swag). Lets the app trust X-Forwarded-* headers. Prefer a name: a pinned IP holds only until the proxy restarts onto another one. Names are resolved at startup." Type="Variable" Display="advanced" Required="false" Mask="false"/>
 
   <!-- File ownership for the mounted volumes. The container chowns /config and /photos to PUID:PGID at startup, then drops to that user — fixes "unable to open database file". -->
   <Config Name="PUID" Target="PUID" Default="99" Mode="" Description="User ID for file permissions. Set this to match your host user's UID so the container can read/write the mounted /config and /photos volumes (default: 99 for Unraid 'nobody'). NOTE: on startup the container recursively chowns /config and /photos to this owner — point them at dedicated directories, not a shared/pre-existing share. 0 (root) is refused." Type="Variable" Display="advanced" Required="false" Mask="false">99</Config>

@@ -48,7 +48,24 @@ export class ProviderSignIn {
     // and will happily hand back the same ID token on every later page load — posting
     // that again asks the API to spend a token it has already spent, which it refuses,
     // and the refusal then reads as a failed sign-in on a page that was working fine.
-    if (!new URLSearchParams(window.location.search).has('code')) {
+    const callback = new URLSearchParams(window.location.search);
+
+    // The provider can come back refusing instead of granting — a cancelled consent, a
+    // user the provider's own policy turns away, a misregistered client. Without this
+    // the user lands on the login screen with nothing said and no idea whether to try
+    // again or call the administrator.
+    if (callback.has('error')) {
+      this.error.set(
+        callback.get('error_description') ??
+          providerErrors[callback.get('error') ?? ''] ??
+          'The identity provider refused the sign-in.',
+      );
+      history.replaceState(null, '', '/');
+      this.oidc.logoffLocal();
+      return false;
+    }
+
+    if (!callback.has('code')) {
       return false;
     }
 
@@ -89,6 +106,12 @@ export class ProviderSignIn {
     }
   }
 }
+
+/** The refusals worth wording ourselves; anything else is shown as the provider sent it. */
+const providerErrors: Record<string, string> = {
+  access_denied: 'The identity provider did not authorise you to use this app.',
+  login_required: 'The identity provider needs you to sign in again.',
+};
 
 function messageFor(err: unknown): string {
   const detail = (err as { error?: { detail?: string } })?.error?.detail;

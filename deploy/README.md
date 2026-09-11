@@ -58,11 +58,14 @@ secure context. Don't publish the container port directly to the internet.
    - `/config` → e.g. `/mnt/user/appdata/coffee-tracker/config` (SQLite DB)
    - `/photos` → e.g. `/mnt/user/appdata/coffee-tracker/photos` (uploads)
    - **`Jwt__Key`** (required) — `openssl rand -base64 48`
-   - **`ForwardedHeaders__KnownProxies`** — your reverse proxy's IP
+   - **`ForwardedHeaders__KnownProxies`** — your reverse proxy's name or IP
    - **`PUID`/`PGID`** — match the host owner of the appdata dirs (Unraid default
      `99`/`100`); the container chowns the volumes to this on start and drops to it.
-4. **Bootstrap the admin:** set `REGISTRATION_ENABLED=true`, start, register (the
-   first user becomes admin), then set it back to `false` and recreate.
+   - **`Oidc__Authority` / `Oidc__ClientId`** *(optional)* — an OpenID Connect provider
+     to sign in through; see the app README for the rest of the `Oidc__*` settings.
+4. **Bootstrap the admin:** start the container and register at `/register`. A fresh
+   instance accepts exactly one account — the first — and closes registration behind it.
+   Both settings live in **Admin → Account settings** from then on.
 5. Point the reverse proxy at the container's `8080`.
 
 ### Behind SWAG + Authelia

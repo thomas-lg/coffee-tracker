@@ -38,6 +38,18 @@ public class OidcOptions
     /// <summary>Value <see cref="AdminClaim"/> must carry to grant administrator status.</summary>
     public string? AdminClaimValue { get; set; }
 
+    /// <summary>
+    /// Whether the authority is one the signing keys can be fetched from safely. Over
+    /// plain http anyone on the path can serve their own JWKS and mint ID tokens the
+    /// app would accept, so https is required — except on loopback, where there is no
+    /// path to be on and a provider is routinely run without a certificate in
+    /// development.
+    /// </summary>
+    public bool HasSecureAuthority =>
+        string.IsNullOrWhiteSpace(Authority)
+        || (Uri.TryCreate(Authority, UriKind.Absolute, out var uri)
+            && (uri.Scheme == Uri.UriSchemeHttps || uri.IsLoopback));
+
     /// <summary>Whether enough is configured for the feature to exist at all.</summary>
     public bool IsConfigured =>
         !string.IsNullOrWhiteSpace(Authority) && !string.IsNullOrWhiteSpace(ClientId);

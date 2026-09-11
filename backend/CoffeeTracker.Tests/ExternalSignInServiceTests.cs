@@ -37,10 +37,12 @@ public sealed class ExternalSignInServiceTests
         public AuthUser? ByExternalLogin { get; init; }
         public AuthUser? ByEmail { get; init; }
         public AuthUser? Created { get; init; }
+        public bool OtherAdminExists { get; init; }
 
         public List<(string UserId, string Issuer, string Subject)> Links { get; } = [];
         public List<(string UserId, bool IsAdmin)> AdminChanges { get; } = [];
         public bool CreateCalled { get; private set; }
+        public string? CreatedWithEmail { get; private set; }
 
         public override Task<AuthUser?> FindByExternalLoginAsync(string issuer, string subject, CancellationToken ct = default) =>
             Task.FromResult(ByExternalLogin);
@@ -58,8 +60,12 @@ public sealed class ExternalSignInServiceTests
             string issuer, string subject, string email, string displayName, CancellationToken ct = default)
         {
             CreateCalled = true;
+            CreatedWithEmail = email;
             return Task.FromResult(CreateUserResult.Ok(Created!));
         }
+
+        public override Task<bool> HasOtherAdminAsync(string userId, CancellationToken ct = default) =>
+            Task.FromResult(OtherAdminExists);
 
         public override Task SetAdminAsync(string userId, bool isAdmin, CancellationToken ct = default)
         {
@@ -198,7 +204,9 @@ public sealed class ExternalSignInServiceTests
         Assert.Equal(("user-1", true), grantUsers.AdminChanges.Single());
 
         var admin = new AuthUser("user-1", "person@example.com", "A Person", IsAdmin: true);
-        var (revoke, revokeUsers) = Build(Identity(adminAssertion: false), new FakeUsers { ByExternalLogin = admin });
+        var (revoke, revokeUsers) = Build(
+            Identity(adminAssertion: false),
+            new FakeUsers { ByExternalLogin = admin, OtherAdminExists = true });
 
         var revoked = await revoke.SignInAsync("token");
         // Rights that can only ever be granted cannot be taken back from the provider,
@@ -268,6 +276,37 @@ public sealed class ExternalSignInServiceTests
         // appoint one from inside the app.
         Assert.True(result.Response!.IsAdmin);
         Assert.Empty(users.AdminChanges);
+    }
+
+    [Fact]
+    public async Task The_claim_does_not_strip_the_last_administrator_of_an_established_instance()
+    {
+        var admin = new AuthUser("user-1", "person@example.com", "A Person", IsAdmin: true);
+        var users = new FakeUsers { ByExternalLogin = admin };
+        var (service, _) = Build(Identity(adminAssertion: false), users);
+
+        var result = await service.SignInAsync("token");
+
+        // Same dead end as the bootstrap case, reached the slow way: an operator sets
+        // the claim mapping up and signs in before adding themselves to the group. The
+        // instance would be left with no administrator and nothing but SQL to fix it.
+        Assert.True(result.Response!.IsAdmin);
+        Assert.Empty(users.AdminChanges);
+    }
+
+    [Fact]
+    public async Task An_unverified_email_is_not_written_onto_a_new_account()
+    {
+        var created = new AuthUser("user-new", null, "A Person", IsAdmin: false);
+        var users = new FakeUsers { Created = created };
+        var (service, _) = Build(Identity(emailVerified: false), users);
+
+        await service.SignInAsync("token");
+
+        // The provider is only repeating what its user typed. Writing it would let that
+        // user squat an address they do not own and be linked to by whoever later proves
+        // they do — the same collision the verified-email guard refuses on the way in.
+        Assert.Equal($"{Subject}@id.example.com.invalid", users.CreatedWithEmail);
     }
 
     [Fact]

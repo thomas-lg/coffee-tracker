@@ -51,6 +51,40 @@ public sealed class OidcConfigurationTests
         Assert.Contains("AdminClaimValue", string.Join(" ", ex.Failures), StringComparison.Ordinal);
     }
 
+    [Theory]
+    [InlineData("http://id.example.com")]
+    [InlineData("id.example.com")]
+    public void An_authority_the_keys_cannot_be_trusted_from_prevents_startup(string authority)
+    {
+        using var factory = new ApiFactory(oidc: new Dictionary<string, string?>
+        {
+            ["Oidc:Authority"] = authority,
+            ["Oidc:ClientId"] = "coffee-tracker",
+        });
+
+        // Over plain http the signing keys come from whoever is on the path, who can
+        // then mint tokens this app would accept. A typo must cost a failed start, not
+        // silent trust.
+        var ex = Assert.Throws<OptionsValidationException>(() => factory.CreateClient());
+        Assert.Contains("https", string.Join(" ", ex.Failures), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task A_provider_on_loopback_is_allowed_without_tls()
+    {
+        // No path to be on, and a development provider rarely has a certificate.
+        using var factory = new ApiFactory(oidc: new Dictionary<string, string?>
+        {
+            ["Oidc:Authority"] = "http://localhost:9091",
+            ["Oidc:ClientId"] = "coffee-tracker",
+        });
+        var client = factory.CreateClient();
+
+        var config = await (await client.Get("/api/config")).Content.ReadFromJsonAsync<ConfigDto>();
+
+        Assert.False(config!.OidcAvailable);
+    }
+
     [Fact]
     public async Task An_unreachable_provider_does_not_stop_the_app()
     {

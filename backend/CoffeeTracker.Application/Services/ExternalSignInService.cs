@@ -48,7 +48,7 @@ public sealed class ExternalSignInService(
             return ExternalSignInResult.Fail(resolved.Status);
         }
 
-        var user = await ApplyAdminPolicyAsync(resolved.User, identity, resolved.WasCreated, ct);
+        var user = await ApplyAdminPolicyAsync(resolved.User, identity, ct);
 
         if (resolved.WasCreated && user.IsAdmin)
         {
@@ -109,9 +109,12 @@ public sealed class ExternalSignInService(
         var created = await users.CreateFromExternalAsync(
             identity.Issuer,
             identity.Subject,
-            // A provider that asserts no email still needs a unique, stable local
-            // identifier; the subject is both.
-            identity.Email ?? SyntheticEmailFor(identity),
+            // Only an email the provider says it verified is written to the account. An
+            // unverified one is the provider repeating what its user typed, so trusting
+            // it would let that user squat an address they do not own — and be linked to
+            // by whoever later proves they do. A provider that asserts no usable email
+            // still needs a unique, stable local identifier; the subject is both.
+            identity is { Email: { } email, EmailVerified: true } ? email : SyntheticEmailFor(identity),
             identity.DisplayName ?? identity.Subject,
             ct);
 
@@ -165,7 +168,6 @@ public sealed class ExternalSignInService(
     private async Task<AuthUser> ApplyAdminPolicyAsync(
         AuthUser user,
         ExternalIdentity identity,
-        bool wasCreated,
         CancellationToken ct)
     {
         if (identity.AdminAssertion is not { } asserted || asserted == user.IsAdmin)
@@ -173,12 +175,12 @@ public sealed class ExternalSignInService(
             return user;
         }
 
-        if (wasCreated && user.IsAdmin && !asserted)
+        if (!asserted && !await users.HasOtherAdminAsync(user.Id, ct))
         {
-            // This account was just promoted by the first-user bootstrap and the claim
-            // mapping would immediately take it back, leaving an instance with no
-            // administrator at all and no way to appoint one from inside the app. The
-            // bootstrap wins; the provider governs every sign-in after this one.
+            // Revoking here would leave the instance with no administrator and no way to
+            // appoint one from inside the app — whether this account was just promoted by
+            // the first-user bootstrap or has been the only administrator for months. The
+            // last one keeps their rights; the provider governs every other account.
             logger.LogWarning(
                 "Kept administrator on {UserId}: the provider's claim would have left this instance with none.",
                 user.Id);

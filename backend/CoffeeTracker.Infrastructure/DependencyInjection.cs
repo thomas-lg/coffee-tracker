@@ -120,6 +120,11 @@ public static class DependencyInjection
                 $"{OidcOptions.SectionName}:{nameof(OidcOptions.AdminClaim)} and {nameof(OidcOptions.AdminClaimValue)} " +
                 "must be set together. A claim with no value to match would grant administrator rights to anyone " +
                 "carrying it.")
+            .Validate(
+                o => o.HasSecureAuthority,
+                $"{OidcOptions.SectionName}:{nameof(OidcOptions.Authority)} must be an absolute https URL " +
+                "(http is accepted on loopback only). Over plain http, anyone on the network path can serve " +
+                "the provider's signing keys and mint tokens this app would accept.")
             .ValidateOnStart();
 
         services.AddMemoryCache();

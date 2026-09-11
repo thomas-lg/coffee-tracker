@@ -23,6 +23,8 @@ public abstract class StubUserDirectory : IUserDirectory
 
     public virtual Task<bool> HasAdminWithExternalLoginAsync(string issuer, CancellationToken ct = default) => throw new NotSupportedException();
 
+    public virtual Task<bool> HasOtherAdminAsync(string userId, CancellationToken ct = default) => throw new NotSupportedException();
+
     public virtual Task<AuthUser?> FindByExternalLoginAsync(string issuer, string subject, CancellationToken ct = default) => throw new NotSupportedException();
 
     public virtual Task LinkExternalLoginAsync(string userId, string issuer, string subject, CancellationToken ct = default) => throw new NotSupportedException();

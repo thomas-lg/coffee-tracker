@@ -15,6 +15,8 @@ public sealed class MemoryCacheUsedTokenRegistry(IMemoryCache cache, TimeProvide
 {
     private const string Prefix = "spent-id-token:";
 
+    private readonly Lock gate = new();
+
     public Task<bool> TryConsumeAsync(string tokenId, DateTimeOffset expiresAt, CancellationToken ct = default)
     {
         var remaining = expiresAt - timeProvider.GetUtcNow();
@@ -29,7 +31,7 @@ public sealed class MemoryCacheUsedTokenRegistry(IMemoryCache cache, TimeProvide
 
         // TryGetValue then Set is not atomic on its own, so serialise it: two requests
         // racing with the same token must not both be told yes.
-        lock (this)
+        lock (gate)
         {
             if (cache.TryGetValue(key, out _))
             {
