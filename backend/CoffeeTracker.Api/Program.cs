@@ -249,6 +249,11 @@ if (!app.Environment.IsDevelopment())
     app.UseHsts();
 }
 
+// Security headers on every response — before the static-file middleware, which would
+// otherwise serve the SPA shell and the photos without them. The provider's origin is
+// read from configuration so the policy can let the browser reach it.
+app.UseSecurityHeaders(builder.Configuration[$"{OidcOptions.SectionName}:{nameof(OidcOptions.Authority)}"]);
+
 // Apply pending migrations on startup (single-instance, self-hosted app). A failure here
 // (locked/corrupt DB, bad connection string, failed migration) is the most likely crash-loop
 // cause; log it through the configured Serilog logger so it lands in the persistent file — not
