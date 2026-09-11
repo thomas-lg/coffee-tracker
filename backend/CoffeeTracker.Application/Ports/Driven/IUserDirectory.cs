@@ -39,6 +39,30 @@ public interface IUserDirectory
     /// leaves a door open.
     /// </summary>
     Task<bool> HasAdminWithExternalLoginAsync(string issuer, CancellationToken ct = default);
+
+    /// <summary>Finds the account an external identity is already attached to, if any.</summary>
+    Task<AuthUser?> FindByExternalLoginAsync(string issuer, string subject, CancellationToken ct = default);
+
+    /// <summary>Attaches an external identity to an existing account.</summary>
+    Task LinkExternalLoginAsync(string userId, string issuer, string subject, CancellationToken ct = default);
+
+    /// <summary>
+    /// Creates an account for an external identity and attaches it, with no password:
+    /// such an account has no local credentials to guess. Grants admin to the first
+    /// user on a fresh instance, exactly as <see cref="CreateAsync"/> does.
+    /// </summary>
+    Task<CreateUserResult> CreateFromExternalAsync(
+        string issuer,
+        string subject,
+        string email,
+        string displayName,
+        CancellationToken ct = default);
+
+    /// <summary>
+    /// Sets administrator status. Used when a provider claim is the source of truth, so
+    /// revoking a group there takes effect at the user's next sign-in.
+    /// </summary>
+    Task SetAdminAsync(string userId, bool isAdmin, CancellationToken ct = default);
 }
 
 /// <summary>A user as the application layer sees it (no framework types).</summary>

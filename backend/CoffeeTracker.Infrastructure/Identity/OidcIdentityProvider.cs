@@ -21,7 +21,11 @@ public sealed class OidcIdentityProvider : IExternalIdentityProvider
 
     public OidcIdentityProvider(IOptions<OidcOptions> options, ILogger<OidcIdentityProvider> logger)
     {
-        var authority = options.Value.Authority!.TrimEnd('/');
+        var authority = (options.Value.Authority
+            ?? throw new InvalidOperationException(
+                $"{nameof(OidcIdentityProvider)} was constructed without an authority. It must only be resolved " +
+                "when the provider is configured; see AddExternalIdentityProvider."))
+            .TrimEnd('/');
         ConfiguredIssuer = authority;
         _logger = logger;
         _configuration = new ConfigurationManager<OpenIdConnectConfiguration>(

@@ -2,6 +2,7 @@ using CoffeeTracker.Application.Dtos;
 using CoffeeTracker.Application.Ports.Driven;
 using CoffeeTracker.Application.Ports.Driving;
 using CoffeeTracker.Application.Services;
+using CoffeeTracker.Tests.Fakes;
 using Microsoft.Extensions.Logging.Abstractions;
 using Xunit;
 
@@ -34,17 +35,10 @@ public sealed class AccountSettingsServiceTests
         public string? ConfiguredIssuer => issuer;
     }
 
-    private sealed class FakeUsers(bool hasAdminWithExternalLogin) : IUserDirectory
+    private sealed class FakeUsers(bool hasAdminWithExternalLogin) : StubUserDirectory
     {
-        public Task<bool> HasAdminWithExternalLoginAsync(string issuer, CancellationToken ct = default) =>
+        public override Task<bool> HasAdminWithExternalLoginAsync(string issuer, CancellationToken ct = default) =>
             Task.FromResult(hasAdminWithExternalLogin);
-
-        public Task<AuthUser?> FindByEmailAsync(string email, CancellationToken ct = default) => throw new NotSupportedException();
-        public Task<AuthUser?> FindByIdAsync(string userId, CancellationToken ct = default) => throw new NotSupportedException();
-        public Task<CreateUserResult> CreateAsync(NewUser user, CancellationToken ct = default) => throw new NotSupportedException();
-        public Task<bool> IsLockedOutAsync(string userId, CancellationToken ct = default) => throw new NotSupportedException();
-        public Task<PasswordCheck> VerifyPasswordAsync(string userId, string password, CancellationToken ct = default) => throw new NotSupportedException();
-        public void SpendDecoyVerification(string password) => throw new NotSupportedException();
     }
 
     private static (AccountSettingsService Service, FakePolicy Policy) Build(

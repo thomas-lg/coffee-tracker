@@ -24,12 +24,12 @@
 
 ## 4. OIDC — sign-in
 
-- [ ] 4.1 Add an `IExternalSignIn` driving port and the `POST /api/auth/oidc` endpoint, rate-limited under the existing auth policy.
-- [ ] 4.2 Validate the posted ID token: signature against the JWKS, issuer, audience equal to the client id, expiry, and the nonce bound to the sign-in request.
-- [ ] 4.3 Implement link-or-create over `UserManager.FindByLoginAsync` / `AddLoginAsync`, keyed on issuer + `sub`, with the verified-email linking rule and the refusal on an unverified match.
-- [ ] 4.4 Apply the admin claim mapping on every sign-in — granting and revoking — with the first-user bootstrap as the fallback when no mapping is configured.
-- [ ] 4.5 Return the existing `AuthResponseDto` by reusing `TokenService` and the refresh-token issuance, so nothing downstream changes.
-- [ ] 4.6 Tests: valid token yields a session; wrong issuer, wrong audience, expired, and replayed tokens are each refused; returning user matches on `sub` after an email change; verified-email link; unverified-match refusal; claim grants and revokes admin; bootstrap applies only without a mapping.
+- [x] 4.1 Add an `IExternalSignIn` driving port and the `POST /api/auth/oidc` endpoint, rate-limited under the existing auth policy.
+- [x] 4.2 Validate the posted ID token: signature against the JWKS, issuer, audience equal to the client id, expiry, and the nonce bound to the sign-in request.
+- [x] 4.3 Implement link-or-create over `UserManager.FindByLoginAsync` / `AddLoginAsync`, keyed on issuer + `sub`, with the verified-email linking rule and the refusal on an unverified match.
+- [x] 4.4 Apply the admin claim mapping on every sign-in — granting and revoking — with the first-user bootstrap as the fallback when no mapping is configured.
+- [x] 4.5 Return the existing `AuthResponseDto` by reusing `TokenService` and the refresh-token issuance, so nothing downstream changes.
+- [x] 4.6 Tests: valid token yields a session; wrong issuer, wrong audience, expired, and replayed tokens are each refused; returning user matches on `sub` after an email change; verified-email link; unverified-match refusal; claim grants and revokes admin; bootstrap applies only without a mapping.
 
 ## 5. Web client — sign-in
 

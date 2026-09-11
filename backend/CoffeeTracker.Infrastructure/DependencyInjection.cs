@@ -122,13 +122,25 @@ public static class DependencyInjection
                 "carrying it.")
             .ValidateOnStart();
 
+        services.AddMemoryCache();
+        services.AddSingleton<ISignInNonceStore, MemoryCacheNonceStore>();
+
         services.AddSingleton<IExternalIdentityProvider>(sp =>
         {
             var options = sp.GetRequiredService<IOptions<OidcOptions>>();
             return options.Value.IsConfigured
-                ? ActivatorUtilities.CreateInstance<OidcIdentityProvider>(sp)
+                ? sp.GetRequiredService<OidcIdentityProvider>()
                 : new UnconfiguredIdentityProvider();
         });
+
+        // Both are resolved through factories rather than registered by type: the
+        // concrete adapters have nothing to point at without an authority, so they must
+        // never be constructed on an instance that has no provider.
+        services.AddSingleton<OidcIdentityProvider>();
+        services.AddSingleton<IExternalTokenValidator>(sp =>
+            sp.GetRequiredService<IOptions<OidcOptions>>().Value.IsConfigured
+                ? ActivatorUtilities.CreateInstance<OidcTokenValidator>(sp)
+                : new UnconfiguredTokenValidator());
     }
 
     /// <summary>
