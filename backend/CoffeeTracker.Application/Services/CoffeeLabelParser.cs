@@ -56,7 +56,6 @@ public partial class CoffeeLabelParser : ICoffeeLabelParser
 
     public ScannedCoffeeDto Parse(OcrResult ocr)
     {
-        var text = ocr?.RawText ?? string.Empty;
         var lines = RankLines(ocr?.Lines ?? []);
 
         var (name, roaster) = FindNameAndRoaster(lines);
@@ -67,7 +66,12 @@ public partial class CoffeeLabelParser : ICoffeeLabelParser
             // Normalize "Medium Dark" → "Medium-Dark" so the value is canonical
             // regardless of which spelling the label used.
             RoastLevel: FindKeyword(lines, RoastLevels)?.Replace(' ', '-'),
-            Weight: FindWeight(text));
+            // Read from the lines the confidence gate kept, not from RawText: the
+            // engine rebuilds RawText from every word it recognised, including the
+            // background noise the gate exists to drop. A digit run in a table grain or
+            // a reflection would otherwise land as the bag's weight — confidently wrong,
+            // which is worse than absent.
+            Weight: FindWeight(ConfidentText(ocr?.Lines ?? [])));
     }
 
     // Picks the keyword that looks most like a *label* rather than prose: it prefers
@@ -199,6 +203,21 @@ public partial class CoffeeLabelParser : ICoffeeLabelParser
     // only the tie-break, and OrderByDescending is stable, so an engine reporting no
     // geometry degrades exactly to the previous ordering rather than to something
     // arbitrary.
+    /// <summary>
+    /// The lines that clear the confidence gate, in reading order.
+    ///
+    /// Reading order, not the height ranking RankLines applies: the weight scan takes
+    /// the first match, and on a label that prints two of them the one printed first is
+    /// the meaningful answer, not the one set in the largest type.
+    /// </summary>
+    private string ConfidentText(IReadOnlyList<OcrLine> lines) =>
+        string.Join(
+            '\n',
+            lines
+                .Where(l => !string.IsNullOrWhiteSpace(l.Text))
+                .Where(l => l.Confidence is null || l.Confidence >= _minConfidence)
+                .Select(l => l.Text.Trim()));
+
     private List<string> RankLines(IReadOnlyList<OcrLine> lines) =>
         [.. lines
             .Where(l => !string.IsNullOrWhiteSpace(l.Text))
