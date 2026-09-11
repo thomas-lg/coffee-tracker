@@ -57,6 +57,18 @@ export class Login {
     return this.configRes.value()?.oidc?.displayName?.trim() || 'your identity provider';
   });
 
+  /**
+   * False until /api/config has been answered (or has failed). The screen holds its
+   * shape behind a placeholder rather than flashing a method the instance may not
+   * offer, then swapping it out from under the visitor.
+   */
+  protected readonly configResolved = computed(() => this.localLoginEnabled() !== null);
+
+  /** Neither door is open — the screen explains that instead of showing an empty card. */
+  protected readonly noMethod = computed(
+    () => this.localLoginEnabled() === false && !this.providerAvailable(),
+  );
+
   /** Set when the API refused a provider sign-in we came back from. */
   protected readonly providerError = this.provider.error.asReadonly();
 

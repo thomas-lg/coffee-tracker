@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, booleanAttribute, computed, input } from '@angular/core';
 import { NgTemplateOutlet } from '@angular/common';
 import { RouterLink } from '@angular/router';
 
@@ -10,11 +10,15 @@ import { RouterLink } from '@angular/router';
  *
  * The projected label lives in a single `<ng-content>` stamped into whichever wrapper
  * is active — two `<ng-content>` slots (one per branch) would drop the content.
+ *
+ * `fullWidth` also blocks the host: the inner control is inline-flex, so stretching it
+ * inside an inline host would leave the percentage resolving against the wrong box.
  */
 @Component({
   selector: 'ct-button',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [RouterLink, NgTemplateOutlet],
+  host: { '[class.block]': 'fullWidth()' },
   template: `
     <ng-template #label><ng-content /></ng-template>
     @if (link() != null) {
@@ -40,6 +44,8 @@ export class Button {
   readonly disabled = input(false);
   /** When provided, renders an `<a routerLink>` instead of a `<button>`. */
   readonly link = input<string | readonly unknown[] | null>(null);
+  /** Stretches the control across its column instead of hugging its label. */
+  readonly fullWidth = input(false, { transform: booleanAttribute });
 
   private readonly base =
     'inline-flex cursor-pointer items-center justify-center gap-2 rounded-full px-5 py-3 text-sm font-semibold transition-[transform,background-color,box-shadow] duration-150 active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-crema disabled:pointer-events-none disabled:opacity-50';
@@ -50,5 +56,7 @@ export class Button {
     ghost: 'bg-transparent text-ink ring-1 ring-line hover:ring-cocoa',
   };
 
-  protected readonly cls = computed(() => `${this.base} ${this.classes[this.variant()]}`);
+  protected readonly cls = computed(
+    () => `${this.base} ${this.classes[this.variant()]}${this.fullWidth() ? ' w-full' : ''}`,
+  );
 }
