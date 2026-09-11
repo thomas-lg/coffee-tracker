@@ -29,7 +29,10 @@ test('golden path: register, add a coffee, see it on the shelf, and rate it', as
 
   await test.step('add a coffee from the catalog', async () => {
     await page.goto('/coffees');
-    await page.getByRole('link', { name: /add a coffee/i }).click();
+    // Two of these exist on an empty shelf — the page header always offers it, and so
+    // does the empty state. The test used to win that race by clicking before the
+    // empty state rendered; take the first deliberately rather than depend on timing.
+    await page.getByRole('link', { name: /add a coffee/i }).first().click();
     await expect(page).toHaveURL(/\/coffees\/new$/);
 
     await page.getByLabel('Name').fill(coffeeName);

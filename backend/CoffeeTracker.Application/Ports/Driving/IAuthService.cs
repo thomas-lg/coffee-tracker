@@ -10,13 +10,7 @@ namespace CoffeeTracker.Application.Ports.Driving;
 /// </summary>
 public interface IAuthService
 {
-    /// <summary>
-    /// Whether open registration is currently allowed. Exposed so an anonymous
-    /// client (the login page) can show/hide the register option before signing in.
-    /// </summary>
-    bool RegistrationEnabled { get; }
-
-    /// <summary>Registers a user (subject to the registration flag and password policy).</summary>
+    /// <summary>Registers a user (subject to the account policy and password policy).</summary>
     Task<AuthResult> RegisterAsync(RegisterDto dto, CancellationToken ct = default);
 
     /// <summary>Verifies credentials and issues an access + refresh token pair on success.</summary>
@@ -39,6 +33,8 @@ public enum AuthStatus
     /// <summary>Registration rejected for a reason other than duplicate or weak password (e.g. invalid email/username).</summary>
     InvalidInput,
     InvalidCredentials,
+    /// <summary>Credentials were not even considered: this instance does not accept local sign-in.</summary>
+    LocalLoginDisabled,
     LockedOut,
     InvalidRefreshToken,
 }

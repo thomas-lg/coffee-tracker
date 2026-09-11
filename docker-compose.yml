@@ -11,7 +11,9 @@ services:
       # REQUIRED — the app refuses to start without a strong key. Generate e.g.
       # with: openssl rand -base64 48
       Jwt__Key: ${JWT_KEY:?set JWT_KEY (e.g. `openssl rand -base64 48`)}
-      # Open signup is off by default; set true to allow registration.
+      # Legacy. A fresh instance opens registration for its first account and closes it
+      # behind them, then keeps the policy in the database (Admin -> Account settings);
+      # this is read once, and only on an instance that already had accounts before that.
       REGISTRATION_ENABLED: ${REGISTRATION_ENABLED:-false}
       # The container starts as root, chowns /config + /photos to PUID:PGID, then
       # drops to that user. Defaults match Unraid's nobody:users (99:100); override

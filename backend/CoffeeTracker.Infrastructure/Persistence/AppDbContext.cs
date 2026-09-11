@@ -16,6 +16,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : IdentityDbCo
     public DbSet<Review> Reviews => Set<Review>();
     public DbSet<FlavorTag> FlavorTags => Set<FlavorTag>();
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
+    public DbSet<AppSettings> AppSettings => Set<AppSettings>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -55,6 +56,11 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : IdentityDbCo
         builder.Entity<FlavorTag>()
             .HasIndex(t => t.Name)
             .IsUnique();
+
+        // Instance settings are a single pinned row; never let EF hand out surrogate keys.
+        builder.Entity<AppSettings>()
+            .Property(s => s.Id)
+            .ValueGeneratedNever();
 
         builder.Entity<RefreshToken>(token =>
         {

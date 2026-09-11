@@ -9,6 +9,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace CoffeeTracker.Infrastructure;
 
@@ -26,6 +27,7 @@ public static class DependencyInjection
         services.AddScoped<IReviewRepository, EfReviewRepository>();
         services.AddScoped<IFlavorTagRepository, EfFlavorTagRepository>();
         services.AddScoped<IRefreshTokenStore, EfRefreshTokenStore>();
+        services.AddScoped<IAccountPolicy, EfAccountPolicy>();
         services.AddSingleton<IPhotoStorage, FileSystemPhotoStorage>();
         services.AddSingleton<IPhotoUrlSigner, PhotoUrlSigner>();
 
@@ -59,7 +61,7 @@ public static class DependencyInjection
     /// JWTs, not cookies) and the auth driven-port adapters. JWT bearer *validation*
     /// is wired in the Api project (it owns the HTTP pipeline); the auth use case lives
     /// in the Application layer and drives these adapters (user store, token issuer,
-    /// registration policy; the refresh-token store is registered above).
+    /// the refresh-token store and account policy are registered above).
     /// </summary>
     private static void AddAuth(IServiceCollection services, IConfiguration configuration)
     {
@@ -84,12 +86,66 @@ public static class DependencyInjection
             .AddEntityFrameworkStores<AppDbContext>();
 
         services.Configure<JwtOptions>(configuration.GetSection(JwtOptions.SectionName));
-        // REGISTRATION_ENABLED is a flat env var / key (default off), per the deploy docs.
-        services.Configure<RegistrationOptions>(o => o.Enabled = configuration.GetValue<bool>("REGISTRATION_ENABLED"));
 
         services.AddSingleton<ITokenIssuer, TokenService>();
-        services.AddSingleton<IRegistrationPolicy, RegistrationPolicy>();
         services.AddScoped<IUserDirectory, IdentityUserDirectory>();
+        AddExternalIdentityProvider(services, configuration);
+    }
+
+    /// <summary>
+    /// Registers the external identity provider: the real adapter when one is
+    /// configured, otherwise a stand-in that reports itself unavailable.
+    ///
+    /// A half-configured provider is a startup failure rather than a dormant feature.
+    /// Booting with an authority but no client id would leave a sign-in button that
+    /// cannot possibly work, and the operator would learn about it from a user. This
+    /// mirrors the stance already taken on a missing Jwt:Key.
+    ///
+    /// Both the validation and the choice of adapter are deferred to the options
+    /// system rather than read here: configuration is not final at registration time
+    /// (a host can still layer sources over it), so deciding eagerly would read a
+    /// half-built configuration.
+    /// </summary>
+    private static void AddExternalIdentityProvider(IServiceCollection services, IConfiguration configuration)
+    {
+        services.AddOptions<OidcOptions>()
+            .Bind(configuration.GetSection(OidcOptions.SectionName))
+            .Validate(
+                o => string.IsNullOrWhiteSpace(o.Authority) == string.IsNullOrWhiteSpace(o.ClientId),
+                $"{OidcOptions.SectionName}:{nameof(OidcOptions.Authority)} and {nameof(OidcOptions.ClientId)} " +
+                "must be set together. Provide the missing one via its environment variable, or remove the whole " +
+                $"{OidcOptions.SectionName} section to run without an identity provider.")
+            .Validate(
+                o => string.IsNullOrWhiteSpace(o.AdminClaim) == string.IsNullOrWhiteSpace(o.AdminClaimValue),
+                $"{OidcOptions.SectionName}:{nameof(OidcOptions.AdminClaim)} and {nameof(OidcOptions.AdminClaimValue)} " +
+                "must be set together. A claim with no value to match would grant administrator rights to anyone " +
+                "carrying it.")
+            .Validate(
+                o => o.HasSecureAuthority,
+                $"{OidcOptions.SectionName}:{nameof(OidcOptions.Authority)} must be an absolute https URL " +
+                "(http is accepted on loopback only). Over plain http, anyone on the network path can serve " +
+                "the provider's signing keys and mint tokens this app would accept.")
+            .ValidateOnStart();
+
+        services.AddMemoryCache();
+        services.AddSingleton<IUsedTokenRegistry, MemoryCacheUsedTokenRegistry>();
+
+        services.AddSingleton<IExternalIdentityProvider>(sp =>
+        {
+            var options = sp.GetRequiredService<IOptions<OidcOptions>>();
+            return options.Value.IsConfigured
+                ? sp.GetRequiredService<OidcIdentityProvider>()
+                : new UnconfiguredIdentityProvider();
+        });
+
+        // Both are resolved through factories rather than registered by type: the
+        // concrete adapters have nothing to point at without an authority, so they must
+        // never be constructed on an instance that has no provider.
+        services.AddSingleton<OidcIdentityProvider>();
+        services.AddSingleton<IExternalTokenValidator>(sp =>
+            sp.GetRequiredService<IOptions<OidcOptions>>().Value.IsConfigured
+                ? ActivatorUtilities.CreateInstance<OidcTokenValidator>(sp)
+                : new UnconfiguredTokenValidator());
     }
 
     /// <summary>
@@ -101,6 +157,13 @@ public static class DependencyInjection
         using var scope = services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         await db.Database.MigrateAsync(ct);
+
+        // REGISTRATION_ENABLED is legacy: read once, only to preserve the posture of a
+        // deployment that predates the persisted policy. See AccountPolicySeeder.
+        await AccountPolicySeeder.SeedAsync(
+            db,
+            scope.ServiceProvider.GetRequiredService<IConfiguration>().GetValue<bool>("REGISTRATION_ENABLED"),
+            ct);
 
         // Switch SQLite to Write-Ahead Logging. Unlike the default rollback journal,
         // WAL lets readers proceed concurrently with a writer, which cuts down on

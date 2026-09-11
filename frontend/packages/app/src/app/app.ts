@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
-import { AuthStore } from '@coffee-tracker/auth';
+import { AuthStore, ProviderSignIn } from '@coffee-tracker/auth';
 import { Icon, Toast } from '@coffee-tracker/ui';
 import { applyTheme, initialTheme, persistTheme, type ThemeMode } from '@coffee-tracker/util';
 
@@ -27,6 +27,12 @@ export class App {
 
   constructor() {
     applyTheme(this.theme());
+
+    // Land on the app after a provider sign-in. No race with the router this time:
+    // the exchange happens in an app initializer, so the flag is already settled here.
+    if (inject(ProviderSignIn).justSignedIn()) {
+      void this.router.navigateByUrl('/');
+    }
   }
 
   protected toggleTheme(): void {
