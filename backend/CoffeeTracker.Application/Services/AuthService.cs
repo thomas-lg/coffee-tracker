@@ -15,14 +15,13 @@ public sealed class AuthService(
     IUserDirectory users,
     ITokenIssuer tokenIssuer,
     IRefreshTokenStore refreshTokens,
-    IRegistrationPolicy registration,
+    IAccountPolicy accountPolicy,
     ILogger<AuthService> logger) : IAuthService
 {
-    public bool RegistrationEnabled => registration.Enabled;
-
     public async Task<AuthResult> RegisterAsync(RegisterDto dto, CancellationToken ct = default)
     {
-        if (!registration.Enabled)
+        var policy = await accountPolicy.GetAsync(ct);
+        if (!policy.LocalRegistrationEnabled)
         {
             return AuthResult.Fail(AuthStatus.RegistrationDisabled);
         }
@@ -42,6 +41,17 @@ public sealed class AuthService(
         if (created.User.IsAdmin)
         {
             logger.LogWarning("Admin bootstrap: user {UserId} was granted admin as the first account.", created.User.Id);
+
+            // If the instance opened registration only so this first account could exist,
+            // close it again now that there is something to protect — a fresh install
+            // should never sit on the internet accepting sign-ups nobody meant to allow.
+            // Registration an admin turned on deliberately is left alone.
+            if (policy.RegistrationOpenedForBootstrap)
+            {
+                await accountPolicy.SetAsync(
+                    policy with { LocalRegistrationEnabled = false, RegistrationOpenedForBootstrap = false },
+                    ct);
+            }
         }
         else
         {
@@ -53,6 +63,12 @@ public sealed class AuthService(
 
     public async Task<AuthResult> LoginAsync(LoginDto dto, CancellationToken ct = default)
     {
+        if (!(await accountPolicy.GetAsync(ct)).LocalLoginEnabled)
+        {
+            logger.LogWarning("Login blocked: this instance does not accept local sign-in.");
+            return AuthResult.Fail(AuthStatus.LocalLoginDisabled);
+        }
+
         var user = await users.FindByEmailAsync(dto.Email, ct);
 
         // Same response — and comparable latency — whether the user is unknown or the

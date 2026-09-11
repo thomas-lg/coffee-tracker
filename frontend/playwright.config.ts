@@ -12,6 +12,9 @@ import { defineConfig, devices } from '@playwright/test';
  */
 export default defineConfig({
   testDir: './e2e',
+  // Claims the first account and reopens registration before anything runs — see
+  // the file for why the suite cannot leave that to whichever test gets there first.
+  globalSetup: './e2e/support/global-setup.ts',
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 1 : 0,

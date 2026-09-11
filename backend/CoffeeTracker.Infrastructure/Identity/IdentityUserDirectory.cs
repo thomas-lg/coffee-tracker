@@ -99,5 +99,102 @@ public sealed class IdentityUserDirectory(
     public void SpendDecoyVerification(string password) =>
         passwordHasher.VerifyHashedPassword(new AppUser(), DecoyHash.Value, password);
 
+    /// <summary>
+    /// Joins AspNetUserLogins to AspNetUsers rather than loading users: the guard only
+    /// needs to know whether such a pair exists, and this stays one query as the table
+    /// grows.
+    /// </summary>
+    public async Task<bool> HasAdminWithExternalLoginAsync(string issuer, CancellationToken ct = default) =>
+        await (from login in db.UserLogins
+               join user in db.Users on login.UserId equals user.Id
+               where login.LoginProvider == issuer && user.IsAdmin
+               select login.UserId)
+            .AnyAsync(ct);
+
+    public async Task<bool> HasOtherAdminAsync(string userId, CancellationToken ct = default) =>
+        await db.Users.AnyAsync(u => u.IsAdmin && u.Id != userId, ct);
+
+    public async Task<AuthUser?> FindByExternalLoginAsync(string issuer, string subject, CancellationToken ct = default)
+    {
+        var user = await userManager.FindByLoginAsync(issuer, subject);
+        return user is null ? null : Map(user);
+    }
+
+    public async Task LinkExternalLoginAsync(string userId, string issuer, string subject, CancellationToken ct = default)
+    {
+        var user = await userManager.FindByIdAsync(userId)
+            ?? throw new InvalidOperationException($"Cannot link an external login to unknown user {userId}.");
+
+        var result = await userManager.AddLoginAsync(user, new UserLoginInfo(issuer, subject, issuer));
+        if (!result.Succeeded)
+        {
+            throw new InvalidOperationException(
+                "Failed to link the external login: " + string.Join("; ", result.Errors.Select(e => e.Description)));
+        }
+    }
+
+    public async Task<CreateUserResult> CreateFromExternalAsync(
+        string issuer,
+        string subject,
+        string email,
+        string displayName,
+        CancellationToken ct = default)
+    {
+        var user = new AppUser
+        {
+            UserName = email,
+            Email = email,
+            DisplayName = displayName,
+            IsAdmin = false,
+        };
+
+        // No password: this account's credentials live at the provider, and a null hash
+        // means Identity's password check can never succeed for it.
+        var created = await userManager.CreateAsync(user);
+        if (!created.Succeeded)
+        {
+            var messages = created.Errors.Select(e => e.Description).ToList();
+            return created.Errors.Any(e => e.Code.Contains("Duplicate", StringComparison.OrdinalIgnoreCase))
+                ? CreateUserResult.Fail(CreateUserError.Duplicate, messages)
+                : CreateUserResult.Fail(CreateUserError.Invalid, messages);
+        }
+
+        var linked = await userManager.AddLoginAsync(user, new UserLoginInfo(issuer, subject, issuer));
+        if (!linked.Succeeded)
+        {
+            // Leaving an account with no way to sign in would be worse than failing:
+            // the email is now taken and the next attempt would collide with it.
+            await userManager.DeleteAsync(user);
+            return CreateUserResult.Fail(
+                CreateUserError.Invalid,
+                linked.Errors.Select(e => e.Description).ToList());
+        }
+
+        // Same atomic bootstrap as a local registration — see CreateAsync.
+        var promoted = await db.Database.ExecuteSqlRawAsync(
+            "UPDATE AspNetUsers SET IsAdmin = 1 " +
+            "WHERE Id = {0} AND NOT EXISTS (SELECT 1 FROM AspNetUsers WHERE IsAdmin = 1 AND Id <> {0})",
+            [user.Id], ct);
+
+        return CreateUserResult.Ok(Map(user) with { IsAdmin = promoted == 1 });
+    }
+
+    public async Task SetAdminAsync(string userId, bool isAdmin, CancellationToken ct = default)
+    {
+        var user = await userManager.FindByIdAsync(userId)
+            ?? throw new InvalidOperationException($"Cannot set admin on unknown user {userId}.");
+
+        user.IsAdmin = isAdmin;
+        var result = await userManager.UpdateAsync(user);
+        if (!result.Succeeded)
+        {
+            // Swallowing this would mint an access token whose admin claim contradicts
+            // the database — granting rights the store never recorded.
+            throw new InvalidOperationException(
+                $"Failed to set administrator status on {userId}: " +
+                string.Join("; ", result.Errors.Select(e => e.Description)));
+        }
+    }
+
     private static AuthUser Map(AppUser user) => new(user.Id, user.Email, user.DisplayName, user.IsAdmin);
 }

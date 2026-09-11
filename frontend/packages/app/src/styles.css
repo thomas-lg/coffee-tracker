@@ -89,6 +89,17 @@
   border-radius: 50%;
   transform: rotate(18deg);
 }
+/* Same mark at entry-point scale (sign-in). The seam inset is re-tuned rather than
+   transform-scaled so the hairline keeps its weight. */
+.ct-bean-mark--xl {
+  width: 3.5rem;
+  height: 3.5rem;
+  border-radius: 18px;
+}
+.ct-bean-mark--xl::after {
+  inset: 14px 22px;
+  border-left-width: 2px;
+}
 
 @layer base {
   html {

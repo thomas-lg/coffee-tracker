@@ -100,6 +100,14 @@ export class AuthStore implements OnDestroy {
   }
 
   /**
+   * Exchanges a provider ID token for an app session. From here on the session is
+   * indistinguishable from a local one — same token, same refresh, same guards.
+   */
+  async signInWithProviderToken(idToken: string): Promise<void> {
+    this.persist(await firstValueFrom(this.api.oidcSignIn(idToken)));
+  }
+
+  /**
    * Exchanges the stored refresh token for a new access/refresh pair. Resolves true
    * on success; on failure (revoked/expired/reused token) the session is cleared.
    * Concurrent callers share a single in-flight request.

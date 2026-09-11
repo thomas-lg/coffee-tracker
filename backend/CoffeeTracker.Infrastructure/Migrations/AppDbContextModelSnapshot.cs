@@ -251,6 +251,25 @@ namespace CoffeeTracker.Infrastructure.Migrations
                     b.ToTable("AspNetUsers", (string)null);
                 });
 
+            modelBuilder.Entity("CoffeeTracker.Infrastructure.Persistence.AppSettings", b =>
+                {
+                    b.Property<int>("Id")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("LocalLoginEnabled")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("LocalRegistrationEnabled")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("RegistrationOpenedForBootstrap")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("AppSettings");
+                });
+
             modelBuilder.Entity("CoffeeTracker.Infrastructure.Persistence.RefreshToken", b =>
                 {
                     b.Property<Guid>("Id")

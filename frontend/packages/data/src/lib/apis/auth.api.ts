@@ -1,7 +1,7 @@
 import { HttpClient, HttpContext } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
-import type { AuthResponse, Login, RefreshRequest, Register } from '../models/models';
+import type { AuthResponse, Login, OidcSignIn, RefreshRequest, Register } from '../models/models';
 import { SKIP_AUTH_REDIRECT } from '../http-context';
 
 /** Anonymous auth endpoints. The session/token lives in @coffee-tracker/auth. */
@@ -16,6 +16,11 @@ export class AuthApi {
 
   register(dto: Register): Observable<AuthResponse> {
     return this.http.post<AuthResponse>('/api/auth/register', dto, this.anon);
+  }
+
+  /** Exchanges a provider ID token for an app session. */
+  oidcSignIn(idToken: string): Observable<AuthResponse> {
+    return this.http.post<AuthResponse>('/api/auth/oidc', { idToken } satisfies OidcSignIn, this.anon);
   }
 
   /**
