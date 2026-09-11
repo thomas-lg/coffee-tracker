@@ -6,6 +6,7 @@ using CoffeeTracker.Api;
 using CoffeeTracker.Application;
 using CoffeeTracker.Application.Auth;
 using CoffeeTracker.Infrastructure;
+using CoffeeTracker.Infrastructure.Networking;
 using CoffeeTracker.Infrastructure.Identity;
 using CoffeeTracker.Infrastructure.Storage;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -157,21 +158,26 @@ builder.Services.AddAuthorization(options =>
 
 // Trust the reverse proxy's forwarded client IP/scheme when configured, so the
 // rate limiter partitions by the real client rather than the proxy's single IP
-// (behind SWAG/Authelia, RemoteIpAddress is otherwise always the proxy). Proxies
-// must be listed in ForwardedHeaders:KnownProxies; absent that, headers are
-// ignored (secure default).
+// (behind a proxy, RemoteIpAddress is otherwise always the proxy). Proxies must be
+// listed in ForwardedHeaders:KnownProxies; absent that, headers are ignored (secure
+// default).
+//
+// Entries may be host names as well as addresses, and naming is what an operator can
+// actually rely on: a container orchestrator assigns the address, so a pinned IP holds
+// only until the proxy restarts onto another one — after which headers are silently
+// ignored and every request looks like it came from the proxy. Resolution happens here,
+// once, because that is when these options are built.
 builder.Services.Configure<ForwardedHeadersOptions>(options =>
 {
     options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
     options.KnownIPNetworks.Clear();
     options.KnownProxies.Clear();
-    var knownProxies = builder.Configuration["ForwardedHeaders:KnownProxies"];
-    foreach (var proxy in (knownProxies ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+
+    var resolver = new DnsTrustedProxyResolver(
+        LoggerFactory.Create(b => b.AddConsole()).CreateLogger<DnsTrustedProxyResolver>());
+    foreach (var address in resolver.Resolve(builder.Configuration["ForwardedHeaders:KnownProxies"]))
     {
-        if (IPAddress.TryParse(proxy, out var address))
-        {
-            options.KnownProxies.Add(address);
-        }
+        options.KnownProxies.Add(address);
     }
 });
 
