@@ -40,9 +40,13 @@ export class Login {
     return this.configRes.value()?.registrationEnabled ?? null;
   });
 
-  protected readonly providerAvailable = computed<boolean>(
-    () => this.configRes.value()?.oidcAvailable ?? false,
-  );
+  // Reading value() on an errored resource throws, so the error has to be checked
+  // first here as it is above — otherwise a failed config read takes the whole screen
+  // down instead of falling back to the local form.
+  protected readonly providerAvailable = computed<boolean>(() => {
+    if (this.configRes.error()) return false;
+    return this.configRes.value()?.oidcAvailable ?? false;
+  });
 
   /** Set when the API refused a provider sign-in we came back from. */
   protected readonly providerError = this.provider.error.asReadonly();
