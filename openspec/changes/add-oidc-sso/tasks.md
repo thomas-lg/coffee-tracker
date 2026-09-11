@@ -17,10 +17,10 @@
 
 ## 3. OIDC — configuration and discovery
 
-- [ ] 3.1 Add an `OidcOptions` record (authority, client id, scopes, admin claim, admin claim value) bound from configuration.
-- [ ] 3.2 Register the OIDC services only when authority and client id are both present; fail fast at startup when exactly one is set, mirroring the `Jwt:Key` check.
-- [ ] 3.3 Resolve the provider's discovery document and JWKS lazily, cached, so a slow or unreachable provider degrades to "unavailable" instead of blocking startup.
-- [ ] 3.4 Tests: absent configuration leaves the feature dormant; partial configuration prevents startup; unreachable discovery still starts and reports unavailable.
+- [x] 3.1 Add an `OidcOptions` record (authority, client id, scopes, admin claim, admin claim value) bound from configuration.
+- [x] 3.2 Register the OIDC services only when authority and client id are both present; fail fast at startup when exactly one is set, mirroring the `Jwt:Key` check.
+- [x] 3.3 Resolve the provider's discovery document and JWKS lazily, cached, so a slow or unreachable provider degrades to "unavailable" instead of blocking startup.
+- [x] 3.4 Tests: absent configuration leaves the feature dormant; partial configuration prevents startup; unreachable discovery still starts and reports unavailable.
 
 ## 4. OIDC — sign-in
 

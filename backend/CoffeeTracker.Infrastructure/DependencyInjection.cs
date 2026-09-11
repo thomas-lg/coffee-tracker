@@ -9,6 +9,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace CoffeeTracker.Infrastructure;
 
@@ -88,7 +89,46 @@ public static class DependencyInjection
 
         services.AddSingleton<ITokenIssuer, TokenService>();
         services.AddScoped<IUserDirectory, IdentityUserDirectory>();
-        services.AddSingleton<IExternalIdentityProvider, UnconfiguredIdentityProvider>();
+        AddExternalIdentityProvider(services, configuration);
+    }
+
+    /// <summary>
+    /// Registers the external identity provider: the real adapter when one is
+    /// configured, otherwise a stand-in that reports itself unavailable.
+    ///
+    /// A half-configured provider is a startup failure rather than a dormant feature.
+    /// Booting with an authority but no client id would leave a sign-in button that
+    /// cannot possibly work, and the operator would learn about it from a user. This
+    /// mirrors the stance already taken on a missing Jwt:Key.
+    ///
+    /// Both the validation and the choice of adapter are deferred to the options
+    /// system rather than read here: configuration is not final at registration time
+    /// (a host can still layer sources over it), so deciding eagerly would read a
+    /// half-built configuration.
+    /// </summary>
+    private static void AddExternalIdentityProvider(IServiceCollection services, IConfiguration configuration)
+    {
+        services.AddOptions<OidcOptions>()
+            .Bind(configuration.GetSection(OidcOptions.SectionName))
+            .Validate(
+                o => string.IsNullOrWhiteSpace(o.Authority) == string.IsNullOrWhiteSpace(o.ClientId),
+                $"{OidcOptions.SectionName}:{nameof(OidcOptions.Authority)} and {nameof(OidcOptions.ClientId)} " +
+                "must be set together. Provide the missing one via its environment variable, or remove the whole " +
+                $"{OidcOptions.SectionName} section to run without an identity provider.")
+            .Validate(
+                o => string.IsNullOrWhiteSpace(o.AdminClaim) == string.IsNullOrWhiteSpace(o.AdminClaimValue),
+                $"{OidcOptions.SectionName}:{nameof(OidcOptions.AdminClaim)} and {nameof(OidcOptions.AdminClaimValue)} " +
+                "must be set together. A claim with no value to match would grant administrator rights to anyone " +
+                "carrying it.")
+            .ValidateOnStart();
+
+        services.AddSingleton<IExternalIdentityProvider>(sp =>
+        {
+            var options = sp.GetRequiredService<IOptions<OidcOptions>>();
+            return options.Value.IsConfigured
+                ? ActivatorUtilities.CreateInstance<OidcIdentityProvider>(sp)
+                : new UnconfiguredIdentityProvider();
+        });
     }
 
     /// <summary>

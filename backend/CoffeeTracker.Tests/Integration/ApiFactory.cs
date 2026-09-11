@@ -12,7 +12,10 @@ namespace CoffeeTracker.Tests.Integration;
 // routing, model validation, auth, EF Core, migrations — without touching real
 // data. Runs in Development so the JWT signing key is auto-generated and OCR is
 // off; registration can be toggled to exercise the local-account policy gate.
-public sealed class ApiFactory(bool registrationEnabled = true, bool stampPolicy = true) : WebApplicationFactory<Program>
+public sealed class ApiFactory(
+    bool registrationEnabled = true,
+    bool stampPolicy = true,
+    IDictionary<string, string?>? oidc = null) : WebApplicationFactory<Program>
 {
     /// <summary>
     /// Known signing key (48 bytes, above the HS256 minimum) so security tests can
@@ -55,6 +58,14 @@ public sealed class ApiFactory(bool registrationEnabled = true, bool stampPolicy
                 ["FileLog:Directory"] = _logsPath,
                 ["Jwt:Key"] = JwtKey,
             }));
+
+        // Provider settings, when a test needs one. Nulls are dropped so a test can
+        // express "authority set, client id absent" and exercise the fail-fast.
+        if (oidc is not null)
+        {
+            builder.ConfigureAppConfiguration((_, config) =>
+                config.AddInMemoryCollection(oidc.Where(kv => kv.Value is not null)));
+        }
     }
 
     /// <summary>
