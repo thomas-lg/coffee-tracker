@@ -1,15 +1,19 @@
 name: Release
 
-# Builds and pushes the production image to GHCR. Publishing to main is gated on
-# CI: this runs via workflow_run when the CI workflow succeeds on main
-# (=> :latest + :sha-<short>). Version tags v* still trigger directly
-# (=> semver tags) — they're cut from main commits that already passed CI, and
-# the Trivy gate below scans the image again before it's pushed.
+# Builds and pushes the production image to GHCR. Publishing from a branch is gated
+# on CI: this runs via workflow_run when the CI workflow succeeds on `main`
+# (=> :latest + :sha-<short>) or on `beta` (=> :beta + :sha-<short>). Version tags v*
+# still trigger directly (=> semver tags) — they're cut from main commits that already
+# passed CI, and the Trivy gate below scans the image again before it's pushed.
+#
+# The `beta` channel exists so a change can be run on real hardware without ever being
+# offered to anything tracking :latest. Point a container at :beta to opt in; nothing
+# else sees it.
 on:
   workflow_run:
     workflows: [CI]
     types: [completed]
-    branches: [main]
+    branches: [main, beta]
   push:
     tags: ['v*']
 
@@ -19,11 +23,12 @@ permissions:
   id-token: write # mint the OIDC token for the build-provenance attestation
   attestations: write # record the attestation against the pushed image
 
-# Serialize publishes per ref so rapid pushes can't race on :latest. No
-# cancel-in-progress: killing a run mid-push could leave a tag without its
-# attestation.
+# Serialize publishes per channel so rapid pushes can't race on a moving tag. Keyed on
+# the triggering branch, not github.ref: on a workflow_run event that is the default
+# branch whatever built, so main and beta would otherwise share one queue. No
+# cancel-in-progress: killing a run mid-push could leave a tag without its attestation.
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.event.workflow_run.head_branch || github.ref }}
   cancel-in-progress: false
 
 env:
@@ -32,16 +37,24 @@ env:
 jobs:
   image:
     runs-on: ubuntu-latest
-    # main: only publish when the gating CI run succeeded AND its commit is still
-    # the tip of main (a superseding push gets its own CI run and release, so a
-    # stale run publishing an old sha would only churn :latest). Tags: publish.
+    # Branches: only publish when the gating CI run succeeded. On main, additionally
+    # require that its commit is still the tip (a superseding push gets its own CI run
+    # and release, so a stale run publishing an old sha would only churn :latest) —
+    # github.sha is the default branch's head on a workflow_run event, which is exactly
+    # what that comparison needs and why it cannot be applied to beta. Tags: publish.
     if: >-
       (github.event_name == 'workflow_run'
         && github.event.workflow_run.conclusion == 'success'
-        && github.event.workflow_run.head_sha == github.sha)
+        && (github.event.workflow_run.head_branch == 'beta'
+            || github.event.workflow_run.head_sha == github.sha))
       || startsWith(github.ref, 'refs/tags/v')
     steps:
+      # On a workflow_run event GITHUB_SHA and GITHUB_REF point at the DEFAULT branch,
+      # not at the branch whose CI just passed. Checking out the default would build
+      # main's code and publish it under :beta — so take the head sha explicitly.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.ref }}
       - uses: docker/setup-buildx-action@37fe631027851001ddb9b187196cc803df7f5f0e # v4.3.0
       - uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
         with:
@@ -52,9 +65,13 @@ jobs:
         uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302 # v6
         with:
           images: ${{ env.IMAGE }}
+          # The channel is read from the triggering run's branch, never from
+          # is_default_branch: on a workflow_run event that flag describes the default
+          # branch regardless of what actually built.
           tags: |
-            type=raw,value=latest,enable={{is_default_branch}}
-            type=sha
+            type=raw,value=latest,enable=${{ github.event.workflow_run.head_branch == 'main' }}
+            type=raw,value=beta,enable=${{ github.event.workflow_run.head_branch == 'beta' }}
+            type=sha,value=${{ github.event.workflow_run.head_sha || github.sha }}
             type=semver,pattern={{version}}
       # Build first WITHOUT pushing so Trivy can gate on the exact image; the push
       # step below reuses the warm buildx cache, so it doesn't rebuild.

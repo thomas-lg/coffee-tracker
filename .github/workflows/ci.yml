@@ -1,11 +1,12 @@
 name: CI
 
-# Runs on every PR and on pushes to main. Validates backend + frontend + the
-# production Docker build. Does NOT push images — see release.yml for that.
+# Runs on every PR and on pushes to main and beta. Validates backend + frontend + the
+# production Docker build. Does NOT push images — see release.yml for that, which gates
+# every branch publish on this workflow succeeding.
 on:
   pull_request:
   push:
-    branches: [main]
+    branches: [main, beta]
 
 # Least privilege: these jobs only read the repo (no image push here).
 permissions:
