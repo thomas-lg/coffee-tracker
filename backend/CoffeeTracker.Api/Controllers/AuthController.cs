@@ -45,20 +45,6 @@ public class AuthController(IAuthService auth, IExternalSignInService externalSi
         };
     }
 
-    /// <summary>
-    /// Starts a provider sign-in, returning the nonce the client must carry into its
-    /// authorization request. 404 when no provider is configured — there is nothing to
-    /// start.
-    /// </summary>
-    [HttpPost("oidc/challenge")]
-    public async Task<ActionResult<SignInChallengeDto>> OidcChallenge(CancellationToken ct)
-    {
-        var challenge = await externalSignIn.ChallengeAsync(ct);
-        return challenge is null
-            ? Problem(statusCode: StatusCodes.Status404NotFound, detail: "No identity provider is configured.")
-            : Ok(challenge);
-    }
-
     /// <summary>Exchanges a provider ID token for an app session.</summary>
     [HttpPost("oidc")]
     public async Task<ActionResult<AuthResponseDto>> Oidc(OidcSignInDto dto, CancellationToken ct)

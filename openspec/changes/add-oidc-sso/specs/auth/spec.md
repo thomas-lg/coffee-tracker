@@ -2,7 +2,7 @@
 
 ### Requirement: Users can sign in through an external OIDC provider
 
-When an OpenID Connect provider is configured, the system SHALL accept an ID token issued by that provider at `POST /api/auth/oidc` and, on success, return the same session payload as a local login: a signed JWT carrying the user's id and administrator status, plus a refresh token. The system SHALL validate the token's signature against the provider's published keys and SHALL reject any token whose issuer, audience, expiry, or nonce does not match the configured provider and the client's request. The system SHALL NOT depend on any provider-specific behaviour beyond the OpenID Connect discovery document.
+When an OpenID Connect provider is configured, the system SHALL accept an ID token issued by that provider at `POST /api/auth/oidc` and, on success, return the same session payload as a local login: a signed JWT carrying the user's id and administrator status, plus a refresh token. The system SHALL validate the token's signature against the provider's published keys and SHALL reject any token whose issuer, audience or expiry does not match the configured provider. Each token SHALL buy at most one session. The system SHALL NOT depend on any provider-specific behaviour beyond the OpenID Connect discovery document.
 
 #### Scenario: Valid provider token yields a session
 
@@ -16,9 +16,15 @@ When an OpenID Connect provider is configured, the system SHALL accept an ID tok
 - **THEN** the system SHALL reject the request with an unauthorized response
 - **AND** SHALL NOT create a user or issue a token
 
-#### Scenario: Expired or replayed token is rejected
+#### Scenario: Expired token is rejected
 
-- **WHEN** a client posts an ID token that has expired, or whose nonce does not match the one bound to the sign-in request
+- **WHEN** a client posts an ID token that has expired
+- **THEN** the system SHALL reject the request with an unauthorized response
+- **AND** SHALL NOT issue a token
+
+#### Scenario: A token cannot be exchanged twice
+
+- **WHEN** a client posts an ID token that has already been exchanged for a session
 - **THEN** the system SHALL reject the request with an unauthorized response
 - **AND** SHALL NOT issue a token
 

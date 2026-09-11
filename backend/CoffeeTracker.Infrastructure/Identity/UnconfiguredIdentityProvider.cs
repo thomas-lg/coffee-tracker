@@ -12,4 +12,7 @@ public sealed class UnconfiguredIdentityProvider : IExternalIdentityProvider
     public Task<bool> IsAvailableAsync(CancellationToken ct = default) => Task.FromResult(false);
 
     public string? ConfiguredIssuer => null;
+
+    public Task<ExternalProviderInfo?> GetClientInfoAsync(CancellationToken ct = default) =>
+        Task.FromResult<ExternalProviderInfo?>(null);
 }

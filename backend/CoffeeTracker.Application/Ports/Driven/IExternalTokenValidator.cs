@@ -21,7 +21,8 @@ public interface IExternalTokenValidator
 /// </summary>
 /// <param name="Issuer">Who asserted it — half of the identity's stable key.</param>
 /// <param name="Subject">The provider's stable identifier for the person — the other half.</param>
-/// <param name="Nonce">The nonce the token carries, to be matched against one this instance issued.</param>
+/// <param name="TokenId">A stable identifier for this exact token, so it can be spent once.</param>
+/// <param name="ExpiresAt">When the token stops being valid, bounding how long it must be remembered.</param>
 /// <param name="Email">The asserted email, if any.</param>
 /// <param name="EmailVerified">Whether the provider asserts it verified that email.</param>
 /// <param name="DisplayName">A human-readable name, if the provider supplies one.</param>
@@ -34,7 +35,8 @@ public interface IExternalTokenValidator
 public sealed record ExternalIdentity(
     string Issuer,
     string Subject,
-    string? Nonce,
+    string TokenId,
+    DateTimeOffset ExpiresAt,
     string? Email,
     bool EmailVerified,
     string? DisplayName,

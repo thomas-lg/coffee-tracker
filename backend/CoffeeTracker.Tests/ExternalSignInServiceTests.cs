@@ -14,13 +14,7 @@ public sealed class ExternalSignInServiceTests
 {
     private const string Issuer = "https://id.example.com";
     private const string Subject = "provider-subject-1";
-    private const string Nonce = "nonce-issued-by-this-instance";
-
-    private sealed class FakeProvider : IExternalIdentityProvider
-    {
-        public Task<bool> IsAvailableAsync(CancellationToken ct = default) => Task.FromResult(true);
-        public string? ConfiguredIssuer => Issuer;
-    }
+    private const string TokenId = "token-1";
 
     private sealed class FakeValidator(ExternalIdentity? identity) : IExternalTokenValidator
     {
@@ -28,16 +22,14 @@ public sealed class ExternalSignInServiceTests
             Task.FromResult(identity);
     }
 
-    private sealed class FakeNonces(params string[] valid) : ISignInNonceStore
+    private sealed class FakeUsedTokens : IUsedTokenRegistry
     {
-        private readonly HashSet<string> _valid = [.. valid];
+        private readonly HashSet<string> _spent = [];
 
-        public Task<string> IssueAsync(CancellationToken ct = default) => Task.FromResult(Nonce);
-
-        // Removing on consume is what makes a nonce single-use, and the replay test
-        // depends on this fake honouring that.
-        public Task<bool> ConsumeAsync(string nonce, CancellationToken ct = default) =>
-            Task.FromResult(_valid.Remove(nonce));
+        // Refusing the second call is what the replay test turns on, so the fake has to
+        // honour single use rather than always say yes.
+        public Task<bool> TryConsumeAsync(string tokenId, DateTimeOffset expiresAt, CancellationToken ct = default) =>
+            Task.FromResult(_spent.Add(tokenId));
     }
 
     private sealed class FakeUsers : StubUserDirectory
@@ -99,18 +91,17 @@ public sealed class ExternalSignInServiceTests
         string? email = "person@example.com",
         bool emailVerified = true,
         bool? adminAssertion = null,
-        string? nonce = Nonce) =>
-        new(Issuer, Subject, nonce, email, emailVerified, "A Person", adminAssertion);
+        string tokenId = TokenId) =>
+        new(Issuer, Subject, tokenId, DateTimeOffset.UtcNow.AddMinutes(5), email, emailVerified, "A Person", adminAssertion);
 
     private static (ExternalSignInService Service, FakeUsers Users) Build(
         ExternalIdentity? identity,
-        FakeUsers users,
-        params string[] validNonces)
+        FakeUsers users)
     {
         var service = new ExternalSignInService(
-            new FakeProvider(),
+            new StubIdentityProvider(Issuer),
             new FakeValidator(identity),
-            new FakeNonces(validNonces.Length == 0 ? [Nonce] : validNonces),
+            new FakeUsedTokens(),
             users,
             new FakeTokens(),
             new FakeRefreshTokens(),
@@ -223,20 +214,7 @@ public sealed class ExternalSignInServiceTests
     }
 
     [Fact]
-    public async Task A_token_carrying_no_nonce_this_instance_issued_is_refused()
-    {
-        var known = new AuthUser("user-1", "person@example.com", "A Person", IsAdmin: false);
-        var (service, _) = Build(
-            Identity(nonce: "a-nonce-from-somewhere-else"),
-            new FakeUsers { ByExternalLogin = known });
-
-        var result = await service.SignInAsync("token");
-
-        Assert.Equal(ExternalSignInStatus.InvalidToken, result.Status);
-    }
-
-    [Fact]
-    public async Task A_nonce_cannot_be_spent_twice()
+    public async Task A_token_buys_at_most_one_session()
     {
         var known = new AuthUser("user-1", "person@example.com", "A Person", IsAdmin: false);
         var (service, _) = Build(Identity(), new FakeUsers { ByExternalLogin = known });
@@ -244,7 +222,7 @@ public sealed class ExternalSignInServiceTests
         Assert.Equal(ExternalSignInStatus.Success, (await service.SignInAsync("token")).Status);
 
         // Same token, replayed. Single use is the whole protection against a token
-        // leaked from a log or a proxy being turned into a session.
+        // captured in a log or a proxy being turned into a session.
         Assert.Equal(ExternalSignInStatus.InvalidToken, (await service.SignInAsync("token")).Status);
     }
 }

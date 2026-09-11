@@ -10,9 +10,6 @@ namespace CoffeeTracker.Application.Ports.Driving;
 /// </summary>
 public interface IExternalSignInService
 {
-    /// <summary>Starts a sign-in, returning the nonce to carry into the provider.</summary>
-    Task<SignInChallengeDto?> ChallengeAsync(CancellationToken ct = default);
-
     /// <summary>Exchanges a provider ID token for an app session.</summary>
     Task<ExternalSignInResult> SignInAsync(string idToken, CancellationToken ct = default);
 }

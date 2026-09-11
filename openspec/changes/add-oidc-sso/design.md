@@ -29,7 +29,7 @@ Two facts about the existing code shape this design:
 
 ### 1. The SPA runs the code flow; the API validates the resulting ID token
 
-The Angular client performs Authorization Code + PKCE against the provider and posts the resulting **ID token** to a new `POST /api/auth/oidc`. The API validates it against the provider's JWKS — signature, issuer, audience equal to our client id, expiry, and the nonce bound to the client's request — then links or creates the user and returns the **existing** `AuthResponseDto`.
+The Angular client performs Authorization Code + PKCE against the provider and posts the resulting **ID token** to a new `POST /api/auth/oidc`. The API validates it against the provider's JWKS — signature, issuer, audience equal to our client id, expiry — spends it once, then links or creates the user and returns the **existing** `AuthResponseDto`.
 
 *Why:* everything after sign-in is untouched — the interceptor, the refresh rotation, the `IsAdmin` claim, the guards, the policies. The change is additive, and the local login keeps working beside it with no branching downstream.
 
@@ -76,6 +76,14 @@ The row is created once, at startup, when it is absent:
 
 *Why the variable is not simply deleted:* dropping it outright would reopen registration on upgraded instances that had deliberately closed it. It survives as a one-shot migration input, documented as such, and is otherwise ignored.
 
+### 4c. Replay is closed by spending the token, not by a server-issued nonce
+
+The API remembers each token it has exchanged — by its `jti`, or a hash of the token when the provider mints none — until that token expires, and refuses a second exchange.
+
+*Why not the OIDC nonce, which is what normally binds a token to one authorization request:* `angular-auth-oidc-client` generates the nonce itself (`flowsDataService.createNonce`) and exposes no way to impose one from the server. A nonce the client both creates and presents proves nothing to the API, so the alternative was to hand-roll the authorization request — the very thing decision 5 takes the dependency to avoid. Single use is what is actually enforceable here, and it closes the same attack: a token captured from a log, a proxy or an extension cannot be exchanged a second time.
+
+*What it does not close:* an attacker who obtains a token **before** the legitimate client exchanges it can still spend it first. Nothing short of the backend-for-frontend flow (decision 1's rejected alternative) closes that, and the token's few minutes of life bound the window.
+
 ### 5. The lock-out guard is derived, not stored
 
 Turning `LocalAccountsEnabled` off is refused unless at least one user satisfies `IsAdmin = 1` **and** has a row in `AspNetUserLogins` for the configured issuer — i.e. an admin has actually completed an OIDC sign-in. The API answers `409 Conflict` with an explanation the admin view renders inline.
@@ -91,7 +99,7 @@ If `Oidc:Authority` or `Oidc:ClientId` is missing, the OIDC services are not reg
 ## Risks / Trade-offs
 
 - **A provider that lies about `email_verified` can take over an account** → The risk is inherent to email-based linking. Mitigated by requiring the claim rather than assuming it, and by the operator choosing their own provider. An operator who does not trust their provider can leave linking unused by giving OIDC users distinct emails.
-- **The ID token passes through JavaScript and is exchanged for an app token** → Mitigated by full validation server-side (signature, issuer, audience, expiry, nonce), by the token being single-use for the exchange, and by the app's own short-lived JWT being what is actually stored afterwards. Accepted as a deliberate trade against the BFF rewrite (decision 1).
+- **The ID token passes through JavaScript and is exchanged for an app token** → Mitigated by full validation server-side (signature, issuer, audience, expiry), by the token being single-use for the exchange, and by the app's own short-lived JWT being what is actually stored afterwards. Accepted as a deliberate trade against the BFF rewrite (decision 1).
 - **Removing `REGISTRATION_ENABLED` as the live source of truth is a breaking change** → Mitigated by seeding the setting from it on migration, so no deployment changes behaviour on upgrade. Documented in the README and the `deployment` spec.
 - **Admin re-evaluated from the claim on every sign-in can demote the only admin** → If the claim mapping is configured and nobody carries the value, the deployment ends up with no admin. Mitigated by the bootstrap fallback applying only when no mapping is configured, and by the lock-out guard keeping local sign-in available in exactly that scenario.
 - **Discovery makes a network call at startup** → A provider that is slow or down must not prevent the app from booting. Discovery is lazy and cached, and a failure degrades to "provider unavailable" in `GET /api/config` rather than a failed startup.
@@ -109,5 +117,5 @@ If `Oidc:Authority` or `Oidc:ClientId` is missing, the OIDC services are not reg
 
 None outstanding. The two questions raised while drafting are settled:
 
-- **Angular OIDC library — resolved: `angular-auth-oidc-client`.** Version 22.0.0 (MIT, published 2026-08-15) declares `@angular/core >=20.0.0` and tracks Angular's major releases closely, so the app's Angular 22 is covered. Hand-rolling code + PKCE was the alternative; rejected because the flow is small to write and easy to get subtly wrong in ways that only fail as a security hole, and this is the one dependency worth taking for that reason. Pin the exact version.
+- **Angular OIDC library — resolved: `angular-auth-oidc-client`.** (Renumbered as decision 5 in this document.) Version 22.0.0 (MIT, published 2026-08-15) declares `@angular/core >=20.0.0` and tracks Angular's major releases closely, so the app's Angular 22 is covered. Hand-rolling code + PKCE was the alternative; rejected because the flow is small to write and easy to get subtly wrong in ways that only fail as a security hole, and this is the one dependency worth taking for that reason. Pin the exact version.
 - **Provider diagnostics in the admin view — resolved: deferred.** Showing which provider is configured and whether discovery currently succeeds is diagnostics, not policy, and the admin view in this change is about policy. Revisit only if a misconfiguration proves hard to diagnose from logs.

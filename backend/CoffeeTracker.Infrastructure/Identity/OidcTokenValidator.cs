@@ -1,5 +1,7 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using System.Security.Cryptography;
+using System.Text;
 using CoffeeTracker.Application.Ports.Driven;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -47,10 +49,11 @@ public sealed class OidcTokenValidator(
         };
 
         ClaimsPrincipal principal;
+        SecurityToken validated;
         try
         {
             var handler = new JwtSecurityTokenHandler { MapInboundClaims = false };
-            principal = handler.ValidateToken(idToken, parameters, out _);
+            principal = handler.ValidateToken(idToken, parameters, out validated);
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
@@ -71,12 +74,21 @@ public sealed class OidcTokenValidator(
         return new ExternalIdentity(
             Issuer: configuration.Issuer,
             Subject: subject,
-            Nonce: principal.FindFirstValue("nonce"),
+            // The jti when the provider mints one, otherwise a hash of the token itself.
+            // Hashing rather than storing the token keeps a spent-token set from being a
+            // set of usable credentials.
+            TokenId: principal.FindFirstValue("jti") ?? Sha256(idToken),
+            ExpiresAt: validated.ValidTo == default
+                ? DateTimeOffset.UtcNow
+                : new DateTimeOffset(DateTime.SpecifyKind(validated.ValidTo, DateTimeKind.Utc)),
             Email: principal.FindFirstValue("email"),
             EmailVerified: string.Equals(principal.FindFirstValue("email_verified"), "true", StringComparison.OrdinalIgnoreCase),
             DisplayName: principal.FindFirstValue("name") ?? principal.FindFirstValue("preferred_username"),
             AdminAssertion: ResolveAdminAssertion(principal));
     }
+
+    private static string Sha256(string value) =>
+        Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(value)));
 
     /// <summary>
     /// The configured claim mapping's verdict, or null when no mapping is configured —

@@ -13,17 +13,12 @@ namespace CoffeeTracker.Application.Services;
 public sealed class ExternalSignInService(
     IExternalIdentityProvider provider,
     IExternalTokenValidator validator,
-    ISignInNonceStore nonces,
+    IUsedTokenRegistry usedTokens,
     IUserDirectory users,
     ITokenIssuer tokenIssuer,
     IRefreshTokenStore refreshTokens,
     ILogger<ExternalSignInService> logger) : IExternalSignInService
 {
-    public async Task<SignInChallengeDto?> ChallengeAsync(CancellationToken ct = default) =>
-        await provider.IsAvailableAsync(ct)
-            ? new SignInChallengeDto(await nonces.IssueAsync(ct))
-            : null;
-
     public async Task<ExternalSignInResult> SignInAsync(string idToken, CancellationToken ct = default)
     {
         if (provider.ConfiguredIssuer is null)
@@ -38,12 +33,11 @@ public sealed class ExternalSignInService(
             return ExternalSignInResult.Fail(ExternalSignInStatus.InvalidToken);
         }
 
-        // The nonce proves this token answers a sign-in *this* instance started, which
-        // is what stops a leaked token from being replayed into a session. Consuming it
-        // is what makes it single-use.
-        if (identity.Nonce is null || !await nonces.ConsumeAsync(identity.Nonce, ct))
+        // One token, one session. A token captured in a log or a proxy stays valid for
+        // minutes; spending it here is what stops it being exchanged a second time.
+        if (!await usedTokens.TryConsumeAsync(identity.TokenId, identity.ExpiresAt, ct))
         {
-            logger.LogWarning("Provider sign-in refused: the ID token carried no nonce this instance issued.");
+            logger.LogWarning("Provider sign-in refused: this ID token has already been exchanged.");
             return ExternalSignInResult.Fail(ExternalSignInStatus.InvalidToken);
         }
 

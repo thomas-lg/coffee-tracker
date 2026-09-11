@@ -28,13 +28,6 @@ public sealed class AccountSettingsServiceTests
         }
     }
 
-    private sealed class FakeProvider(string? issuer) : IExternalIdentityProvider
-    {
-        public Task<bool> IsAvailableAsync(CancellationToken ct = default) => Task.FromResult(issuer is not null);
-
-        public string? ConfiguredIssuer => issuer;
-    }
-
     private sealed class FakeUsers(bool hasAdminWithExternalLogin) : StubUserDirectory
     {
         public override Task<bool> HasAdminWithExternalLoginAsync(string issuer, CancellationToken ct = default) =>
@@ -50,7 +43,7 @@ public sealed class AccountSettingsServiceTests
         var service = new AccountSettingsService(
             policy,
             new FakeUsers(hasAdminWithExternalLogin),
-            new FakeProvider(issuer),
+            new StubIdentityProvider(issuer),
             NullLogger<AccountSettingsService>.Instance);
         return (service, policy);
     }
@@ -139,7 +132,7 @@ public sealed class AccountSettingsServiceTests
         var service = new AccountSettingsService(
             policy,
             new FakeUsers(hasAdminWithExternalLogin: true),
-            new FakeProvider(Issuer),
+            new StubIdentityProvider(Issuer),
             NullLogger<AccountSettingsService>.Instance);
 
         await service.UpdateAsync(new AccountSettingsDto(LocalLoginEnabled: true, LocalRegistrationEnabled: true));

@@ -131,7 +131,37 @@ export interface Register {
 }
 
 export interface ClientConfig {
+  /** Whether accounts created in the app may sign in. */
+  localLoginEnabled: boolean;
+  /** Whether new app accounts may be registered. */
   registrationEnabled: boolean;
+  /** Whether an external identity provider is configured and reachable. */
+  oidcAvailable: boolean;
+  /** How to reach that provider. Present only when `oidcAvailable`. */
+  oidc: OidcClientConfig | null;
+}
+
+/** Provider coordinates, served by the API so the client configures itself. */
+export interface OidcClientConfig {
+  authority: string;
+  clientId: string;
+  scopes: string;
+}
+
+/** A single-use nonce the provider must echo back in its ID token. */
+export interface SignInChallenge {
+  nonce: string;
+}
+
+/** The provider ID token, presented for an app session. */
+export interface OidcSignIn {
+  idToken: string;
+}
+
+// --- Admin account policy ---
+export interface AccountSettings {
+  localLoginEnabled: boolean;
+  localRegistrationEnabled: boolean;
 }
 
 // --- Admin photo cleanup ---
@@ -173,5 +203,9 @@ type _GRefreshRequest = Assert<SameKeys<RefreshRequest, Schemas['RefreshRequestD
 type _GLogin = Assert<SameKeys<Login, Schemas['LoginDto']>>;
 type _GRegister = Assert<SameKeys<Register, Schemas['RegisterDto']>>;
 type _GClientConfig = Assert<SameKeys<ClientConfig, Schemas['ConfigDto']>>;
+type _GOidcClientConfig = Assert<SameKeys<OidcClientConfig, Schemas['OidcClientConfigDto']>>;
+type _GSignInChallenge = Assert<SameKeys<SignInChallenge, Schemas['SignInChallengeDto']>>;
+type _GOidcSignIn = Assert<SameKeys<OidcSignIn, Schemas['OidcSignInDto']>>;
+type _GAccountSettings = Assert<SameKeys<AccountSettings, Schemas['AccountSettingsDto']>>;
 type _GPhotoListItem = Assert<SameKeys<PhotoListItem, Schemas['PhotoListItemDto']>>;
 type _GPhotoDeleteResult = Assert<SameKeys<PhotoDeleteResult, Schemas['PhotoDeleteResultDto']>>;

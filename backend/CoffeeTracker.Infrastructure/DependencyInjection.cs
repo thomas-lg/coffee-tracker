@@ -123,7 +123,7 @@ public static class DependencyInjection
             .ValidateOnStart();
 
         services.AddMemoryCache();
-        services.AddSingleton<ISignInNonceStore, MemoryCacheNonceStore>();
+        services.AddSingleton<IUsedTokenRegistry, MemoryCacheUsedTokenRegistry>();
 
         services.AddSingleton<IExternalIdentityProvider>(sp =>
         {

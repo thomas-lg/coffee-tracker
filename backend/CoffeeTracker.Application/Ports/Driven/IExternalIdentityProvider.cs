@@ -21,4 +21,15 @@ public interface IExternalIdentityProvider
     /// momentarily unreachable does not make the app forget which identities it trusts.
     /// </summary>
     string? ConfiguredIssuer { get; }
+
+    /// <summary>
+    /// What a browser client needs to run the authorization flow itself, or null when
+    /// there is no usable provider. Served to the client so an operator configures the
+    /// provider in one place — the container — rather than in the app and its build.
+    /// None of it is secret: a public client's id is published by construction.
+    /// </summary>
+    Task<ExternalProviderInfo?> GetClientInfoAsync(CancellationToken ct = default);
 }
+
+/// <summary>The provider coordinates a browser client needs.</summary>
+public sealed record ExternalProviderInfo(string Authority, string ClientId, string Scopes);

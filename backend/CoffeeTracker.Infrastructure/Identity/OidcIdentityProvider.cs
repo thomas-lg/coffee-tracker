@@ -16,11 +16,13 @@ namespace CoffeeTracker.Infrastructure.Identity;
 /// </summary>
 public sealed class OidcIdentityProvider : IExternalIdentityProvider
 {
+    private readonly OidcOptions _options;
     private readonly ConfigurationManager<OpenIdConnectConfiguration> _configuration;
     private readonly ILogger<OidcIdentityProvider> _logger;
 
     public OidcIdentityProvider(IOptions<OidcOptions> options, ILogger<OidcIdentityProvider> logger)
     {
+        _options = options.Value;
         var authority = (options.Value.Authority
             ?? throw new InvalidOperationException(
                 $"{nameof(OidcIdentityProvider)} was constructed without an authority. It must only be resolved " +
@@ -38,6 +40,11 @@ public sealed class OidcIdentityProvider : IExternalIdentityProvider
 
     public async Task<bool> IsAvailableAsync(CancellationToken ct = default) =>
         await GetConfigurationAsync(ct) is not null;
+
+    public async Task<ExternalProviderInfo?> GetClientInfoAsync(CancellationToken ct = default) =>
+        await IsAvailableAsync(ct)
+            ? new ExternalProviderInfo(ConfiguredIssuer!, _options.ClientId!, _options.Scopes)
+            : null;
 
     /// <summary>
     /// The provider's resolved metadata, or null when discovery has not succeeded.
