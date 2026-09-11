@@ -36,6 +36,14 @@ export class ProviderSignIn {
    * was established, false when there was nothing to complete (an ordinary page load).
    */
   async complete(): Promise<boolean> {
+    // Only act on an actual return from the provider. checkAuth() keeps its own session
+    // and will happily hand back the same ID token on every later page load — posting
+    // that again asks the API to spend a token it has already spent, which it refuses,
+    // and the refusal then reads as a failed sign-in on a page that was working fine.
+    if (!new URLSearchParams(window.location.search).has('code')) {
+      return false;
+    }
+
     let result: LoginResponse;
     try {
       result = await firstValueFrom(this.oidc.checkAuth());
