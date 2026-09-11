@@ -55,15 +55,26 @@ A token carrying an email that matches an existing user **without** `email_verif
 
 *Why re-evaluate every time:* an admin flag that only ever gets set is a flag that can never be revoked from the provider — the whole point of centralising identity.
 
-### 4. The local-account policy is a persisted setting, not configuration
+### 4. The local-account policy is two persisted settings, not configuration
 
-A single `Settings` row holds `LocalAccountsEnabled`, read through a port so the application layer stays free of storage concerns, and served to the client through the existing `GET /api/config`. `PUT /api/admin/settings` updates it behind the existing `Admin` policy.
-
-**Seeding:** on first startup after the migration, the row is created from the current `REGISTRATION_ENABLED` value, so an existing deployment keeps behaving as it did. Afterwards the environment variable is ignored.
+A single `AppSettings` row holds `LocalLoginEnabled` and `LocalRegistrationEnabled`, read through a port so the application layer stays free of storage concerns, and served to the client through the existing `GET /api/config`. `PUT /api/admin/settings` updates them behind the existing `Admin` policy.
 
 *Why persisted rather than an env var:* the request is a toggle in the admin view. A setting an admin flips at runtime cannot live in a file that requires a container restart.
 
-*Why one setting and not two:* registration and login for local accounts are the same question asked twice. Two toggles invite the incoherent state "can register, cannot log in".
+*Why two settings and not one.* A single flag was the first design, and it is unrepresentable on upgrade. `REGISTRATION_ENABLED` defaults to `false`, and "registration closed, login open" is the recommended posture once an instance is set up — so a merged flag seeded from it would lock every such deployment out, and seeded to `true` would silently reopen registration on every deployment that had closed it. There is no third value. Two settings seed to exactly the behaviour each deployment already had.
+
+*The incoherent state this admits* — "may register, may not log in" — is real but harmless: registration succeeds and the new account simply cannot sign in until login is re-enabled. The admin view shows both settings together, so the combination is visible rather than surprising.
+
+### 4b. `REGISTRATION_ENABLED` disappears; a fresh instance opens itself
+
+The row is created once, at startup, when it is absent:
+
+- **An instance that already has users** (an upgrade) seeds `LocalLoginEnabled = true` and `LocalRegistrationEnabled` from `REGISTRATION_ENABLED`. This is the only read of that variable, and it exists solely so no existing deployment changes behaviour.
+- **An instance with no users** (a fresh install) seeds `LocalLoginEnabled = true` and `LocalRegistrationEnabled = true`, so the operator can create the first account. Registration closes itself as soon as that first account exists.
+
+*Why self-closing rather than an env var:* requiring an environment variable to create the very first account is friction that every new self-hoster pays, and a variable that only matters once is a variable people later change expecting an effect. Opening registration exactly while there is nobody to protect, and closing it the moment there is, needs no configuration and leaves no trap.
+
+*Why the variable is not simply deleted:* dropping it outright would reopen registration on upgraded instances that had deliberately closed it. It survives as a one-shot migration input, documented as such, and is otherwise ignored.
 
 ### 5. The lock-out guard is derived, not stored
 

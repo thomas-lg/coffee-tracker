@@ -21,9 +21,9 @@ The web client SHALL offer a provider sign-in action when `GET /api/config` repo
 - **THEN** the client SHALL return to the sign-in screen with the reason shown
 - **AND** SHALL NOT store a session
 
-### Requirement: An administrator can control local accounts
+### Requirement: An administrator can control local sign-in and registration
 
-The web client SHALL provide an administrator-only control for whether app-created accounts may register and sign in, reflecting the current setting and applying a change through the API. When the API refuses to disable local accounts, the client SHALL show the refusal and leave the control in its current state. The control SHALL NOT be reachable by non-administrators.
+The web client SHALL provide administrator-only controls for whether app-created accounts may sign in and whether new ones may be registered, showing both together, reflecting the current settings and applying changes through the API. When the API refuses to disable local sign-in, the client SHALL show the refusal and leave that control in its current state. The controls SHALL NOT be reachable by non-administrators.
 
 #### Scenario: Only admins can reach the control
 
@@ -31,32 +31,32 @@ The web client SHALL provide an administrator-only control for whether app-creat
 - **THEN** the client SHALL redirect them away from it
 - **AND** SHALL NOT show a navigation entry for it
 
-#### Scenario: Toggling local accounts
+#### Scenario: Toggling either control
 
-- **WHEN** an administrator changes the local-accounts control
+- **WHEN** an administrator changes the local sign-in or the local registration control
 - **THEN** the client SHALL apply the change through the API
 - **AND** SHALL reflect the stored value after the change
 
 #### Scenario: A refused change is explained
 
-- **WHEN** an administrator tries to disable local accounts and the API refuses because no administrator has signed in through the provider
+- **WHEN** an administrator tries to disable local sign-in and the API refuses because no administrator has signed in through the provider
 - **THEN** the client SHALL show that explanation
-- **AND** the control SHALL remain enabled
+- **AND** the sign-in control SHALL remain enabled
 
 ## MODIFIED Requirements
 
 ### Requirement: A visitor can authenticate through the web client
 
-The web client SHALL let a visitor sign in, and register when local accounts are enabled, then keep them signed in across reloads. It SHALL read `GET /api/config` to decide whether to offer local sign-in and registration, persist the issued token, attach it to API requests, and return to the login screen when the API rejects the token.
+The web client SHALL let a visitor sign in, and register when local registration is open, then keep them signed in across reloads. It SHALL read `GET /api/config` to decide whether to offer local sign-in and registration, persist the issued token, attach it to API requests, and return to the login screen when the API rejects the token.
 
 #### Scenario: Register is hidden when disabled
 
-- **WHEN** the client loads and `GET /api/config` reports local accounts are not enabled
+- **WHEN** the client loads and `GET /api/config` reports local registration is not open
 - **THEN** the client SHALL NOT offer a registration option
 
 #### Scenario: Local sign-in is hidden when disabled
 
-- **WHEN** the client loads and `GET /api/config` reports local accounts are not enabled
+- **WHEN** the client loads and `GET /api/config` reports local sign-in is not enabled
 - **THEN** the client SHALL NOT offer the email and password form
 
 #### Scenario: Signing in persists the session

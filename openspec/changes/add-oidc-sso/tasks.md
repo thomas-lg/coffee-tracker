@@ -1,18 +1,19 @@
 ## 1. Local-account policy — storage and enforcement
 
-- [ ] 1.1 Add a `Settings` entity and an EF migration creating its table, with a single row holding `LocalAccountsEnabled`.
-- [ ] 1.2 Seed that row on startup from the current `REGISTRATION_ENABLED` value when it does not yet exist; ignore the variable once seeded.
-- [ ] 1.3 Add an `IAccountPolicy` driven port (read + update) in `CoffeeTracker.Application/Ports/Driven` and its adapter in `CoffeeTracker.Infrastructure`.
-- [ ] 1.4 Replace `IRegistrationPolicy` usage in `AuthService.RegisterAsync` with the new port, keeping the existing `AuthStatus.RegistrationDisabled` outcome.
-- [ ] 1.5 Gate `AuthService.LoginAsync` on the policy, returning a refusal distinct from invalid credentials so the client can explain it.
-- [ ] 1.6 Tests: registration and login are both refused when local accounts are disabled; the seeding runs once and respects a pre-existing row.
+- [ ] 1.1 Add an `AppSettings` single-row entity (`LocalLoginEnabled`, `LocalRegistrationEnabled`) and an EF migration creating its table.
+- [ ] 1.2 Seed the row on startup when absent: on an instance with users, sign-in enabled and registration from the legacy `REGISTRATION_ENABLED`; on an empty instance, both enabled.
+- [ ] 1.3 Add an `IAccountPolicy` driven port (read + update both settings) in `CoffeeTracker.Application/Ports/Driven` and its EF adapter in `CoffeeTracker.Infrastructure`.
+- [ ] 1.4 Gate `AuthService.RegisterAsync` on the registration setting, keeping the existing `AuthStatus.RegistrationDisabled` outcome, and close registration once the first account exists.
+- [ ] 1.5 Gate `AuthService.LoginAsync` on the sign-in setting with a new `AuthStatus.LocalLoginDisabled`, distinct from invalid credentials.
+- [ ] 1.6 Delete `IRegistrationPolicy`, `RegistrationPolicy`, `RegistrationOptions` and `IAuthService.RegistrationEnabled`, now unused.
+- [ ] 1.7 Tests: registration and login each refused by their own setting; the two settings are independent; a fresh instance registers its first account with no configuration and closes registration afterwards; an upgraded instance keeps its posture; the legacy variable is read once.
 
 ## 2. Local-account policy — admin surface
 
 - [ ] 2.1 Add `GET` and `PUT /api/admin/settings` behind the existing `AuthorizationPolicies.Admin`.
-- [ ] 2.2 Implement the lock-out guard: refuse a disable request with `409` and an explanatory message unless an admin holds a login row for the configured issuer; never refuse a re-enable.
-- [ ] 2.3 Extend `ConfigDto` and `GET /api/config` with local-accounts and provider-availability flags.
-- [ ] 2.4 Tests: non-admin is refused; disable is refused without a proven provider admin and allowed with one; re-enable is always allowed; `/api/config` reflects both flags.
+- [ ] 2.2 Implement the lock-out guard on the sign-in setting: refuse a disable with `409` and an explanatory message unless an admin holds a login row for the configured issuer; never refuse a re-enable; registration carries no such condition.
+- [ ] 2.3 Extend `ConfigDto` and `GET /api/config` with local sign-in, local registration and provider-availability flags.
+- [ ] 2.4 Tests: non-admin is refused; disabling sign-in is refused without a proven provider admin and allowed with one; re-enable always allowed; disabling registration is never blocked; `/api/config` reflects all three flags.
 
 ## 3. OIDC — configuration and discovery
 
@@ -33,19 +34,19 @@
 ## 5. Web client — sign-in
 
 - [ ] 5.1 Add `angular-auth-oidc-client` pinned to an exact 22.x version, configured for Authorization Code + PKCE against the discovered provider.
-- [ ] 5.2 Read the new config flags at bootstrap and render the provider action, the local form, and the register link accordingly.
+- [ ] 5.2 Read the three config flags at bootstrap and render the provider action, the local form, and the register link accordingly.
 - [ ] 5.3 Run the provider flow and exchange its ID token at `POST /api/auth/oidc`, storing the resulting session through the existing `AuthStore` path.
 - [ ] 5.4 Surface a refused provider sign-in on the sign-in screen without storing a session.
-- [ ] 5.5 Tests: provider action hidden when unconfigured; local form hidden when local accounts are disabled; session persists across reload after provider sign-in; refusal is shown.
+- [ ] 5.5 Tests: provider action hidden when unconfigured; local form hidden when local sign-in is disabled; register link hidden when registration is closed; session persists across reload after provider sign-in; refusal is shown.
 
 ## 6. Web client — admin control
 
-- [ ] 6.1 Add the admin settings screen with the local-accounts control, reachable only by admins, alongside the existing photo-cleanup screen.
-- [ ] 6.2 Apply changes through the API and reflect the stored value; render the `409` refusal inline and leave the control enabled.
+- [ ] 6.1 Add the admin settings screen with both local-account controls shown together, reachable only by admins, alongside the existing photo-cleanup screen.
+- [ ] 6.2 Apply changes through the API and reflect the stored values; render the `409` refusal inline and leave the sign-in control enabled.
 - [ ] 6.3 Tests: non-admin is redirected and sees no navigation entry; toggling persists; the refusal is explained.
 
 ## 7. Documentation and release
 
-- [ ] 7.1 Document the optional OIDC variables and the `REGISTRATION_ENABLED` change in the README, with a worked example for one provider and a note that any OIDC-compliant provider works.
+- [ ] 7.1 Document the optional OIDC variables in the README, with a worked example for one provider and a note that any OIDC-compliant provider works, plus the removal of `REGISTRATION_ENABLED` and the self-closing first-account bootstrap.
 - [ ] 7.2 Note the breaking change and the seeding behaviour in the deployment docs.
 - [ ] 7.3 Run the full backend and frontend test suites and the production image build before proposing the change for review.

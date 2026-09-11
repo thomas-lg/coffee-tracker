@@ -75,62 +75,95 @@ When an administrator claim and value are configured, the system SHALL set the u
 - **THEN** the system SHALL mark that user as an administrator
 - **AND** subsequent provider sign-ins SHALL NOT produce administrators
 
-### Requirement: An administrator controls whether local accounts are accepted
+### Requirement: An administrator controls local sign-in and local registration
 
-The system SHALL persist a setting governing whether accounts created in the app may register and sign in, SHALL expose it to administrators for reading and updating, and SHALL enforce it on both the register and login endpoints. The setting SHALL survive restarts and SHALL be changeable without redeploying.
+The system SHALL persist two settings — whether accounts created in the app may sign in, and whether new ones may be registered — SHALL expose both to administrators for reading and updating, and SHALL enforce each on the corresponding endpoint. The settings SHALL survive restarts and SHALL be changeable without redeploying.
 
-#### Scenario: Disabling local accounts refuses local sign-in
+#### Scenario: Disabling local sign-in refuses local login
 
-- **WHEN** local accounts are disabled and a client posts valid credentials to `POST /api/auth/login`
-- **THEN** the system SHALL refuse the request
+- **WHEN** local sign-in is disabled and a client posts valid credentials to `POST /api/auth/login`
+- **THEN** the system SHALL refuse the request with a reason distinct from invalid credentials
 - **AND** SHALL NOT issue a token
 
-#### Scenario: Disabling local accounts refuses registration
+#### Scenario: Disabling local registration refuses registration
 
-- **WHEN** local accounts are disabled and a client posts to `POST /api/auth/register`
+- **WHEN** local registration is disabled and a client posts to `POST /api/auth/register`
 - **THEN** the system SHALL refuse the request
 - **AND** SHALL NOT create a user
 
+#### Scenario: The two settings are independent
+
+- **WHEN** local registration is enabled and local sign-in is disabled
+- **THEN** registration SHALL succeed
+- **AND** the resulting account SHALL NOT be able to sign in until local sign-in is re-enabled
+
 #### Scenario: Provider sign-in is unaffected
 
-- **WHEN** local accounts are disabled and a user signs in through the configured provider
+- **WHEN** local sign-in is disabled and a user signs in through the configured provider
 - **THEN** the system SHALL issue a token as usual
 
-#### Scenario: Only administrators may change the setting
+#### Scenario: Only administrators may change the settings
 
-- **WHEN** a non-administrator attempts to update the setting
+- **WHEN** a non-administrator attempts to update either setting
 - **THEN** the system SHALL refuse the request
-- **AND** SHALL leave the setting unchanged
+- **AND** SHALL leave both settings unchanged
 
-### Requirement: Local accounts cannot be disabled while they are the only way in
+### Requirement: A fresh instance accepts its first account without configuration
 
-The system SHALL refuse to disable local accounts unless at least one administrator has already completed a sign-in through the configured provider, and SHALL explain the refusal so an administrator can act on it. Re-enabling local accounts SHALL never be refused.
+The system SHALL create the settings row once, when it is absent. On an instance that already has users, sign-in SHALL be seeded enabled and registration SHALL be seeded from the legacy `REGISTRATION_ENABLED` value, so no existing deployment changes behaviour. On an instance with no users, both SHALL be seeded enabled so the first account can be created, and registration SHALL be disabled as soon as an account exists. No environment variable SHALL be required to create the first account.
+
+#### Scenario: A fresh instance allows the first registration
+
+- **WHEN** an instance with no users and no settings row starts, and a client registers
+- **THEN** the system SHALL create the user
+- **AND** SHALL mark that user as an administrator
+
+#### Scenario: Registration closes itself after the first account
+
+- **WHEN** the first account has been created on a fresh instance
+- **THEN** local registration SHALL be disabled
+- **AND** a further registration attempt SHALL be refused until an administrator re-enables it
+
+#### Scenario: An upgraded instance keeps its registration posture
+
+- **WHEN** an instance that already has users and no settings row starts
+- **THEN** local sign-in SHALL be enabled
+- **AND** local registration SHALL take the value of `REGISTRATION_ENABLED`
+
+#### Scenario: The legacy variable is read only once
+
+- **WHEN** the settings row already exists and `REGISTRATION_ENABLED` is changed and the instance restarts
+- **THEN** both settings SHALL be unchanged
+
+### Requirement: Local sign-in cannot be disabled while it is the only way in
+
+The system SHALL refuse to disable local sign-in unless at least one administrator has already completed a sign-in through the configured provider, and SHALL explain the refusal so an administrator can act on it. Re-enabling local sign-in SHALL never be refused. Local registration carries no such condition, since disabling it cannot lock anyone out.
 
 #### Scenario: Disabling is refused with no proven provider administrator
 
-- **WHEN** an administrator attempts to disable local accounts and no administrator has ever signed in through the provider
+- **WHEN** an administrator attempts to disable local sign-in and no administrator has ever signed in through the provider
 - **THEN** the system SHALL refuse the request with an explanation
 - **AND** the setting SHALL remain enabled
 
 #### Scenario: Disabling is allowed once an administrator has signed in through the provider
 
-- **WHEN** an administrator who has signed in through the provider attempts to disable local accounts
+- **WHEN** an administrator who has signed in through the provider attempts to disable local sign-in
 - **THEN** the system SHALL apply the change
 
 #### Scenario: Re-enabling is always allowed
 
-- **WHEN** an administrator re-enables local accounts
+- **WHEN** an administrator re-enables local sign-in
 - **THEN** the system SHALL apply the change without further condition
 
 ## MODIFIED Requirements
 
 ### Requirement: Users can register when registration is enabled
 
-The system SHALL expose `POST /api/auth/register` accepting a display name, email/username, and password. Registration SHALL be permitted only when local accounts are enabled by the persisted setting; when they are disabled the system SHALL refuse all registration attempts. Passwords SHALL be subject to a configured password policy. The first user successfully registered on an instance SHALL be made an administrator; subsequent users SHALL NOT.
+The system SHALL expose `POST /api/auth/register` accepting a display name, email/username, and password. Registration SHALL be permitted only when the persisted local-registration setting is enabled; when it is disabled the system SHALL refuse all registration attempts. Passwords SHALL be subject to a configured password policy. The first user successfully registered on an instance SHALL be made an administrator; subsequent users SHALL NOT.
 
 #### Scenario: Registration is refused when disabled
 
-- **WHEN** local accounts are disabled and a client sends `POST /api/auth/register`
+- **WHEN** local registration is disabled and a client sends `POST /api/auth/register`
 - **THEN** the system SHALL refuse the request
 - **AND** SHALL NOT create a user
 
@@ -153,11 +186,11 @@ The system SHALL expose `POST /api/auth/register` accepting a display name, emai
 
 ### Requirement: Users can authenticate and receive a token
 
-The system SHALL expose `POST /api/auth/login` that verifies credentials and, on success, returns a signed JWT carrying the user's id and administrator status. Login SHALL be permitted only when local accounts are enabled by the persisted setting. Invalid credentials SHALL be rejected without revealing whether the username or the password was wrong. Repeated failed attempts SHALL trip account lockout.
+The system SHALL expose `POST /api/auth/login` that verifies credentials and, on success, returns a signed JWT carrying the user's id and administrator status. Login SHALL be permitted only when the persisted local-sign-in setting is enabled. Invalid credentials SHALL be rejected without revealing whether the username or the password was wrong. Repeated failed attempts SHALL trip account lockout.
 
 #### Scenario: Successful login returns a token
 
-- **WHEN** a client logs in with valid credentials and local accounts are enabled
+- **WHEN** a client logs in with valid credentials and local sign-in is enabled
 - **THEN** the system SHALL respond with a signed JWT
 - **AND** the token SHALL contain the user's id and administrator claim
 
@@ -174,18 +207,18 @@ The system SHALL expose `POST /api/auth/login` that verifies credentials and, on
 
 ### Requirement: Registration availability is discoverable
 
-The system SHALL expose, without authentication, via `GET /api/config`, whether local accounts are currently accepted and whether an external provider is available for sign-in, so a client can show the right sign-in options before any user signs in.
+The system SHALL expose, without authentication, via `GET /api/config`, whether local sign-in is currently accepted, whether local registration is open, and whether an external provider is available for sign-in, so a client can show the right options before any user signs in.
 
 #### Scenario: Reading public client config
 
 - **WHEN** any client requests `GET /api/config`
-- **THEN** the system SHALL respond `200` with a body reporting whether local accounts are enabled and whether a provider is available
+- **THEN** the system SHALL respond `200` with a body reporting whether local sign-in is enabled, whether local registration is open, and whether a provider is available
 - **AND** SHALL NOT require authentication
 
-#### Scenario: Config reflects the local-account setting
+#### Scenario: Config reflects the local-account settings
 
-- **WHEN** local accounts are disabled
-- **THEN** `GET /api/config` SHALL report them as not enabled
+- **WHEN** local sign-in and local registration are disabled
+- **THEN** `GET /api/config` SHALL report both as not enabled
 - **AND** registration and login attempts SHALL still be refused by their endpoints
 
 #### Scenario: Config reflects provider availability
