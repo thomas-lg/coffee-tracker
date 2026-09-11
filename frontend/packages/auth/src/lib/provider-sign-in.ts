@@ -25,6 +25,14 @@ export class ProviderSignIn {
   /** Set when a sign-in came back refused, so the login screen can say why. */
   readonly error = signal<string | null>(null);
 
+  /**
+   * True once a provider sign-in has established a session in this page load. The root
+   * component reads it to land the user on the app rather than wherever the callback
+   * URL happened to route. Safe to read synchronously: complete() runs in an app
+   * initializer, so it has already finished by the time anything is constructed.
+   */
+  readonly justSignedIn = signal(false);
+
   /** Sends the browser to the provider. Resolves only if the redirect never happens. */
   start(): void {
     this.error.set(null);
@@ -63,6 +71,7 @@ export class ProviderSignIn {
 
     try {
       await this.auth.signInWithProviderToken(result.idToken);
+      this.justSignedIn.set(true);
       return true;
     } catch (err: unknown) {
       // The API refused the token — a conflicting unverified email, most likely. Its
