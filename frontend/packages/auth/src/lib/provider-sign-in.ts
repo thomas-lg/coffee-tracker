@@ -1,5 +1,11 @@
 import { Injectable, inject, signal } from '@angular/core';
-import { OidcSecurityService, provideAuth, StsConfigHttpLoader, StsConfigLoader } from 'angular-auth-oidc-client';
+import {
+  OidcSecurityService,
+  provideAuth,
+  StsConfigHttpLoader,
+  StsConfigLoader,
+  type LoginResponse,
+} from 'angular-auth-oidc-client';
 import { firstValueFrom, map } from 'rxjs';
 import { ConfigApi } from '@coffee-tracker/data';
 import { AuthStore } from './auth.store';
@@ -30,10 +36,22 @@ export class ProviderSignIn {
    * was established, false when there was nothing to complete (an ordinary page load).
    */
   async complete(): Promise<boolean> {
-    const result = await firstValueFrom(this.oidc.checkAuth());
+    let result: LoginResponse;
+    try {
+      result = await firstValueFrom(this.oidc.checkAuth());
+    } catch {
+      // This runs during bootstrap: a provider that is unreachable, or a malformed
+      // callback, must not stop the app from starting. Local sign-in still works.
+      return false;
+    }
+
     if (!result.isAuthenticated || !result.idToken) {
       return false;
     }
+
+    // Drop ?code=… before anything can reload with it: the API spends a token once, so
+    // a refresh carrying a used code would surface as a failed sign-in.
+    history.replaceState(null, '', window.location.pathname);
 
     try {
       await this.auth.signInWithProviderToken(result.idToken);

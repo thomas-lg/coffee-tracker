@@ -1,5 +1,7 @@
 import {
   ApplicationConfig,
+  inject,
+  provideAppInitializer,
   provideBrowserGlobalErrorListeners,
   provideZonelessChangeDetection,
   isDevMode,
@@ -12,7 +14,7 @@ import {
   withViewTransitions,
 } from '@angular/router';
 import { provideHttpClient, withFetch, withInterceptors } from '@angular/common/http';
-import { authInterceptor, provideProviderSignIn } from '@coffee-tracker/auth';
+import { authInterceptor, ProviderSignIn, provideProviderSignIn } from '@coffee-tracker/auth';
 
 import { routes } from './app.routes';
 import { provideServiceWorker } from '@angular/service-worker';
@@ -32,6 +34,11 @@ export const appConfig: ApplicationConfig = {
     ),
     provideHttpClient(withFetch(), withInterceptors([authInterceptor])),
     provideProviderSignIn(),
+    // The provider redirects back to the app root carrying ?code=…, and the exchange
+    // has to finish BEFORE the router runs: otherwise the auth guard sees no session,
+    // redirects to /login, and the code goes with the URL — the sign-in silently ends
+    // back on the login screen with nothing to show for it.
+    provideAppInitializer(() => inject(ProviderSignIn).complete()),
     provideServiceWorker('ngsw-worker.js', {
       enabled: !isDevMode(),
       registrationStrategy: 'registerWhenStable:30000',
