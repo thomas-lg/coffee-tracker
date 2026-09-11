@@ -192,6 +192,45 @@ public class CoffeeLabelParserTests
         ]);
 
     [Fact]
+    public void Parse_IgnoresAWeightTheConfidenceGateRejected()
+    {
+        var scan = OcrResult.Read(
+            // RawText carries everything the engine read, noise included — which is
+            // exactly why the weight must not be taken from it.
+            "1509 g\nGUATEMALA\n250 g",
+            [
+                new OcrLine("1509 g", 22.4, 30),
+                new OcrLine("GUATEMALA", 96.6, 39),
+                new OcrLine("250 g", 91.2, 35),
+            ]);
+
+        var result = Parser.Parse(scan);
+
+        // A digit run in table grain or a reflection reads as a weight just as well as a
+        // printed one. Taking it would put a confidently wrong number on the coffee,
+        // which is worse than leaving the field empty.
+        Assert.Equal("250g", result.Weight);
+    }
+
+    [Fact]
+    public void Parse_TakesTheFirstConfidentWeightInReadingOrder_NotTheTallest()
+    {
+        var scan = OcrResult.Read(
+            "net 250 g\n1 kg",
+            [
+                new OcrLine("net 250 g", 88.0, 20),
+                // Set in much larger type, so the height ranking would put it first.
+                new OcrLine("1 kg", 90.0, 120),
+            ]);
+
+        var result = Parser.Parse(scan);
+
+        // Height decides which line is the product name; it says nothing about which
+        // number is the net weight. Reading order does.
+        Assert.Equal("250g", result.Weight);
+    }
+
+    [Fact]
     public void Parse_PicksTheTallestConfidentLineAsName_NotTheFirstNoiseLine()
     {
         var result = Parser.Parse(RealBagScan());
