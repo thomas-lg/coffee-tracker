@@ -52,18 +52,7 @@ public sealed class ExternalSignInService(
 
         if (resolved.WasCreated && user.IsAdmin)
         {
-            // The instance opened registration only so a first account could exist, and
-            // that account has just arrived through the provider instead of the local
-            // form. Closing it here as well — AuthService does the same after a local
-            // registration — keeps a fresh instance from sitting on the internet
-            // accepting sign-ups nobody meant to allow.
-            var policy = await accountPolicy.GetAsync(ct);
-            if (policy.RegistrationOpenedForBootstrap)
-            {
-                await accountPolicy.SetAsync(
-                    policy with { LocalRegistrationEnabled = false, RegistrationOpenedForBootstrap = false },
-                    ct);
-            }
+            await CloseBootstrapRegistrationAsync(ct);
         }
 
         var access = tokenIssuer.CreateAccessToken(user);
@@ -133,6 +122,24 @@ public sealed class ExternalSignInService(
         }
 
         return (ExternalSignInStatus.Success, created.User, true);
+    }
+
+    /// <summary>
+    /// Shuts the door a fresh instance left open for its first account, now that the
+    /// account exists. AuthService does the same after a local registration; without it
+    /// here, an instance whose first user arrives through the provider keeps accepting
+    /// anonymous sign-ups. Registration an administrator opened deliberately carries no
+    /// bootstrap mark and is left alone.
+    /// </summary>
+    private async Task CloseBootstrapRegistrationAsync(CancellationToken ct)
+    {
+        var policy = await accountPolicy.GetAsync(ct);
+        if (policy.RegistrationOpenedForBootstrap)
+        {
+            await accountPolicy.SetAsync(
+                policy with { LocalRegistrationEnabled = false, RegistrationOpenedForBootstrap = false },
+                ct);
+        }
     }
 
     /// <summary>

@@ -1,3 +1,4 @@
+using CoffeeTracker.Application.Dtos;
 using CoffeeTracker.Application.Ports.Driven;
 
 namespace CoffeeTracker.Infrastructure.Identity;
@@ -9,10 +10,8 @@ namespace CoffeeTracker.Infrastructure.Identity;
 /// </summary>
 public sealed class UnconfiguredIdentityProvider : IExternalIdentityProvider
 {
-    public Task<bool> IsAvailableAsync(CancellationToken ct = default) => Task.FromResult(false);
-
     public string? ConfiguredIssuer => null;
 
-    public Task<ExternalProviderInfo?> GetClientInfoAsync(CancellationToken ct = default) =>
-        Task.FromResult<ExternalProviderInfo?>(null);
+    public Task<OidcClientConfigDto?> GetClientInfoAsync(CancellationToken ct = default) =>
+        Task.FromResult<OidcClientConfigDto?>(null);
 }

@@ -21,7 +21,7 @@ public class AdminSettingsController(IAccountSettingsService settings) : Control
     /// would leave no way into the instance.
     /// </summary>
     [HttpPut]
-    public async Task<ActionResult<AccountSettingsDto>> Update(AccountSettingsDto request, CancellationToken ct)
+    public async Task<ActionResult<AccountSettingsDto>> Update(UpdateAccountSettingsDto request, CancellationToken ct)
     {
         // Model validation has already rejected a missing field, so both are present.
         var result = await settings.UpdateAsync(

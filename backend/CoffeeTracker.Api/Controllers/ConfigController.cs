@@ -21,11 +21,11 @@ public class ConfigController(IAccountPolicy accountPolicy, IExternalIdentityPro
     public async Task<ActionResult<ConfigDto>> Get(CancellationToken ct)
     {
         var policy = await accountPolicy.GetAsync(ct);
-        var info = await provider.GetClientInfoAsync(ct);
+        var oidc = await provider.GetClientInfoAsync(ct);
         return Ok(new ConfigDto(
             policy.LocalLoginEnabled,
             policy.LocalRegistrationEnabled,
-            info is not null,
-            info is null ? null : new OidcClientConfigDto(info.Authority, info.ClientId, info.Scopes, info.DisplayName)));
+            oidc is not null,
+            oidc));
     }
 }

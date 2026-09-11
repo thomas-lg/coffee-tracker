@@ -1,3 +1,4 @@
+using CoffeeTracker.Application.Dtos;
 using CoffeeTracker.Application.Ports.Driven;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -49,12 +50,9 @@ public sealed class OidcIdentityProvider : IExternalIdentityProvider
     /// </summary>
     public string? ConfiguredIssuer => _authority;
 
-    public async Task<bool> IsAvailableAsync(CancellationToken ct = default) =>
-        await GetConfigurationAsync(ct) is not null;
-
-    public async Task<ExternalProviderInfo?> GetClientInfoAsync(CancellationToken ct = default) =>
-        await IsAvailableAsync(ct)
-            ? new ExternalProviderInfo(ConfiguredIssuer!, _options.ClientId!, _options.Scopes, _options.DisplayName)
+    public async Task<OidcClientConfigDto?> GetClientInfoAsync(CancellationToken ct = default) =>
+        await GetConfigurationAsync(ct) is not null
+            ? new OidcClientConfigDto(ConfiguredIssuer!, _options.ClientId!, _options.Scopes, _options.DisplayName)
             : null;
 
     /// <summary>

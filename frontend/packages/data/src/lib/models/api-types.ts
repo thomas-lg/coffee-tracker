@@ -106,9 +106,9 @@ export interface paths {
             };
             requestBody: {
                 content: {
-                    "application/json": components["schemas"]["AccountSettingsDto"];
-                    "text/json": components["schemas"]["AccountSettingsDto"];
-                    "application/*+json": components["schemas"]["AccountSettingsDto"];
+                    "application/json": components["schemas"]["UpdateAccountSettingsDto"];
+                    "text/json": components["schemas"]["UpdateAccountSettingsDto"];
+                    "application/*+json": components["schemas"]["UpdateAccountSettingsDto"];
                 };
             };
             responses: {
@@ -975,6 +975,10 @@ export interface components {
             rawText: string;
             parsed: components["schemas"]["ScannedCoffeeDto"];
             photoUrl: string;
+        };
+        UpdateAccountSettingsDto: {
+            localLoginEnabled: null | boolean;
+            localRegistrationEnabled: null | boolean;
         };
     };
     responses: never;

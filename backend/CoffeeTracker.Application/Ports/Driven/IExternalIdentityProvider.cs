@@ -1,3 +1,5 @@
+using CoffeeTracker.Application.Dtos;
+
 namespace CoffeeTracker.Application.Ports.Driven;
 
 /// <summary>
@@ -8,14 +10,6 @@ namespace CoffeeTracker.Application.Ports.Driven;
 public interface IExternalIdentityProvider
 {
     /// <summary>
-    /// Whether a provider is configured *and* its discovery document has been
-    /// resolved. False while discovery has not yet succeeded, so a provider that is
-    /// slow or down degrades to "no provider" instead of offering a sign-in that
-    /// cannot complete.
-    /// </summary>
-    Task<bool> IsAvailableAsync(CancellationToken ct = default);
-
-    /// <summary>
     /// The issuer external identities are recorded under, or null when no provider is
     /// configured. Read from configuration, never from discovery, so a provider that is
     /// momentarily unreachable does not make the app forget which identities it trusts.
@@ -24,12 +18,14 @@ public interface IExternalIdentityProvider
 
     /// <summary>
     /// What a browser client needs to run the authorization flow itself, or null when
-    /// there is no usable provider. Served to the client so an operator configures the
-    /// provider in one place — the container — rather than in the app and its build.
-    /// None of it is secret: a public client's id is published by construction.
+    /// there is no usable provider — either none is configured, or its discovery
+    /// document has not resolved yet, so a provider that is slow or down degrades to
+    /// "no provider" rather than offering a sign-in that cannot complete.
+    ///
+    /// Served to the client so an operator configures the provider in one place — the
+    /// container — rather than in the app and its build. None of it is secret: a public
+    /// client's id is published by construction.
     /// </summary>
-    Task<ExternalProviderInfo?> GetClientInfoAsync(CancellationToken ct = default);
+    Task<OidcClientConfigDto?> GetClientInfoAsync(CancellationToken ct = default);
 }
 
-/// <summary>The provider coordinates a browser client needs.</summary>
-public sealed record ExternalProviderInfo(string Authority, string ClientId, string Scopes, string? DisplayName);

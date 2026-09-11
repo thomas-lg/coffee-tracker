@@ -131,17 +131,17 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/AccountSettingsDto"
+                "$ref": "#/components/schemas/UpdateAccountSettingsDto"
               }
             },
             "text/json": {
               "schema": {
-                "$ref": "#/components/schemas/AccountSettingsDto"
+                "$ref": "#/components/schemas/UpdateAccountSettingsDto"
               }
             },
             "application/*+json": {
               "schema": {
-                "$ref": "#/components/schemas/AccountSettingsDto"
+                "$ref": "#/components/schemas/UpdateAccountSettingsDto"
               }
             }
           },
@@ -1771,6 +1771,27 @@
           },
           "photoUrl": {
             "type": "string"
+          }
+        }
+      },
+      "UpdateAccountSettingsDto": {
+        "required": [
+          "localLoginEnabled",
+          "localRegistrationEnabled"
+        ],
+        "type": "object",
+        "properties": {
+          "localLoginEnabled": {
+            "type": [
+              "null",
+              "boolean"
+            ]
+          },
+          "localRegistrationEnabled": {
+            "type": [
+              "null",
+              "boolean"
+            ]
           }
         }
       }
