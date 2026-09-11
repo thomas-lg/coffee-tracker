@@ -89,6 +89,12 @@ jobs:
             type=raw,value=beta,enable=${{ github.event.workflow_run.head_branch == 'beta' }}
             type=raw,value=sha-${{ steps.ctx.outputs.short_sha }},priority=100
             type=semver,pattern={{version}}
+          # Same root cause as the sha tag: metadata-action derives the revision label
+          # from the git context, which on a workflow_run event is the default branch.
+          # An image that says it was built from a commit it does not contain defeats
+          # the point of the label, so state it from the commit actually checked out.
+          labels: |
+            org.opencontainers.image.revision=${{ github.event.workflow_run.head_sha || github.sha }}
       # Build first WITHOUT pushing so Trivy can gate on the exact image; the push
       # step below reuses the warm buildx cache, so it doesn't rebuild.
       - name: Build image (no push)
