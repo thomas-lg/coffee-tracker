@@ -41,6 +41,7 @@ public sealed class ExternalSignInServiceTests
 
         public List<(string UserId, string Issuer, string Subject)> Links { get; } = [];
         public List<(string UserId, bool IsAdmin)> AdminChanges { get; } = [];
+        public List<string> PasswordsRemoved { get; } = [];
         public bool CreateCalled { get; private set; }
         public string? CreatedWithEmail { get; private set; }
 
@@ -53,6 +54,12 @@ public sealed class ExternalSignInServiceTests
         public override Task LinkExternalLoginAsync(string userId, string issuer, string subject, CancellationToken ct = default)
         {
             Links.Add((userId, issuer, subject));
+            return Task.CompletedTask;
+        }
+
+        public override Task RemoveLocalPasswordAsync(string userId, CancellationToken ct = default)
+        {
+            PasswordsRemoved.Add(userId);
             return Task.CompletedTask;
         }
 
@@ -82,6 +89,8 @@ public sealed class ExternalSignInServiceTests
 
     private sealed class FakeRefreshTokens : IRefreshTokenStore
     {
+        public List<string> RevokedAllFor { get; } = [];
+
         public Task<IssuedRefreshToken> IssueAsync(string userId, CancellationToken ct = default) =>
             Task.FromResult(new IssuedRefreshToken($"refresh-for-{userId}", DateTimeOffset.UtcNow.AddDays(14)));
 
@@ -90,7 +99,11 @@ public sealed class ExternalSignInServiceTests
 
         public Task RevokeAsync(string presentedToken, CancellationToken ct = default) => throw new NotSupportedException();
 
-        public Task RevokeAllAsync(string userId, CancellationToken ct = default) => throw new NotSupportedException();
+        public Task RevokeAllAsync(string userId, CancellationToken ct = default)
+        {
+            RevokedAllFor.Add(userId);
+            return Task.CompletedTask;
+        }
     }
 
     private static ExternalIdentity Identity(
@@ -118,7 +131,8 @@ public sealed class ExternalSignInServiceTests
     private static (ExternalSignInService Service, FakeUsers Users) Build(
         ExternalIdentity? identity,
         FakeUsers users,
-        FakePolicy? policy = null)
+        FakePolicy? policy = null,
+        FakeRefreshTokens? refreshTokens = null)
     {
         var service = new ExternalSignInService(
             new StubIdentityProvider(Issuer),
@@ -127,7 +141,7 @@ public sealed class ExternalSignInServiceTests
             users,
             policy ?? new FakePolicy(),
             new FakeTokens(),
-            new FakeRefreshTokens(),
+            refreshTokens ?? new FakeRefreshTokens(),
             NullLogger<ExternalSignInService>.Instance);
         return (service, users);
     }
@@ -162,6 +176,49 @@ public sealed class ExternalSignInServiceTests
         Assert.Equal("user-1", result.Response!.UserId);
         Assert.Equal(("user-1", Issuer, Subject), users.Links.Single());
         Assert.False(users.CreateCalled);
+    }
+
+    [Fact]
+    public async Task Linking_retires_the_local_password_and_sessions_of_the_account_it_takes_over()
+    {
+        // Registration accepts any address and confirms none, so this account may have
+        // been opened by someone who typed the provider user's address in advance — and
+        // an administrator claim is about to be applied to whatever this resolves to.
+        var squatted = new AuthUser("user-1", "person@example.com", "A Person", IsAdmin: false);
+        var refreshTokens = new FakeRefreshTokens();
+        var (service, users) = Build(
+            Identity(emailVerified: true, adminAssertion: true),
+            new FakeUsers { ByEmail = squatted, OtherAdminExists = true },
+            refreshTokens: refreshTokens);
+
+        var result = await service.SignInAsync("token");
+
+        Assert.Equal(ExternalSignInStatus.Success, result.Status);
+        Assert.Equal(("user-1", Issuer, Subject), users.Links.Single());
+        // Whoever registered the account keeps neither a way back in nor a live session,
+        // so the provider's admin claim lands somewhere only its own user can reach.
+        Assert.Equal("user-1", Assert.Single(users.PasswordsRemoved));
+        Assert.Equal("user-1", Assert.Single(refreshTokens.RevokedAllFor));
+        Assert.Equal(("user-1", true), users.AdminChanges.Single());
+    }
+
+    [Fact]
+    public async Task A_returning_identity_keeps_its_credentials_and_sessions()
+    {
+        var known = new AuthUser("user-1", "person@example.com", "A Person", IsAdmin: false);
+        var refreshTokens = new FakeRefreshTokens();
+        var (service, users) = Build(
+            Identity(),
+            new FakeUsers { ByExternalLogin = known },
+            refreshTokens: refreshTokens);
+
+        var result = await service.SignInAsync("token");
+
+        // Retiring credentials belongs to the handover, which happens once. Repeating it
+        // on every sign-in would sign the user out of their other devices each time.
+        Assert.Equal(ExternalSignInStatus.Success, result.Status);
+        Assert.Empty(users.PasswordsRemoved);
+        Assert.Empty(refreshTokens.RevokedAllFor);
     }
 
     [Fact]
