@@ -2,6 +2,7 @@ using CoffeeTracker.Application.Dtos;
 using CoffeeTracker.Application.Ports.Driven;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace CoffeeTracker.Api.Controllers;
 
@@ -14,6 +15,10 @@ namespace CoffeeTracker.Api.Controllers;
 [ApiController]
 [Route("api/[controller]")]
 [AllowAnonymous]
+// Anonymous and not free to serve: it reads the account policy and the provider's
+// discovery document. Throttled so an unauthenticated caller cannot make the app
+// do that work at will.
+[EnableRateLimiting(RateLimiterPolicies.Public)]
 public class ConfigController(IAccountPolicy accountPolicy, IExternalIdentityProvider provider) : ControllerBase
 {
     /// <summary>Returns settings the client needs before sign-in.</summary>
