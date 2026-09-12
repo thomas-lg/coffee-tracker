@@ -1,5 +1,15 @@
-import { Injectable, OnDestroy, computed, inject, signal } from '@angular/core';
-import { firstValueFrom } from 'rxjs';
+import { DestroyRef, computed, inject } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import {
+  patchState,
+  signalStore,
+  withComputed,
+  withHooks,
+  withMethods,
+  withProps,
+  withState,
+} from '@ngrx/signals';
+import { firstValueFrom, fromEvent } from 'rxjs';
 import { AuthApi, type AuthResponse, type Login, type Register } from '@coffee-tracker/data';
 
 /**
@@ -25,157 +35,165 @@ const STORAGE_KEY = 'ct.session';
 const REFRESH_LOCK = 'ct.auth.refresh';
 
 /**
- * Signal-based auth store (native signals — `@ngrx/signals` has no Angular 22
- * release yet; this keeps the same public surface: state signals + computed +
- * methods).
+ * Auth store.
  *
  * Expiry checks are plain methods, not `computed`s: a computed memoizes on its signal
  * dependencies, so a `Date.now()` comparison inside one would stay stale-truthy after
  * the token expires. Methods re-evaluate at guard/call time while still reading the
  * session signal (so templates stay reactive to login/logout).
+ *
+ * `refresh()` stays a Promise rather than becoming an `rxMethod`: the interceptor does
+ * `from(auth.refresh()).pipe(switchMap(...))` and the guard awaits it, and both branch
+ * on the resolved boolean.
  */
-@Injectable({ providedIn: 'root' })
-export class AuthStore implements OnDestroy {
-  private readonly api = inject(AuthApi);
-  private readonly _session = signal<Session | null>(restoreSession());
-  /** Single-flight refresh: concurrent 401s share one /api/auth/refresh call. */
-  private refreshInFlight: Promise<boolean> | null = null;
-
-  readonly session = this._session.asReadonly();
-  readonly token = computed(() => this._session()?.token ?? null);
-  readonly displayName = computed(() => this._session()?.displayName ?? null);
-  readonly isAdmin = computed(() => this._session()?.isAdmin ?? false);
-
-  // Keep tabs in sync: another tab logging in/out or rotating the refresh token updates
-  // localStorage, and this adopts it so we never present a stale (rotated) token — which
-  // the server would treat as reuse and revoke the whole session.
-  private readonly onStorage = (e: StorageEvent): void => {
-    if (e.key === STORAGE_KEY || e.key === null) {
-      this._session.set(readStoredSession());
-    }
-  };
-
-  constructor() {
-    if (typeof window !== 'undefined') {
-      window.addEventListener('storage', this.onStorage);
-    }
-  }
-
-  ngOnDestroy(): void {
-    if (typeof window !== 'undefined') {
-      window.removeEventListener('storage', this.onStorage);
-    }
-  }
-
-  /** True while the access token itself is still valid. */
-  hasValidAccessToken(): boolean {
-    const s = this._session();
-    return !!s && new Date(s.expiresAt).getTime() > Date.now();
-  }
-
-  /** True when a refresh token is stored and not yet expired. */
-  canRefresh(): boolean {
-    const s = this._session();
-    return (
-      !!s?.refreshToken &&
-      !!s.refreshExpiresAt &&
-      new Date(s.refreshExpiresAt).getTime() > Date.now()
-    );
-  }
-
-  /**
-   * Signed in = a live access token, or an expired one we can still refresh (the
-   * interceptor/guard will transparently obtain a new pair).
-   */
-  isAuthenticated(): boolean {
-    return this.hasValidAccessToken() || this.canRefresh();
-  }
-
-  async login(dto: Login): Promise<void> {
-    this.persist(await firstValueFrom(this.api.login(dto)));
-  }
-
-  async register(dto: Register): Promise<void> {
-    this.persist(await firstValueFrom(this.api.register(dto)));
-  }
-
-  /**
-   * Exchanges a provider ID token for an app session. From here on the session is
-   * indistinguishable from a local one — same token, same refresh, same guards.
-   */
-  async signInWithProviderToken(idToken: string): Promise<void> {
-    this.persist(await firstValueFrom(this.api.oidcSignIn(idToken)));
-  }
-
-  /**
-   * Exchanges the stored refresh token for a new access/refresh pair. Resolves true
-   * on success; on failure (revoked/expired/reused token) the session is cleared.
-   * Concurrent callers share a single in-flight request.
-   */
-  refresh(): Promise<boolean> {
-    this.refreshInFlight ??= this.runRefresh().finally(() => (this.refreshInFlight = null));
-    return this.refreshInFlight;
-  }
-
-  /**
-   * Serialise the refresh across tabs (Web Locks): without this, two tabs holding the
-   * same refresh token could both spend it, and the second would be flagged as token
-   * reuse and revoke the whole family, logging everyone out. Falls back to a plain
-   * refresh where the Locks API is unavailable (older browsers, tests).
-   */
-  private runRefresh(): Promise<boolean> {
-    return typeof navigator !== 'undefined' && navigator.locks
-      ? navigator.locks.request(REFRESH_LOCK, () => this.doRefresh())
-      : this.doRefresh();
-  }
-
-  private async doRefresh(): Promise<boolean> {
-    // Adopt the latest persisted session first: another tab may have rotated the refresh
-    // token (possibly while we waited for the cross-tab lock), so use that token rather
-    // than our stale one — presenting a rotated token is treated as reuse and would
-    // revoke the whole session family.
-    this._session.set(readStoredSession());
-
-    const refreshToken = this._session()?.refreshToken;
-    if (!refreshToken || !this.canRefresh()) return false;
-    try {
-      this.persist(await firstValueFrom(this.api.refresh(refreshToken)));
-      return true;
-    } catch {
-      this.clearSession();
-      return false;
-    }
-  }
-
-  /** Revokes the refresh token server-side (fire-and-forget), then clears local state. */
-  logout(): void {
-    const refreshToken = this._session()?.refreshToken;
-    if (refreshToken) {
-      this.api.logout(refreshToken).subscribe({ error: () => {} });
-    }
-    this.clearSession();
-  }
-
-  /** Drops the local session only (no server call). */
-  clearSession(): void {
-    this._session.set(null);
-    localStorage.removeItem(STORAGE_KEY);
-  }
-
-  private persist(res: AuthResponse): void {
-    const session: Session = {
-      token: res.token,
-      userId: res.userId,
-      displayName: res.displayName,
-      isAdmin: res.isAdmin,
-      expiresAt: res.expiresAt,
-      refreshToken: res.refreshToken,
-      refreshExpiresAt: res.refreshExpiresAt,
+export const AuthStore = signalStore(
+  { providedIn: 'root' },
+  withState(() => ({ session: restoreSession() })),
+  withProps(() => ({
+    _api: inject(AuthApi),
+    /**
+     * Single-flight refresh: concurrent 401s share one /api/auth/refresh call. A box
+     * rather than a bare field, because a store's props are readonly.
+     */
+    _refresh: { current: null as Promise<boolean> | null },
+  })),
+  withComputed(({ session }) => ({
+    token: computed(() => session()?.token ?? null),
+    displayName: computed(() => session()?.displayName ?? null),
+    isAdmin: computed(() => session()?.isAdmin ?? false),
+  })),
+  withMethods((store) => {
+    /** True while the access token itself is still valid. */
+    const hasValidAccessToken = (): boolean => {
+      const s = store.session();
+      return !!s && new Date(s.expiresAt).getTime() > Date.now();
     };
-    this._session.set(session);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(session));
-  }
-}
+
+    /** True when a refresh token is stored and not yet expired. */
+    const canRefresh = (): boolean => {
+      const s = store.session();
+      return (
+        !!s?.refreshToken &&
+        !!s.refreshExpiresAt &&
+        new Date(s.refreshExpiresAt).getTime() > Date.now()
+      );
+    };
+
+    const clearSession = (): void => {
+      patchState(store, { session: null });
+      localStorage.removeItem(STORAGE_KEY);
+    };
+
+    const persist = (res: AuthResponse): void => {
+      const session: Session = {
+        token: res.token,
+        userId: res.userId,
+        displayName: res.displayName,
+        isAdmin: res.isAdmin,
+        expiresAt: res.expiresAt,
+        refreshToken: res.refreshToken,
+        refreshExpiresAt: res.refreshExpiresAt,
+      };
+      patchState(store, { session });
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(session));
+    };
+
+    const doRefresh = async (): Promise<boolean> => {
+      // Adopt the latest persisted session first: another tab may have rotated the
+      // refresh token (possibly while we waited for the cross-tab lock), so use that
+      // token rather than our stale one — presenting a rotated token is treated as reuse
+      // and would revoke the whole session family.
+      patchState(store, { session: readStoredSession() });
+
+      const refreshToken = store.session()?.refreshToken;
+      if (!refreshToken || !canRefresh()) return false;
+      try {
+        persist(await firstValueFrom(store._api.refresh(refreshToken)));
+        return true;
+      } catch {
+        clearSession();
+        return false;
+      }
+    };
+
+    /**
+     * Serialise the refresh across tabs (Web Locks): without this, two tabs holding the
+     * same refresh token could both spend it, and the second would be flagged as token
+     * reuse and revoke the whole family, logging everyone out. Falls back to a plain
+     * refresh where the Locks API is unavailable (older browsers, tests).
+     */
+    const runRefresh = (): Promise<boolean> =>
+      typeof navigator !== 'undefined' && navigator.locks
+        ? navigator.locks.request(REFRESH_LOCK, () => doRefresh())
+        : doRefresh();
+
+    return {
+      hasValidAccessToken,
+      canRefresh,
+      clearSession,
+
+      /**
+       * Signed in = a live access token, or an expired one we can still refresh (the
+       * interceptor/guard will transparently obtain a new pair).
+       */
+      isAuthenticated(): boolean {
+        return hasValidAccessToken() || canRefresh();
+      },
+
+      async login(dto: Login): Promise<void> {
+        persist(await firstValueFrom(store._api.login(dto)));
+      },
+
+      async register(dto: Register): Promise<void> {
+        persist(await firstValueFrom(store._api.register(dto)));
+      },
+
+      /**
+       * Exchanges a provider ID token for an app session. From here on the session is
+       * indistinguishable from a local one — same token, same refresh, same guards.
+       */
+      async signInWithProviderToken(idToken: string): Promise<void> {
+        persist(await firstValueFrom(store._api.oidcSignIn(idToken)));
+      },
+
+      /**
+       * Exchanges the stored refresh token for a new access/refresh pair. Resolves true
+       * on success; on failure (revoked/expired/reused token) the session is cleared.
+       * Concurrent callers share a single in-flight request.
+       */
+      refresh(): Promise<boolean> {
+        store._refresh.current ??= runRefresh().finally(() => (store._refresh.current = null));
+        return store._refresh.current;
+      },
+
+      /** Revokes the refresh token server-side (fire-and-forget), then clears local state. */
+      logout(): void {
+        const refreshToken = store.session()?.refreshToken;
+        if (refreshToken) {
+          store._api.logout(refreshToken).subscribe({ error: () => {} });
+        }
+        clearSession();
+      },
+    };
+  }),
+  withHooks({
+    onInit(store) {
+      // Keep tabs in sync: another tab logging in/out or rotating the refresh token
+      // updates localStorage, and this adopts it so we never present a stale (rotated)
+      // token — which the server would treat as reuse and revoke the whole session.
+      if (typeof window === 'undefined') return;
+      fromEvent<StorageEvent>(window, 'storage')
+        .pipe(takeUntilDestroyed(inject(DestroyRef)))
+        .subscribe((e) => {
+          if (e.key === STORAGE_KEY || e.key === null) {
+            patchState(store, { session: readStoredSession() });
+          }
+        });
+    },
+  }),
+);
+
+export type AuthStore = InstanceType<typeof AuthStore>;
 
 /** Parse the stored session as-is (no usability filter); null if absent/corrupt. */
 function readStoredSession(): Session | null {
