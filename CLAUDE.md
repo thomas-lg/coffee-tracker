@@ -74,11 +74,32 @@ needs a `libdl` shim.
 
 ## Backend dependency bumps
 
-NuGet keeps one lock file per project, so a package change in `Application` or
-`Infrastructure` invalidates the ones in `Api` and `Tests` and CI's
-`restore --locked-mode` fails with **NU1004**. Refresh them all:
-`./scripts/refresh-lockfiles.ps1`, or `gh workflow run refresh-lockfiles.yml -f pr=<n>`
-without a local toolchain. That workflow refuses a pull request from a fork by design.
+`backend/Directory.Build.props` enables NuGet lock files and CI restores with
+`--locked-mode`, so a bump cannot land without a reviewed `packages.lock.json`. NuGet
+keeps **one lock file per project**, so changing a package in `Application` or
+`Infrastructure` also invalidates the ones in `Api` and `Tests`, and the restore fails
+with **NU1004**. Refresh them all:
+
+```powershell
+./scripts/refresh-lockfiles.ps1          # rewrite the lock files (--force-evaluate)
+./scripts/refresh-lockfiles.ps1 -Check   # just reproduce the CI restore (--locked-mode)
+```
+
+The script uses a local .NET SDK if there is one and the pinned SDK container
+otherwise, so it works on a bare host.
+
+Dependabot hits this on every backend PR. Without a local toolchain,
+`gh workflow run refresh-lockfiles.yml -f pr=<number>` does the restore and pushes the
+lock files — but it cannot make the checks pass on its own: GitHub parks any run
+triggered by `github-actions[bot]` as `action_required`, and `GITHUB_TOKEN` can neither
+start nor approve its own runs. The job summary prints the one command that finishes it:
+
+```bash
+gh pr close <number> && gh pr reopen <number>
+```
+
+That workflow refuses a pull request from a fork by design — it checks out the head it
+is given with a writable token.
 
 ## OpenSpec
 
@@ -104,6 +125,27 @@ then drops privileges via `gosu`.
 - **`openapi-typescript`** runs via `npx` (it peers on TS 5, the project is on TS 6).
   Fine as-is. The e2e CI job regenerates the client from the running backend and fails
   on drift, so a backend contract change cannot ship a stale typed client.
+
+## Regenerating the screenshots
+
+`docs/screenshots/*.png` are captured by `scripts/capture-screenshots.mjs`, not grabbed
+by hand — so a layout change is a re-run, not a reason to leave them stale. They need a
+running, seeded instance. Nothing on the host but Docker:
+
+```bash
+JWT_KEY=$(openssl rand -base64 48) REGISTRATION_ENABLED=true docker compose up -d --build
+# register an account, add a few coffees and some dated reviews, then:
+docker run --rm -v "$PWD:/work" -w /work \
+  -e BASE_URL=http://host.docker.internal:8080 \
+  --add-host host.docker.internal:host-gateway \
+  mcr.microsoft.com/playwright:v1.63.0-noble \
+  bash -lc 'npm i -s --no-save playwright@1.63.0 && node scripts/capture-screenshots.mjs'
+```
+
+Keep the Playwright image tag in step with `@playwright/test` in `frontend/package.json`.
+Review timestamps are server-set, so demo reviews all land on today — back-date them
+directly in SQLite (stop the container first; WAL keeps the file open) or the
+"ratings over time" shot shows the same date twice and sells nothing.
 
 ## Gotchas
 
