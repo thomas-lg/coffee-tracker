@@ -16,6 +16,7 @@ WORKDIR /web
 # install fails. `packages/app` is the Angular app, not a workspace member, so it has
 # no package.json and is copied with the sources below.
 COPY frontend/package.json frontend/package-lock.json ./
+COPY frontend/packages/admin/package.json ./packages/admin/
 COPY frontend/packages/auth/package.json ./packages/auth/
 COPY frontend/packages/coffees/package.json ./packages/coffees/
 COPY frontend/packages/data/package.json ./packages/data/
