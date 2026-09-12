@@ -1,0 +1,11 @@
+/* Spec configuration for the whole workspace: one vitest run covers every package,
+   resolving the libraries through the path aliases in tsconfig.json exactly as the
+   production build does. */
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "outDir": "./out-tsc/spec",
+    "types": ["vitest/globals"]
+  },
+  "include": ["packages/**/*.d.ts", "packages/**/*.spec.ts"]
+}
