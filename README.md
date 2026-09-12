@@ -134,6 +134,14 @@ keeps their coffees. A first sign-in whose email matches an existing app account
 linked to it only when the provider asserts the address is verified; otherwise the
 sign-in is refused rather than quietly creating a second account.
 
+Linking is a **handover, not a sharing**: that account's app password and any sessions it
+had are retired, leaving the provider as its only way in. Registration takes any address
+and confirms none, so an app account bearing your address is not proof anyone owns it —
+without this, someone could open one in advance and keep a password on the account you
+are about to be linked to, including whatever rights the provider then grants it. If you
+are migrating your own app account to the provider, expect to sign in through the
+provider from then on.
+
 **The provider is the guest list.** Anyone the provider lets through gets an account on
 first sign-in, so point the app at a provider you control and that gates who may use it
 (Authelia's `access_control`, a Keycloak client role, a Google Workspace domain…). A
@@ -238,3 +246,7 @@ Nothing committed — a parking lot for when the mood strikes:
 
 I use [Claude](https://claude.ai) (via Claude Code) to help design and build this
 project.
+
+## License
+
+[MIT](./LICENSE) — do what you like with it, just keep the copyright notice.

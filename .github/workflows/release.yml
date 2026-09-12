@@ -42,9 +42,16 @@ jobs:
     # and release, so a stale run publishing an old sha would only churn :latest) —
     # github.sha is the default branch's head on a workflow_run event, which is exactly
     # what that comparison needs and why it cannot be applied to beta. Tags: publish.
+    #
+    # The event/repository pair is load-bearing, not belt-and-braces: ci.yml runs on
+    # pull_request, so it runs for fork PRs too, and `head_branch` is then the branch name
+    # *inside the fork* — anyone naming theirs `beta` would otherwise have their unmerged
+    # head published. `event == 'push'` is the strong half.
     if: >-
       (github.event_name == 'workflow_run'
         && github.event.workflow_run.conclusion == 'success'
+        && github.event.workflow_run.event == 'push'
+        && github.event.workflow_run.head_repository.full_name == github.repository
         && (github.event.workflow_run.head_branch == 'beta'
             || github.event.workflow_run.head_sha == github.sha))
       || startsWith(github.ref, 'refs/tags/v')

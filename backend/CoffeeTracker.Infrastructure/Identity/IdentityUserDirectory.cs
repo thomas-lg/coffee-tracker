@@ -133,6 +133,27 @@ public sealed class IdentityUserDirectory(
         }
     }
 
+    public async Task RemoveLocalPasswordAsync(string userId, CancellationToken ct = default)
+    {
+        var user = await userManager.FindByIdAsync(userId)
+            ?? throw new InvalidOperationException($"Cannot remove the password of unknown user {userId}.");
+
+        if (!await userManager.HasPasswordAsync(user))
+        {
+            return;
+        }
+
+        var result = await userManager.RemovePasswordAsync(user);
+        if (!result.Succeeded)
+        {
+            // Swallowing this would leave the password that the caller linked an external
+            // identity specifically to retire, which is the whole point of the call.
+            throw new InvalidOperationException(
+                $"Failed to remove the local password of {userId}: " +
+                string.Join("; ", result.Errors.Select(e => e.Description)));
+        }
+    }
+
     public async Task<CreateUserResult> CreateFromExternalAsync(
         string issuer,
         string subject,

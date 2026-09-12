@@ -99,8 +99,17 @@ public sealed class ExternalSignInService(
                 }
 
                 await users.LinkExternalLoginAsync(byEmail.Id, identity.Issuer, identity.Subject, ct);
+
+                // The provider vouches for its side of this address; nothing vouches for
+                // ours, since registration takes any email and confirms none. So this is a
+                // handover, not a sharing: whoever registered the account cannot follow it
+                // across, nor ride the administrator claim applied just below.
+                await users.RemoveLocalPasswordAsync(byEmail.Id, ct);
+                await refreshTokens.RevokeAllAsync(byEmail.Id, ct);
+
                 logger.LogWarning(
-                    "Linked provider identity to existing account {UserId} on a verified email.",
+                    "Linked provider identity to existing account {UserId} on a verified email; " +
+                    "its local password and sessions were retired.",
                     byEmail.Id);
                 return (ExternalSignInStatus.Success, byEmail, false);
             }

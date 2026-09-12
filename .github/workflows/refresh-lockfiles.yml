@@ -44,27 +44,44 @@ jobs:
   refresh:
     runs-on: ubuntu-latest
     steps:
+      # Runs BEFORE the checkout, and the ordering is the point: `dotnet restore` below
+      # evaluates the checked-out MSBuild graph, so a Directory.Build.targets with an
+      # <Exec BeforeTargets="Restore"> is arbitrary code on a runner holding a
+      # contents: write token. Nothing about workflow_dispatch constrains `pr` to a PR
+      # from this repository. (The lock-file guard further down runs after restore, so it
+      # cannot help here.)
+      - name: Refuse a pull request from a fork
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ inputs.pr }}
+          REPO: ${{ github.repository }}
+        id: pr
+        run: |
+          read -r cross branch author <<<"$(gh pr view "$PR" --repo "$REPO" \
+            --json isCrossRepository,headRefName,author \
+            -q '[.isCrossRepository, .headRefName, .author.login] | @tsv')"
+          if [ "$cross" != "false" ]; then
+            echo "::error::PR #$PR comes from a fork. This workflow builds the head it is" \
+                 "given with a writable token, so it only runs on same-repository branches."
+            exit 1
+          fi
+          echo "branch=$branch" >> "$GITHUB_OUTPUT"
+          echo "Refreshing lock files on $branch (opened by $author)"
+
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           # Check out the PR's head branch by name (not the merge ref) so the refreshed
           # lock files can be pushed straight back to it.
           ref: refs/pull/${{ inputs.pr }}/head
-          # A detached merge ref can't be pushed; resolve the real branch below.
+          # A detached merge ref can't be pushed; the branch is resolved above.
           fetch-depth: 0
-          persist-credentials: true
+          # Behind the fork check: don't leave a writable token in .git/config where the
+          # restore could read it. The push step supplies its own.
+          persist-credentials: false
 
       - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
         with:
           dotnet-version: 10.0.x
-
-      - name: Resolve the PR's head branch
-        id: pr
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          branch=$(gh pr view "${{ inputs.pr }}" --json headRefName -q .headRefName)
-          echo "branch=$branch" >> "$GITHUB_OUTPUT"
-          echo "Refreshing lock files on $branch"
 
       # --force-evaluate re-resolves every project graph and rewrites every lock file,
       # which is exactly what --locked-mode in ci.yml then verifies.
@@ -87,6 +104,8 @@ jobs:
         id: commit
         env:
           BRANCH: ${{ steps.pr.outputs.branch }}
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
         run: |
           if git diff --quiet -- 'backend/*/packages.lock.json'; then
             echo "Lock files already consistent; nothing to push."
@@ -99,7 +118,8 @@ jobs:
           # Two -m flags rather than one multi-line string: a YAML block scalar would
           # carry this step's indentation into the commit message body.
           git commit             -m "deps: refresh packages.lock.json after the NuGet bump"             -m "Dependabot updates only the lock file of the project it edited; Api and Tests reference Application/Infrastructure transitively and go stale, which fails ci.yml's restore --locked-mode with NU1004."
-          git push origin "HEAD:$BRANCH"
+          # The checkout persisted no credentials; Actions masks the token in the log.
+          git push "https://x-access-token:${GH_TOKEN}@github.com/${REPO}.git" "HEAD:$BRANCH"
           echo "pushed=true" >> "$GITHUB_OUTPUT"
 
       # Satisfy main's strict up-to-date rule, then report what a human still has to do.
