@@ -11,10 +11,8 @@ public interface ICoffeeCatalogService
     /// <summary>Returns the full catalog, newest first.</summary>
     Task<IReadOnlyList<CoffeeResponseDto>> GetCatalogAsync(CancellationToken ct = default);
 
-    /// <summary>Returns one coffee, or null if it does not exist.</summary>
     Task<CoffeeResponseDto?> GetByIdAsync(int id, CancellationToken ct = default);
 
-    /// <summary>Creates a coffee from the supplied payload and returns the stored resource.</summary>
     Task<CoffeeResponseDto> CreateAsync(CoffeeCreateDto dto, CancellationToken ct = default);
 
     /// <summary>

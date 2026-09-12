@@ -12,6 +12,5 @@ public interface IPhotoUrlSigner
     /// </summary>
     string? Sign(string? relativePath);
 
-    /// <summary>Validates a photo request's file name against its expiry and signature.</summary>
     bool Validate(string fileName, string? exp, string? sig);
 }

@@ -12,7 +12,6 @@ namespace CoffeeTracker.Api.Controllers;
 [Authorize]
 public class CoffeesController(ICoffeeCatalogService catalog) : ControllerBase
 {
-    /// <summary>Returns the full coffee catalog.</summary>
     [HttpGet]
     public async Task<ActionResult<IReadOnlyList<CoffeeResponseDto>>> GetCoffees(CancellationToken ct)
     {
@@ -20,7 +19,6 @@ public class CoffeesController(ICoffeeCatalogService catalog) : ControllerBase
         return Ok(coffees);
     }
 
-    /// <summary>Returns a single coffee by id.</summary>
     [HttpGet("{id:int}")]
     public async Task<ActionResult<CoffeeResponseDto>> GetCoffee(int id, CancellationToken ct)
     {
@@ -28,7 +26,6 @@ public class CoffeesController(ICoffeeCatalogService catalog) : ControllerBase
         return coffee is null ? NotFound() : Ok(coffee);
     }
 
-    /// <summary>Creates a new coffee.</summary>
     [HttpPost]
     public async Task<ActionResult<CoffeeResponseDto>> CreateCoffee(CoffeeCreateDto dto, CancellationToken ct)
     {

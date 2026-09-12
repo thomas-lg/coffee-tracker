@@ -50,7 +50,6 @@ public interface IUserDirectory
     /// <summary>Finds the account an external identity is already attached to, if any.</summary>
     Task<AuthUser?> FindByExternalLoginAsync(string issuer, string subject, CancellationToken ct = default);
 
-    /// <summary>Attaches an external identity to an existing account.</summary>
     Task LinkExternalLoginAsync(string userId, string issuer, string subject, CancellationToken ct = default);
 
     /// <summary>
@@ -82,7 +81,6 @@ public interface IUserDirectory
 /// <summary>A user as the application layer sees it (no framework types).</summary>
 public sealed record AuthUser(string Id, string? Email, string? DisplayName, bool IsAdmin);
 
-/// <summary>Details for a new registration.</summary>
 public sealed record NewUser(string Email, string DisplayName, string Password);
 
 public enum CreateUserError
