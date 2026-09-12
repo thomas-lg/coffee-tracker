@@ -4,9 +4,9 @@
   "scripts": {
     "ng": "ng",
     "start": "ng serve app",
-    "build": "ng build",
-    "watch": "ng build --watch --configuration development",
-    "test": "ng test",
+    "build": "ng build app",
+    "watch": "ng build app --watch --configuration development",
+    "test": "ng test tests --no-watch",
     "e2e": "playwright test",
     "gen:api": "npx --yes openapi-typescript openapi.json -o packages/data/src/lib/models/api-types.ts",
     "lint": "eslint ."

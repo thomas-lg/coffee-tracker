@@ -74,22 +74,14 @@ jobs:
       - name: Build (production)
         working-directory: frontend
         run: npx ng build app --configuration production
-      # Unit tests via the vitest builder (NOT Karma, so no --browsers). We run each
-      # project whose specs compile in isolation; a spec that pulled another lib's
-      # source would hit the ng-packagr rootDir limit, so cross-lib components are
-      # guarded by the production build above instead. @coffee-tracker/auth holds the
-      # most security-sensitive client logic (token/session/interceptor), so it — and
-      # the app shell — are tested here too, not just built.
+      # Unit tests via the vitest builder (NOT Karma, so no --browsers). `npm test`
+      # runs the workspace-wide `tests` project, which covers every package's specs in
+      # one build — so a laptop runs exactly what CI runs. This used to be seven
+      # hand-listed commands here, while a bare `ng test` locally covered only the
+      # default project and hid 16 of the 19 spec files.
       - name: Unit tests (vitest)
         working-directory: frontend
-        run: |
-          npx ng test @coffee-tracker/util --no-watch
-          npx ng test @coffee-tracker/ui --no-watch
-          npx ng test @coffee-tracker/data --no-watch
-          npx ng test @coffee-tracker/auth --no-watch
-          npx ng test @coffee-tracker/coffees --no-watch
-          npx ng test @coffee-tracker/admin --no-watch
-          npx ng test app --no-watch
+        run: npm test
 
   e2e:
     runs-on: ubuntu-latest
