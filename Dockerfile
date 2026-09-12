@@ -8,7 +8,7 @@
 # is frontend/package.json's engines (^20.19 || ^22.12 || ^24, i.e. Angular's supported
 # range) plus LTS status -- an even major is still "Current" until the October of its
 # release year. Dependabot ignores node majors here; move all three references at once.
-FROM node:24-slim@sha256:ba849c60be29959425b8734d57b8b4b7d56f98edd9504c9af091d5281095a71e AS web
+FROM node:24-slim@sha256:2fe369e969550cde8e867afc3fe370b260140cab4a23d467074295b42163d553 AS web
 WORKDIR /web
 # Restore deps in their own layer (cached until a manifest changes). This is an npm
 # workspaces repo, so `npm ci` needs every member's package.json present up front —
@@ -32,14 +32,14 @@ RUN npx ng build app --configuration production
 
 # --- Stage 2: publish the API ---
 # mcr.microsoft.com/dotnet/sdk:10.0
-FROM mcr.microsoft.com/dotnet/sdk:10.0@sha256:e1ffd2a92ae84c1291bc1b6887501f8af98e6331e7af6d4c8d37168c5e87a64c AS api
+FROM mcr.microsoft.com/dotnet/sdk:10.0@sha256:2fa828c68761b1b8c23d7662dc134421b9d3b59fe1425fdbc80804e390cdb24d AS api
 WORKDIR /src
 COPY backend/ ./backend/
 RUN dotnet publish backend/CoffeeTracker.Api/CoffeeTracker.Api.csproj -c Release -o /publish
 
 # --- Stage 3: runtime ---
 # mcr.microsoft.com/dotnet/aspnet:10.0
-FROM mcr.microsoft.com/dotnet/aspnet:10.0@sha256:a4556ed033fa96f984bb7a8d348851cb2d36b1281dd2420070045f664fbb5f94 AS runtime
+FROM mcr.microsoft.com/dotnet/aspnet:10.0@sha256:6a94333d37514e385650a3c81a55e5350b67253dbe136e9cf17e499c35606a8c AS runtime
 # OCR via the tesseract CLI (the app shells out to it). The tesseract-ocr package
 # pulls its own runtime libs; tesseract-ocr-eng ships eng.traineddata. gosu drops
 # privileges in the entrypoint. curl is only for the HEALTHCHECK (the aspnet image
