@@ -29,6 +29,8 @@ public abstract class StubUserDirectory : IUserDirectory
 
     public virtual Task LinkExternalLoginAsync(string userId, string issuer, string subject, CancellationToken ct = default) => throw new NotSupportedException();
 
+    public virtual Task RemoveLocalPasswordAsync(string userId, CancellationToken ct = default) => throw new NotSupportedException();
+
     public virtual Task<CreateUserResult> CreateFromExternalAsync(string issuer, string subject, string email, string displayName, CancellationToken ct = default) => throw new NotSupportedException();
 
     public virtual Task SetAdminAsync(string userId, bool isAdmin, CancellationToken ct = default) => throw new NotSupportedException();

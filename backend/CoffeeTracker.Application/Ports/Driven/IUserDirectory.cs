@@ -54,6 +54,13 @@ public interface IUserDirectory
     Task LinkExternalLoginAsync(string userId, string issuer, string subject, CancellationToken ct = default);
 
     /// <summary>
+    /// Drops the account's local password, if it has one, leaving the external identity
+    /// as its only credential — the same shape <see cref="CreateFromExternalAsync"/>
+    /// produces. Idempotent: an account with no password is already in the target state.
+    /// </summary>
+    Task RemoveLocalPasswordAsync(string userId, CancellationToken ct = default);
+
+    /// <summary>
     /// Creates an account for an external identity and attaches it, with no password:
     /// such an account has no local credentials to guess. Grants admin to the first
     /// user on a fresh instance, exactly as <see cref="CreateAsync"/> does.
