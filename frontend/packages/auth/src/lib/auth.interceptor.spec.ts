@@ -94,8 +94,8 @@ describe('authInterceptor', () => {
       .flush('nope', { status: 401, statusText: 'Unauthorized', headers: API_CHALLENGE });
 
     expect(refresh).not.toHaveBeenCalled();
+    // logout() clears the session and returns to /login — see auth.store.spec.
     expect(logout).toHaveBeenCalledOnce();
-    expect(navigateByUrl).toHaveBeenCalledWith('/login');
     expect(reload).not.toHaveBeenCalled();
   });
 
@@ -150,7 +150,6 @@ describe('authInterceptor', () => {
     expect(errored).toBe(true);
     expect(refresh).toHaveBeenCalledOnce();
     expect(logout).toHaveBeenCalledOnce();
-    expect(navigateByUrl).toHaveBeenCalledWith('/login');
     httpCtrl.expectNone('/api/coffees');
   });
 

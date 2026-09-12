@@ -41,8 +41,4 @@ export class App {
     persistTheme(this.theme());
   }
 
-  protected logout(): void {
-    this.auth.logout();
-    void this.router.navigateByUrl('/login');
-  }
 }

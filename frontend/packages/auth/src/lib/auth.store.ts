@@ -18,6 +18,8 @@ import {
   setRequestError,
   withRequestStatus,
 } from '@coffee-tracker/util';
+import { Router } from '@angular/router';
+import { ToastService } from '@coffee-tracker/ui';
 import { AuthApi, type AuthResponse, type Login, type Register } from '@coffee-tracker/data';
 
 /**
@@ -60,6 +62,8 @@ export const AuthStore = signalStore(
   withRequestStatus(),
   withProps(() => ({
     _api: inject(AuthApi),
+    _router: inject(Router),
+    _toast: inject(ToastService),
     /**
      * Single-flight refresh: concurrent 401s share one /api/auth/refresh call. A box
      * rather than a bare field, because a store's props are readonly.
@@ -158,9 +162,13 @@ export const AuthStore = signalStore(
                 next: (res) => {
                   persist(res);
                   patchState(store, setFulfilled());
+                  void store._router.navigateByUrl('/');
                 },
-                error: (err: unknown) =>
-                  patchState(store, setRequestError(loginMessage(err))),
+                error: (err: unknown) => {
+                  const message = loginMessage(err);
+                  patchState(store, setRequestError(message));
+                  store._toast.show(message, 'error');
+                },
               }),
             ),
           ),
@@ -176,14 +184,14 @@ export const AuthStore = signalStore(
                 next: (res) => {
                   persist(res);
                   patchState(store, setFulfilled());
+                  void store._router.navigateByUrl('/');
                 },
-                error: () =>
-                  patchState(
-                    store,
-                    setRequestError(
-                      'Could not create the account — the email may already be in use.',
-                    ),
-                  ),
+                error: () => {
+                  const message =
+                    'Could not create the account — the email may already be in use.';
+                  patchState(store, setRequestError(message));
+                  store._toast.show(message, 'error');
+                },
               }),
             ),
           ),
@@ -208,13 +216,18 @@ export const AuthStore = signalStore(
         return store._refresh.current;
       },
 
-      /** Revokes the refresh token server-side (fire-and-forget), then clears local state. */
+      /**
+       * Revokes the refresh token server-side (fire-and-forget), clears local state and
+       * returns to the sign-in screen. Signing out is one action, so it lands in one
+       * place — the header and the interceptor both just call this.
+       */
       logout(): void {
         const refreshToken = store.session()?.refreshToken;
         if (refreshToken) {
           store._api.logout(refreshToken).subscribe({ error: () => {} });
         }
         clearSession();
+        void store._router.navigateByUrl('/login');
       },
     };
   }),

@@ -11,14 +11,14 @@
     >
       <span class="grid size-11 place-items-center rounded-xl bg-crema text-ink"><ct-icon name="camera" [size]="22" /></span>
       <span class="flex-1">
-        <span class="block font-semibold">{{ scanning() ? 'Reading the label…' : 'Snap the bag' }}</span>
+        <span class="block font-semibold">{{ store.scanning() ? 'Reading the label…' : 'Snap the bag' }}</span>
         <span class="block text-xs text-muted">Photograph the bag and we’ll pre-fill the form.</span>
       </span>
       <input type="file" accept="image/*" capture="environment" class="hidden" (change)="onSnap($event)" />
     </label>
   }
 
-  @if (editing() && loading()) {
+  @if (editing() && store.loading()) {
     <div class="mt-5 flex flex-col gap-4" aria-busy="true">
       @for (s of [1, 2, 3, 4, 5]; track s) {
         <ct-skeleton height="3.25rem" width="100%" />
@@ -39,7 +39,7 @@
           <span class="text-sm font-semibold">Roaster</span>
           <input [formField]="f.roaster" class="input" list="roasterOptions" autocomplete="off" />
           <datalist id="roasterOptions">
-            @for (r of store.roasters(); track r) {
+            @for (r of catalog.roasters(); track r) {
               <option [value]="r"></option>
             }
           </datalist>
@@ -96,7 +96,7 @@
           <span class="text-sm font-semibold">Shop <span class="text-muted">(optional)</span></span>
           <input [formField]="f.shopName" class="input" list="shopOptions" autocomplete="off" />
           <datalist id="shopOptions">
-            @for (s of store.shops(); track s) {
+            @for (s of catalog.shops(); track s) {
               <option [value]="s"></option>
             }
           </datalist>
@@ -128,8 +128,8 @@
 
       <!-- Stays enabled while invalid: submitting then marks every field touched so
            the validation messages explain what's missing. -->
-      <ct-button type="submit" [disabled]="submitting()" class="mt-2">
-        {{ submitting() ? 'Saving…' : editing() ? 'Save changes' : 'Add coffee' }}
+      <ct-button type="submit" [disabled]="store.submitting()" class="mt-2">
+        {{ store.submitting() ? 'Saving…' : editing() ? 'Save changes' : 'Add coffee' }}
       </ct-button>
     </form>
   }

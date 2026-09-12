@@ -1,8 +1,9 @@
-import { describe, expect, it, beforeEach, afterEach } from 'vitest';
+import { describe, expect, it, beforeEach, afterEach, vi } from 'vitest';
 import { ApplicationRef } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
+import { ToastService } from '@coffee-tracker/ui';
 import { PhotoCleanupStore } from './photo-cleanup.store';
 
 const SEED = [
@@ -15,10 +16,17 @@ describe('PhotoCleanupStore', () => {
   let store: PhotoCleanupStore;
   let http: HttpTestingController;
   let appRef: ApplicationRef;
+  let toast: { show: ReturnType<typeof vi.fn> };
 
   beforeEach(() => {
+    toast = { show: vi.fn() };
     TestBed.configureTestingModule({
-      providers: [provideHttpClient(), provideHttpClientTesting(), PhotoCleanupStore],
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        { provide: ToastService, useValue: toast },
+        PhotoCleanupStore,
+      ],
     });
     store = TestBed.inject(PhotoCleanupStore);
     http = TestBed.inject(HttpTestingController);
@@ -79,8 +87,9 @@ describe('PhotoCleanupStore', () => {
       .expectOne('/api/admin/photos')
       .flush([{ path: 'photos/used.jpg', url: '/photos/used.jpg?exp=1&sig=a', used: true }]);
 
-    expect(store.lastOutcome()).toEqual({ kind: 'ok', result: { deleted: 2, skipped: 0 } });
+    expect(toast.show).toHaveBeenCalledWith('Deleted 2, skipped 0', 'success');
     expect(store.selectedCount()).toBe(0);
+    expect(store.confirming()).toBe(false);
     expect(store.pending()).toBe(false);
   });
 
@@ -92,7 +101,7 @@ describe('PhotoCleanupStore', () => {
       .expectOne('/api/admin/photos')
       .flush('boom', { status: 500, statusText: 'Server Error' });
 
-    expect(store.lastOutcome()).toEqual({ kind: 'error' });
+    expect(toast.show).toHaveBeenCalledWith('Delete failed — please retry.', 'error');
     expect(store.requestError()).toBe('Delete failed — please retry.');
     expect(store.pending()).toBe(false);
     // The selection survives, so the operator can retry without re-picking.
@@ -104,10 +113,17 @@ describe('PhotoCleanupStore (error path)', () => {
   let store: PhotoCleanupStore;
   let http: HttpTestingController;
   let appRef: ApplicationRef;
+  let toast: { show: ReturnType<typeof vi.fn> };
 
   beforeEach(() => {
+    toast = { show: vi.fn() };
     TestBed.configureTestingModule({
-      providers: [provideHttpClient(), provideHttpClientTesting(), PhotoCleanupStore],
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        { provide: ToastService, useValue: toast },
+        PhotoCleanupStore,
+      ],
     });
     store = TestBed.inject(PhotoCleanupStore);
     http = TestBed.inject(HttpTestingController);

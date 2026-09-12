@@ -1,15 +1,8 @@
-import {
-  ChangeDetectionStrategy,
-  Component,
-  computed,
-  effect,
-  inject,
-  signal,
-} from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { rxResource } from '@angular/core/rxjs-interop';
-import { Router, RouterLink } from '@angular/router';
+import { RouterLink } from '@angular/router';
 import { FormField, FormRoot, email, form, required } from '@angular/forms/signals';
-import { Button, Icon, ToastService } from '@coffee-tracker/ui';
+import { Button, Icon } from '@coffee-tracker/ui';
 import { ConfigApi } from '@coffee-tracker/data';
 import { AuthStore } from '../auth.store';
 import { ProviderSignIn } from '../provider-sign-in';
@@ -21,9 +14,7 @@ import { ProviderSignIn } from '../provider-sign-in';
   templateUrl: './login.html',
 })
 export class Login {
-  private readonly auth = inject(AuthStore);
-  private readonly router = inject(Router);
-  private readonly toast = inject(ToastService);
+  protected readonly auth = inject(AuthStore);
   private readonly config = inject(ConfigApi);
   private readonly provider = inject(ProviderSignIn);
 
@@ -85,26 +76,6 @@ export class Login {
     email(p.email);
     required(p.password);
   });
-  /** In-flight state belongs to the command, which the store owns. */
-  protected readonly submitting = this.auth.pending;
-
-  constructor() {
-    // Root-provided store shared with the sibling screen: clear anything it left behind.
-    this.auth.resetRequestStatus();
-
-    effect(() => {
-      if (this.auth.fulfilled()) void this.router.navigateByUrl('/');
-    });
-
-    // The store owns the message now — it is the only side that still sees the error.
-    effect(() => {
-      const message = this.auth.requestError();
-      if (message) {
-        this.toast.show(message, 'error');
-        this.auth.resetRequestStatus();
-      }
-    });
-  }
 
   /** Set on click and never cleared: the page is on its way out to the provider. */
   protected readonly redirecting = signal(false);
@@ -115,7 +86,7 @@ export class Login {
   }
 
   protected onSubmit(): void {
-    if (this.submitting()) return;
+    if (this.auth.pending()) return;
     if (this.f().invalid()) {
       // Surface why nothing happened: reveal every field's validation message.
       this.f().markAsTouched();

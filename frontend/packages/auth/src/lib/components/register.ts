@@ -1,15 +1,8 @@
-import {
-  ChangeDetectionStrategy,
-  Component,
-  computed,
-  effect,
-  inject,
-  signal,
-} from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { rxResource } from '@angular/core/rxjs-interop';
-import { Router, RouterLink } from '@angular/router';
+import { RouterLink } from '@angular/router';
 import { FormField, FormRoot, email, form, minLength, required } from '@angular/forms/signals';
-import { Button, ToastService } from '@coffee-tracker/ui';
+import { Button } from '@coffee-tracker/ui';
 import { ConfigApi } from '@coffee-tracker/data';
 import { AuthStore } from '../auth.store';
 
@@ -20,9 +13,7 @@ import { AuthStore } from '../auth.store';
   templateUrl: './register.html',
 })
 export class Register {
-  private readonly auth = inject(AuthStore);
-  private readonly router = inject(Router);
-  private readonly toast = inject(ToastService);
+  protected readonly auth = inject(AuthStore);
   private readonly config = inject(ConfigApi);
 
   /** Reactive config read (same rxResource pattern as the data screens). */
@@ -32,26 +23,6 @@ export class Register {
     if (this.configRes.error()) return false;
     return this.configRes.value()?.registrationEnabled ?? null;
   });
-  /** In-flight state belongs to the command, which the store owns. */
-  protected readonly submitting = this.auth.pending;
-
-  constructor() {
-    // Root-provided store shared with the sibling screen: clear anything it left behind.
-    this.auth.resetRequestStatus();
-
-    effect(() => {
-      if (this.auth.fulfilled()) void this.router.navigateByUrl('/');
-    });
-
-    // The store owns the message now — it is the only side that still sees the error.
-    effect(() => {
-      const message = this.auth.requestError();
-      if (message) {
-        this.toast.show(message, 'error');
-        this.auth.resetRequestStatus();
-      }
-    });
-  }
   protected readonly model = signal({ email: '', password: '', displayName: '' });
   protected readonly f = form(this.model, (p) => {
     required(p.email);
@@ -62,7 +33,7 @@ export class Register {
   });
 
   protected onSubmit(): void {
-    if (this.submitting()) return;
+    if (this.auth.pending()) return;
     if (this.f().invalid()) {
       // Surface why nothing happened: reveal every field's validation message.
       this.f().markAsTouched();

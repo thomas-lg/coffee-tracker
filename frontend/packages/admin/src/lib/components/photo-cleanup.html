@@ -45,24 +45,24 @@
     @if (store.selectedCount() > 0) {
       <!-- aria-live on the stable wrapper so arming the confirm step is announced. -->
       <div class="ml-auto flex items-center gap-2" aria-live="polite">
-        @if (!confirming()) {
+        @if (!store.confirming()) {
           <span class="text-sm text-muted">{{ store.selectedCount() }} selected</span>
           <button (click)="store.clearSelection()" class="text-sm font-semibold text-muted hover:text-ink">
             Clear
           </button>
-          <ct-button variant="ghost" (click)="arm()">Delete {{ store.selectedCount() }}</ct-button>
+          <ct-button variant="ghost" (click)="store.arm()">Delete {{ store.selectedCount() }}</ct-button>
         } @else {
           <span class="text-sm font-semibold text-ink">Delete {{ store.selectedCount() }} photo(s)?</span>
           <button
             #cancelBtn
-            (click)="cancel()"
+            (click)="store.cancel()"
             class="rounded-full px-3 py-1.5 text-sm font-semibold text-muted hover:text-ink"
-            [disabled]="deleting()"
+            [disabled]="store.pending()"
           >
             Cancel
           </button>
-          <ct-button variant="primary" [disabled]="deleting()" (click)="confirmDelete()">
-            {{ deleting() ? 'Deleting…' : 'Confirm delete' }}
+          <ct-button variant="primary" [disabled]="store.pending()" (click)="store.deleteSelected()">
+            {{ store.pending() ? 'Deleting…' : 'Confirm delete' }}
           </ct-button>
         }
       </div>

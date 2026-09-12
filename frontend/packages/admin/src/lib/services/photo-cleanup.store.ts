@@ -11,18 +11,17 @@ import {
   setRequestError,
   withRequestStatus,
 } from '@coffee-tracker/util';
-import { AdminPhotosApi, type PhotoDeleteResult, type PhotoListItem } from '@coffee-tracker/data';
+import { ToastService } from '@coffee-tracker/ui';
+import { AdminPhotosApi, type PhotoListItem } from '@coffee-tracker/data';
 
 export type PhotoFilter = 'all' | 'unused';
-
-/** Outcome of the last delete. The screen turns this into a toast, then acknowledges it. */
-export type DeleteOutcome = { kind: 'ok'; result: PhotoDeleteResult } | { kind: 'error' };
 
 type PhotoCleanupState = {
   filter: PhotoFilter;
   /** Selected paths. Only unused photos are ever added (used ones aren't selectable). */
   selection: readonly string[];
-  lastOutcome: DeleteOutcome | null;
+  /** Two-step delete: the action button arms a confirm row rather than a modal. */
+  confirming: boolean;
 };
 
 /**
@@ -34,12 +33,13 @@ type PhotoCleanupState = {
  * derived `selectionSet` keeps `isSelected` O(1) inside the template's @for.
  */
 export const PhotoCleanupStore = signalStore(
-  withState<PhotoCleanupState>({ filter: 'all', selection: [], lastOutcome: null }),
+  withState<PhotoCleanupState>({ filter: 'all', selection: [], confirming: false }),
   withRequestStatus(),
   withProps(() => {
     const api = inject(AdminPhotosApi);
     return {
       _api: api,
+      _toast: inject(ToastService),
       // See CoffeesStore: a resource's value() throws while errored, and withValueOnError
       // answers the empty default instead.
       _list: extendResource(
@@ -91,9 +91,13 @@ export const PhotoCleanupStore = signalStore(
       patchState(store, { filter: value });
     },
 
-    /** Clears the one-shot outcome once the screen has shown it. */
-    acknowledgeOutcome(): void {
-      patchState(store, { lastOutcome: null, requestStatus: 'idle' });
+    /** Arming is refused with nothing selected, so the confirm row can never be empty. */
+    arm(): void {
+      if (store.selectedCount() > 0) patchState(store, { confirming: true });
+    },
+
+    cancel(): void {
+      patchState(store, { confirming: false });
     },
 
     /**
@@ -105,21 +109,23 @@ export const PhotoCleanupStore = signalStore(
      */
     deleteSelected: rxMethod<void>(
       pipe(
-        tap(() => patchState(store, setPending(), { lastOutcome: null })),
+        tap(() => patchState(store, setPending())),
         switchMap(() =>
           store._api.delete([...store.selection()]).pipe(
             tapResponse({
               next: (result) => {
-                patchState(store, setFulfilled(), {
-                  selection: [],
-                  lastOutcome: { kind: 'ok', result },
-                });
+                patchState(store, setFulfilled(), { selection: [], confirming: false });
                 store._list.reload();
+                store._toast.show(
+                  `Deleted ${result.deleted}, skipped ${result.skipped}`,
+                  'success',
+                );
               },
-              error: () =>
-                patchState(store, setRequestError('Delete failed — please retry.'), {
-                  lastOutcome: { kind: 'error' },
-                }),
+              error: () => {
+                const message = 'Delete failed — please retry.';
+                patchState(store, setRequestError(message), { confirming: false });
+                store._toast.show(message, 'error');
+              },
             }),
           ),
         ),

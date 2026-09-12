@@ -8,7 +8,7 @@
 
   <div class="relative mx-auto max-w-5xl px-5 py-20">
     <p class="font-mono text-xs font-semibold uppercase tracking-widest text-crema-deep">
-      Your coffee shelf@if (coffees().length) { · {{ coffees().length }} bags catalogued }
+      Your coffee shelf@if (store.coffees().length) { · {{ store.coffees().length }} bags catalogued }
     </p>
     <h1 class="mt-2 max-w-[13ch] font-display text-5xl font-semibold leading-[1.05]">
       Every bag worth <em class="italic text-crema-deep">remembering.</em>
@@ -22,7 +22,7 @@
       <ct-button variant="crema" link="/coffees/new"><ct-icon name="camera" [size]="16" /> Snap a new bag</ct-button>
     </div>
 
-    @if (coffees().length) {
+    @if (store.coffees().length) {
       <div class="mt-10 flex flex-wrap gap-x-10 gap-y-4">
         <div>
           <div class="font-display text-3xl leading-none"><ct-count-up [value]="stats().bags" /></div>
@@ -52,7 +52,7 @@
 </section>
 
 <section class="mx-auto max-w-5xl px-5 pb-20 pt-12">
-  @if (coffees().length) {
+  @if (store.coffees().length) {
     <div class="mb-5 flex items-end justify-between gap-3">
       <div>
         <p class="font-mono text-xs font-semibold uppercase tracking-widest text-crema-deep">Recently added</p>
@@ -65,7 +65,7 @@
   <ct-coffee-shelf-states
     [loading]="store.loading()"
     [error]="store.error()"
-    [empty]="coffees().length === 0"
+    [empty]="store.coffees().length === 0"
     [skeletonCount]="4"
     (retry)="store.reload()"
   >
