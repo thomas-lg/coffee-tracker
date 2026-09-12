@@ -24,7 +24,7 @@ describe('PhotoCleanupStore', () => {
     http = TestBed.inject(HttpTestingController);
     appRef = TestBed.inject(ApplicationRef);
 
-    // httpResource issues its GET from a reactive effect — tick() runs it, then we
+    // The resource issues its GET from a reactive effect — tick() runs it, then we
     // flush the seed and tick() again so the value lands in the resource signal.
     appRef.tick();
     http.expectOne('/api/admin/photos').flush(SEED);
@@ -126,7 +126,7 @@ describe('PhotoCleanupStore (error path)', () => {
   it('surfaces a friendly error, stops loading, and exposes an empty list without throwing', () => {
     expect(store.error()).toBe('Could not load stored photos.');
     expect(store.loading()).toBe(false);
-    // The raw httpResource value rethrows in the error state; the store guards it.
+    // A resource value() rethrows in the error state; withValueOnError answers [].
     expect(store.photos()).toEqual([]);
     expect(store.visible()).toEqual([]);
     expect(store.storedCount()).toBe(0);

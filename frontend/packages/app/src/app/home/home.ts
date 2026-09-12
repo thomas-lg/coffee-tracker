@@ -14,7 +14,7 @@ export class Home {
 
   /**
    * The catalog list. `CoffeesStore.coffees` already returns [] while the resource is
-   * in its error state (the store guards the throwing httpResource value), so reads
+   * in its error state (withValueOnError answers [] instead of rethrowing), so reads
    * here are safe; the template shows a retry block when `store.error()` is set.
    */
   protected readonly coffees = this.store.coffees;

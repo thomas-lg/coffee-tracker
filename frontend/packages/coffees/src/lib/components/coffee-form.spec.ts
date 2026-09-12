@@ -39,7 +39,7 @@ describe('CoffeeForm', () => {
   });
 
   function create() {
-    // Seed the shared CoffeesStore first (httpResource GET → flush → tick), so the
+    // Seed the shared CoffeesStore first (resource GET → flush → tick), so the
     // shelf data is present before the form reads it.
     TestBed.inject(CoffeesStore);
     appRef.tick();

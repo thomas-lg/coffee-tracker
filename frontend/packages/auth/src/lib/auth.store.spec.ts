@@ -277,4 +277,38 @@ describe('AuthStore', () => {
     expect(store.session()).toBeNull();
     expect(localStorage.getItem(STORAGE_KEY)).toBeNull();
   });
+
+  // The message now belongs to the store: the screen fires the command and never sees
+  // the error. These two pin the wording, which nothing else covers.
+  it('reports a rejected login without starting a session', () => {
+    const store = TestBed.inject(AuthStore);
+    api.login.mockReturnValue(throwError(() => ({ status: 401 })));
+
+    store.login({ email: 'a@b.c', password: 'wrong' });
+
+    expect(store.requestError()).toBe('Invalid email or password.');
+    expect(store.pending()).toBe(false);
+    expect(store.session()).toBeNull();
+  });
+
+  it('tells a user refused by policy to use the provider instead of retrying a password', () => {
+    const store = TestBed.inject(AuthStore);
+    // 403 = this instance no longer accepts app accounts at all. Reporting bad
+    // credentials would send the user round in circles.
+    api.login.mockReturnValue(throwError(() => ({ status: 403 })));
+
+    store.login({ email: 'a@b.c', password: 'secret-123' });
+
+    expect(store.requestError()).toContain('identity provider');
+  });
+
+  it('clears a previous error so the sibling screen does not inherit it', () => {
+    const store = TestBed.inject(AuthStore);
+    api.login.mockReturnValue(throwError(() => ({ status: 401 })));
+    store.login({ email: 'a@b.c', password: 'wrong' });
+
+    store.resetRequestStatus();
+
+    expect(store.requestError()).toBeNull();
+  });
 });

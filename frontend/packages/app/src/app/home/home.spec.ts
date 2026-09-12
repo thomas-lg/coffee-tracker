@@ -28,14 +28,14 @@ describe('Home', () => {
 
   it('shows a retry block instead of crashing when the catalog fails to load', async () => {
     const fixture = TestBed.createComponent(Home);
-    fixture.detectChanges(); // initial render + run the httpResource effect (issues the GET)
+    fixture.detectChanges(); // initial render + run the resource effect (issues the GET)
     http.expectOne('/api/coffees').flush('boom', { status: 500, statusText: 'Server Error' });
 
     // The resource settles into its error state on a microtask/macrotask after flush.
     await new Promise((resolve) => setTimeout(resolve, 0));
 
     // Re-rendering with the resource in its error state must not throw — the guarded
-    // coffees() accessor returns [] rather than letting httpResource.value rethrow.
+    // coffees() returns [] rather than letting the resource value rethrow.
     expect(() => fixture.detectChanges()).not.toThrow();
 
     const text = fixture.nativeElement.textContent as string;

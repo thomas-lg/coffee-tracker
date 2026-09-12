@@ -9,7 +9,15 @@ import {
   withProps,
   withState,
 } from '@ngrx/signals';
-import { firstValueFrom, fromEvent } from 'rxjs';
+import { rxMethod } from '@ngrx/signals/rxjs-interop';
+import { tapResponse } from '@ngrx/operators';
+import { firstValueFrom, fromEvent, pipe, switchMap, tap } from 'rxjs';
+import {
+  setFulfilled,
+  setPending,
+  setRequestError,
+  withRequestStatus,
+} from '@coffee-tracker/util';
 import { AuthApi, type AuthResponse, type Login, type Register } from '@coffee-tracker/data';
 
 /**
@@ -49,6 +57,7 @@ const REFRESH_LOCK = 'ct.auth.refresh';
 export const AuthStore = signalStore(
   { providedIn: 'root' },
   withState(() => ({ session: restoreSession() })),
+  withRequestStatus(),
   withProps(() => ({
     _api: inject(AuthApi),
     /**
@@ -140,13 +149,46 @@ export const AuthStore = signalStore(
         return hasValidAccessToken() || canRefresh();
       },
 
-      async login(dto: Login): Promise<void> {
-        persist(await firstValueFrom(store._api.login(dto)));
-      },
+      login: rxMethod<Login>(
+        pipe(
+          tap(() => patchState(store, setPending())),
+          switchMap((dto) =>
+            store._api.login(dto).pipe(
+              tapResponse({
+                next: (res) => {
+                  persist(res);
+                  patchState(store, setFulfilled());
+                },
+                error: (err: unknown) =>
+                  patchState(store, setRequestError(loginMessage(err))),
+              }),
+            ),
+          ),
+        ),
+      ),
 
-      async register(dto: Register): Promise<void> {
-        persist(await firstValueFrom(store._api.register(dto)));
-      },
+      register: rxMethod<Register>(
+        pipe(
+          tap(() => patchState(store, setPending())),
+          switchMap((dto) =>
+            store._api.register(dto).pipe(
+              tapResponse({
+                next: (res) => {
+                  persist(res);
+                  patchState(store, setFulfilled());
+                },
+                error: () =>
+                  patchState(
+                    store,
+                    setRequestError(
+                      'Could not create the account — the email may already be in use.',
+                    ),
+                  ),
+              }),
+            ),
+          ),
+        ),
+      ),
 
       /**
        * Exchanges a provider ID token for an app session. From here on the session is
@@ -194,6 +236,17 @@ export const AuthStore = signalStore(
 );
 
 export type AuthStore = InstanceType<typeof AuthStore>;
+
+/**
+ * 403 means the instance no longer accepts app accounts at all — telling the user their
+ * password is wrong would send them round in circles. Lives here rather than in the
+ * screen because the screen no longer sees the error.
+ */
+function loginMessage(err: unknown): string {
+  return (err as { status?: number })?.status === 403
+    ? 'This instance no longer accepts sign-in with an app account. Use the identity provider.'
+    : 'Invalid email or password.';
+}
 
 /** Parse the stored session as-is (no usability filter); null if absent/corrupt. */
 function readStoredSession(): Session | null {

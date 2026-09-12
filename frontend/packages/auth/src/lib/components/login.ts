@@ -1,4 +1,11 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  effect,
+  inject,
+  signal,
+} from '@angular/core';
 import { rxResource } from '@angular/core/rxjs-interop';
 import { Router, RouterLink } from '@angular/router';
 import { FormField, FormRoot, email, form, required } from '@angular/forms/signals';
@@ -78,7 +85,26 @@ export class Login {
     email(p.email);
     required(p.password);
   });
-  protected readonly submitting = signal(false);
+  /** In-flight state belongs to the command, which the store owns. */
+  protected readonly submitting = this.auth.pending;
+
+  constructor() {
+    // Root-provided store shared with the sibling screen: clear anything it left behind.
+    this.auth.resetRequestStatus();
+
+    effect(() => {
+      if (this.auth.fulfilled()) void this.router.navigateByUrl('/');
+    });
+
+    // The store owns the message now — it is the only side that still sees the error.
+    effect(() => {
+      const message = this.auth.requestError();
+      if (message) {
+        this.toast.show(message, 'error');
+        this.auth.resetRequestStatus();
+      }
+    });
+  }
 
   /** Set on click and never cleared: the page is on its way out to the provider. */
   protected readonly redirecting = signal(false);
@@ -88,28 +114,13 @@ export class Login {
     this.provider.start();
   }
 
-  protected async onSubmit(): Promise<void> {
+  protected onSubmit(): void {
     if (this.submitting()) return;
     if (this.f().invalid()) {
       // Surface why nothing happened: reveal every field's validation message.
       this.f().markAsTouched();
       return;
     }
-    this.submitting.set(true);
-    try {
-      await this.auth.login(this.model());
-      await this.router.navigateByUrl('/');
-    } catch (err: unknown) {
-      // 403 means the instance no longer accepts app accounts at all — telling the user
-      // their password is wrong would send them round in circles.
-      this.toast.show(
-        (err as { status?: number })?.status === 403
-          ? 'This instance no longer accepts sign-in with an app account. Use the identity provider.'
-          : 'Invalid email or password.',
-        'error',
-      );
-    } finally {
-      this.submitting.set(false);
-    }
+    this.auth.login(this.model());
   }
 }

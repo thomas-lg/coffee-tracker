@@ -1,4 +1,11 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  effect,
+  inject,
+  signal,
+} from '@angular/core';
 import { rxResource } from '@angular/core/rxjs-interop';
 import { Router, RouterLink } from '@angular/router';
 import { FormField, FormRoot, email, form, minLength, required } from '@angular/forms/signals';
@@ -25,7 +32,26 @@ export class Register {
     if (this.configRes.error()) return false;
     return this.configRes.value()?.registrationEnabled ?? null;
   });
-  protected readonly submitting = signal(false);
+  /** In-flight state belongs to the command, which the store owns. */
+  protected readonly submitting = this.auth.pending;
+
+  constructor() {
+    // Root-provided store shared with the sibling screen: clear anything it left behind.
+    this.auth.resetRequestStatus();
+
+    effect(() => {
+      if (this.auth.fulfilled()) void this.router.navigateByUrl('/');
+    });
+
+    // The store owns the message now — it is the only side that still sees the error.
+    effect(() => {
+      const message = this.auth.requestError();
+      if (message) {
+        this.toast.show(message, 'error');
+        this.auth.resetRequestStatus();
+      }
+    });
+  }
   protected readonly model = signal({ email: '', password: '', displayName: '' });
   protected readonly f = form(this.model, (p) => {
     required(p.email);
@@ -35,21 +61,13 @@ export class Register {
     minLength(p.password, 8);
   });
 
-  protected async onSubmit(): Promise<void> {
+  protected onSubmit(): void {
     if (this.submitting()) return;
     if (this.f().invalid()) {
       // Surface why nothing happened: reveal every field's validation message.
       this.f().markAsTouched();
       return;
     }
-    this.submitting.set(true);
-    try {
-      await this.auth.register(this.model());
-      await this.router.navigateByUrl('/');
-    } catch {
-      this.toast.show('Could not create the account — the email may already be in use.', 'error');
-    } finally {
-      this.submitting.set(false);
-    }
+    this.auth.register(this.model());
   }
 }
