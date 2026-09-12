@@ -66,22 +66,22 @@ describe('CoffeesStore', () => {
   });
 
   it('filters by free-text search across name/roaster/origin', () => {
-    store.search.set('yirga');
+    store.setSearch('yirga');
     expect(store.filtered().map((c) => c.name)).toEqual(['Yirgacheffe']);
-    store.search.set('onyx');
+    store.setSearch('onyx');
     expect(store.filtered().map((c) => c.name).sort()).toEqual(['Cerrado', 'Geisha']);
   });
 
   it('filters by roast bucket', () => {
-    store.roast.set('Light');
+    store.setRoast('Light');
     expect(store.filtered().map((c) => c.name)).toEqual(['Yirgacheffe']);
   });
 
   it('filters by origin and by flavour', () => {
-    store.origin.set('Brazil');
+    store.setOrigin('Brazil');
     expect(store.filtered().map((c) => c.name)).toEqual(['Cerrado']);
-    store.origin.set('all');
-    store.flavor.set('Floral');
+    store.setOrigin('all');
+    store.setFlavor('Floral');
     expect(store.filtered().map((c) => c.name)).toEqual(['Yirgacheffe']);
   });
 

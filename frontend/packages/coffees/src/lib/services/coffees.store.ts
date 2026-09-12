@@ -1,77 +1,115 @@
-import { Injectable, computed, signal } from '@angular/core';
-import { httpResource } from '@angular/common/http';
-import type { Coffee } from '@coffee-tracker/data';
+import { computed, inject } from '@angular/core';
+import { rxResource } from '@angular/core/rxjs-interop';
+import { patchState, signalStore, withComputed, withMethods, withProps, withState } from '@ngrx/signals';
+import { extendResource, withValueOnError } from '@ngrx/signals/resource';
+import { CoffeesApi, type Coffee } from '@coffee-tracker/data';
 import { roastBucket } from '../utils/coffee-visual';
 
 export type RoastFilter = 'all' | 'Light' | 'Medium' | 'Dark';
 export type CoffeeSort = 'new' | 'rating' | 'name';
 
+type CoffeesFilters = {
+  search: string;
+  roast: RoastFilter;
+  origin: string;
+  flavor: string;
+  sort: CoffeeSort;
+};
+
+const initialFilters: CoffeesFilters = {
+  search: '',
+  roast: 'all',
+  origin: 'all',
+  flavor: 'all',
+  sort: 'new',
+};
+
 /**
- * Catalog store. The list is an `httpResource` (auto-fetches, reactive, refetchable);
- * search/roast/sort are plain signals composed into `filtered`.
+ * Catalog store. The list is a resource (auto-fetches, reactive, refetchable); the
+ * filters are state composed into `filtered`.
  */
-@Injectable({ providedIn: 'root' })
-export class CoffeesStore {
-  private readonly resource = httpResource<Coffee[]>(() => '/api/coffees', { defaultValue: [] });
+export const CoffeesStore = signalStore(
+  { providedIn: 'root' },
+  withState(initialFilters),
+  withProps(() => {
+    const api = inject(CoffeesApi);
+    return {
+      // A resource's value() THROWS while it is in an error state, even with a default.
+      // withValueOnError makes it answer [] instead, so every derived signal and every
+      // template consumer below is safe without re-implementing the guard.
+      _list: extendResource(
+        rxResource({ stream: () => api.list(), defaultValue: [] as Coffee[] }),
+        withValueOnError([]),
+      ),
+    };
+  }),
+  withComputed(({ _list, search, roast, origin, flavor, sort }) => {
+    const coffees = computed(() => _list.value());
+    return {
+      coffees,
+      loading: _list.isLoading,
+      error: computed(() => (_list.error() ? 'Could not load your coffees.' : null)),
 
-  // httpResource.value THROWS while the resource is in an error state (even with a
-  // defaultValue), so guard every read here — it returns the empty default on error.
-  // This keeps the derived signals below (filtered/origins/…) and every template
-  // consumer (grid, home) safe without each one re-implementing the guard.
-  readonly coffees = computed(() => (this.resource.error() ? [] : this.resource.value()));
-  readonly loading = this.resource.isLoading;
-  readonly error = computed(() => (this.resource.error() ? 'Could not load your coffees.' : null));
+      /** Distinct filter/autocomplete options derived from the loaded shelf. */
+      origins: computed(() => [...new Set(coffees().map((c) => c.origin))].sort()),
+      flavors: computed(() => [...new Set(coffees().flatMap((c) => c.flavorTags))].sort()),
+      roasters: computed(() => [...new Set(coffees().map((c) => c.roaster).filter(Boolean))].sort()),
+      shops: computed(() =>
+        [...new Set(coffees().map((c) => c.shopName).filter((s): s is string => !!s))].sort(),
+      ),
 
-  readonly search = signal('');
-  readonly roast = signal<RoastFilter>('all');
-  readonly origin = signal('all');
-  readonly flavor = signal('all');
-  readonly sort = signal<CoffeeSort>('new');
+      filtered: computed(() => {
+        const q = search().toLowerCase().trim();
+        const byRoast = roast();
+        const byOrigin = origin();
+        const byFlavor = flavor();
+        let list = coffees().filter(
+          (c) =>
+            (byRoast === 'all' || roastBucket(c.roastLevel) === byRoast) &&
+            (byOrigin === 'all' || c.origin === byOrigin) &&
+            (byFlavor === 'all' || c.flavorTags.includes(byFlavor)) &&
+            `${c.name} ${c.roaster} ${c.origin}`.toLowerCase().includes(q),
+        );
+        switch (sort()) {
+          case 'rating':
+            list = [...list].sort((a, b) => (b.averageRating ?? 0) - (a.averageRating ?? 0));
+            break;
+          case 'name':
+            list = [...list].sort((a, b) => a.name.localeCompare(b.name));
+            break;
+          // 'new' keeps the API order (newest first).
+        }
+        return list;
+      }),
+    };
+  }),
+  withMethods((store) => ({
+    /** Refetch the list (e.g. after add/delete elsewhere). */
+    reload(): void {
+      store._list.reload();
+    },
+    setSearch(value: string): void {
+      patchState(store, { search: value });
+    },
+    setRoast(value: RoastFilter): void {
+      patchState(store, { roast: value });
+    },
+    setOrigin(value: string): void {
+      patchState(store, { origin: value });
+    },
+    setFlavor(value: string): void {
+      patchState(store, { flavor: value });
+    },
+    /** Narrows a raw <select> value to the sort union (type-safe, no `$any`). */
+    setSort(value: string): void {
+      const allowed: readonly CoffeeSort[] = ['new', 'rating', 'name'];
+      patchState(store, {
+        sort: (allowed as readonly string[]).includes(value) ? (value as CoffeeSort) : 'new',
+      });
+    },
+  })),
+);
 
-  /** Distinct filter/autocomplete options derived from the loaded shelf. */
-  readonly origins = computed(() => [...new Set(this.coffees().map((c) => c.origin))].sort());
-  readonly flavors = computed(() =>
-    [...new Set(this.coffees().flatMap((c) => c.flavorTags))].sort(),
-  );
-  readonly roasters = computed(() =>
-    [...new Set(this.coffees().map((c) => c.roaster).filter(Boolean))].sort(),
-  );
-  readonly shops = computed(() =>
-    [...new Set(this.coffees().map((c) => c.shopName).filter((s): s is string => !!s))].sort(),
-  );
-
-  readonly filtered = computed(() => {
-    const q = this.search().toLowerCase().trim();
-    const roast = this.roast();
-    const origin = this.origin();
-    const flavor = this.flavor();
-    let list = this.coffees().filter(
-      (c) =>
-        (roast === 'all' || roastBucket(c.roastLevel) === roast) &&
-        (origin === 'all' || c.origin === origin) &&
-        (flavor === 'all' || c.flavorTags.includes(flavor)) &&
-        `${c.name} ${c.roaster} ${c.origin}`.toLowerCase().includes(q),
-    );
-    switch (this.sort()) {
-      case 'rating':
-        list = [...list].sort((a, b) => (b.averageRating ?? 0) - (a.averageRating ?? 0));
-        break;
-      case 'name':
-        list = [...list].sort((a, b) => a.name.localeCompare(b.name));
-        break;
-      // 'new' keeps the API order (newest first).
-    }
-    return list;
-  });
-
-  /** Refetch the list (e.g. after add/delete elsewhere). */
-  reload(): void {
-    this.resource.reload();
-  }
-
-  /** Narrows a raw <select> value to the sort union (type-safe, no `$any`). */
-  setSort(value: string): void {
-    const allowed: readonly CoffeeSort[] = ['new', 'rating', 'name'];
-    this.sort.set((allowed as readonly string[]).includes(value) ? (value as CoffeeSort) : 'new');
-  }
-}
+// `signalStore()` returns a value, so the name alone cannot annotate a variable. This
+// companion type lets consumers and specs write `store: CoffeesStore` as before.
+export type CoffeesStore = InstanceType<typeof CoffeesStore>;
