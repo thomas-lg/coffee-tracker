@@ -139,8 +139,14 @@ then drops privileges via `gosu`.
   project runs 22.1.5. The three stores (`AuthStore`, `CoffeesStore`,
   `PhotoCleanupStore`) ship as native-signals stores with the same surface, so the swap
   is a deliberate refactor, not a required update.
-- **`lucide-angular`** — *still blocked*. 1.0.0 peers on `13.x - 21.x`. The custom
-  `ct-icon` lucide-core wrapper stays until that moves.
+- **`@lucide/angular`** — *available, not blocked*. An earlier note here said
+  `lucide-angular` was stuck on `13.x - 21.x`; that package is **deprecated** in favour
+  of the scoped `@lucide/angular`, which peers on `@angular/core: >=17.0.0` and has
+  supported Angular 22 since 1.18.0. Check the scoped name before repeating the claim.
+  The custom `ct-icon` wrapper over the framework-agnostic `lucide` core therefore stays
+  by choice, not for want of an alternative: it keeps `IconName` a closed union built
+  with `satisfies`, so a typo'd icon name is a compile error rather than a blank space.
+  Weigh that against a maintained component before switching.
 - **`openapi-typescript`** runs via `npx` (it peers on TS 5, the project is on TS 6).
   Fine as-is. The e2e CI job regenerates the client from the running backend and fails
   on drift, so a backend contract change cannot ship a stale typed client.
