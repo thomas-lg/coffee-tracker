@@ -158,12 +158,7 @@ public static class DependencyInjection
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         await db.Database.MigrateAsync(ct);
 
-        // REGISTRATION_ENABLED is legacy: read once, only to preserve the posture of a
-        // deployment that predates the persisted policy. See AccountPolicySeeder.
-        await AccountPolicySeeder.SeedAsync(
-            db,
-            scope.ServiceProvider.GetRequiredService<IConfiguration>().GetValue<bool>("REGISTRATION_ENABLED"),
-            ct);
+        await AccountPolicySeeder.SeedAsync(db, ct);
 
         // Switch SQLite to Write-Ahead Logging. Unlike the default rollback journal,
         // WAL lets readers proceed concurrently with a writer, which cuts down on

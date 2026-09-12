@@ -152,7 +152,9 @@ by hand — so a layout change is a re-run, not a reason to leave them stale. Th
 running, seeded instance. Nothing on the host but Docker:
 
 ```bash
-JWT_KEY=$(openssl rand -base64 48) REGISTRATION_ENABLED=true docker compose up -d --build
+# A fresh `config` volume opens registration for the first account. If you have run this
+# before, `docker compose down -v` first or the register form will already be closed.
+JWT_KEY=$(openssl rand -base64 48) docker compose up -d --build
 # register an account, add a few coffees and some dated reviews, then:
 docker run --rm -v "$PWD:/work" -w /work \
   -e BASE_URL=http://host.docker.internal:8080 \
