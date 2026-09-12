@@ -10,6 +10,38 @@ This is a **personal, for-fun project** — a deliberately chill, no-pressure sp
 to learn modern C#/.NET (and enjoy good coffee) on my own schedule. No roadmap
 commitments, no SLAs, no deadlines.
 
+![The shelf: search, filter by origin, roast or flavour, and sort by rating](docs/screenshots/shelf.png)
+
+<table>
+<tr>
+<td width="50%"><img src="docs/screenshots/coffee-detail.png" alt="A coffee's page, listing every dated rating with its own tasting notes and flavour tags"></td>
+<td width="50%"><img src="docs/screenshots/shelf-dark.png" alt="The same shelf in dark mode"></td>
+</tr>
+<tr>
+<td><em>Every rating is kept and dated — a bag can be re-rated as it opens up.</em></td>
+<td><em>Light and dark, following the system theme.</em></td>
+</tr>
+</table>
+
+> Coffees with no photo get a gradient keyed to their roast level, which is what these
+> screenshots show. Upload one and it takes the card.
+
+## What it does
+
+- **A shared shelf.** Name, roaster, origin, roast level, price, where you bought it
+  and a photo. Search it, filter by origin or flavour, sort by newest, name or rating.
+- **Ratings over time**, not one score per person: every review is dated and carries
+  its own tasting notes, brew method, grind, ratio and flavour tags — so a bag can be
+  re-rated as it opens up. Each coffee shows its running average and review count.
+- **Snap-to-fill.** Photograph the bag; OCR reads the label and pre-fills the form.
+- **Multi-user.** Everyone rates the same catalog independently. A coffee can only be
+  edited by whoever added it, or an administrator.
+- **Installable PWA** with light and dark theming — it works from a phone home screen.
+- **Two ways to sign in:** app accounts, or your own OpenID Connect provider with
+  admin rights mapped from a group claim. See [Signing in](#signing-in).
+- **Admin screens** for account policy (who may register, whether app accounts can
+  sign in at all) and for reaping photos left behind by abandoned scans.
+
 ## Stack
 - **Backend:** ASP.NET Core Web API (.NET 10), EF Core + SQLite (WAL mode),
   ASP.NET Core Identity + JWT.
@@ -35,31 +67,37 @@ Development happens inside a dev container, so the only host prerequisites are
    `http://localhost:4200` (both forwarded automatically). `http://localhost` is a
    secure context, so the PWA service worker and camera work without HTTPS in dev.
 
-### Backend dependency bumps
+Conventions, architecture rules and maintainer notes — including the NuGet lock-file
+trap that bites every backend dependency bump — live in [CLAUDE.md](./CLAUDE.md).
 
-`backend/Directory.Build.props` enables NuGet lock files and CI restores with
-`--locked-mode`, so a bump can't land without a reviewed `packages.lock.json`. NuGet keeps
-one lock file per project, so changing a package in `Application` or `Infrastructure` also
-invalidates the ones in `Api` and `Tests` and the restore fails with **NU1004**. Refresh
-them all with:
+## Running the tests
 
-```powershell
-./scripts/refresh-lockfiles.ps1          # rewrites the lock files (--force-evaluate)
-./scripts/refresh-lockfiles.ps1 -Check   # just reproduce the CI restore (--locked-mode)
-```
-
-It uses a local .NET SDK if you have one and the pinned SDK container otherwise, so it
-works on a bare host too.
-
-Dependabot hits this on every backend PR. To refresh one without a local toolchain,
-`gh workflow run refresh-lockfiles.yml -f pr=<number>` does the restore and pushes the
-lock files — but it cannot make the checks pass on its own: GitHub parks any run triggered
-by `github-actions[bot]` as `action_required`, and `GITHUB_TOKEN` can neither start nor
-approve its own runs. The job summary says so and prints the one command that finishes it:
+Three suites, all run in CI on every pull request.
 
 ```bash
-gh pr close <number> && gh pr reopen <number>
+dotnet test CoffeeTracker.sln     # backend: unit + HTTP integration
+cd frontend && npm test           # frontend: unit (Vitest)
+cd frontend && npm run e2e        # frontend: end-to-end (Playwright, Chromium)
 ```
+
+The backend integration tests boot the real API through `WebApplicationFactory<Program>`
+against a throwaway SQLite database — each test gets its own, so they need nothing
+running.
+
+**The e2e suite does.** Playwright starts only the Angular dev server on `:4200`
+(`proxy.conf.json` forwards `/api` and `/photos`), so the API must already be up on
+`:5000`, against an **empty** database: the suite's global setup claims the instance's
+first account — which makes it the administrator — and reopens registration, so that
+parallel tests aren't racing for the one registration a fresh instance allows.
+
+```bash
+rm -f backend/CoffeeTracker.Api/coffee.db
+ASPNETCORE_ENVIRONMENT=Development dotnet run --project backend/CoffeeTracker.Api --urls http://localhost:5000
+```
+
+`Development` opens registration and sets `Ocr__Engine=none`, so no Tesseract is needed.
+Provider sign-in is exercised against a minimal OpenID Connect provider the suite starts
+in-process — real discovery, JWKS, PKCE and nonce — so no external provider is involved.
 
 ## Install on Unraid (or any Docker host)
 
@@ -203,31 +241,6 @@ carries a **content security policy** (no inline script), `X-Frame-Options: DENY
 path to the session, which lives in `localStorage` — has no way to run. See the
 Security section in
 [PLAN.md](./PLAN.md).
-
-## Status
-
-All planned milestones (**M0–M8**) are shipped and merged:
-
-- ✅ **M0** — dev container (reproducible .NET 10 + Node 24 + Tesseract toolchain)
-- ✅ **M1** — backend skeleton over EF Core + SQLite (WAL, auto-migrate),
-  **hexagonal architecture** (Domain ← Application ← {Infrastructure, Api})
-- ✅ **M2** — coffee CRUD + photo upload behind an `IPhotoStorage` port
-  (content-type allowlist, 5 MB cap, server-generated names), served at `/photos`
-- ✅ **M3** — auth: ASP.NET Identity + JWT, first user is admin, password policy +
-  lockout, rate-limited endpoints, `Jwt__Key` required
-- ✅ **M4** — reviews, ratings & flavor tags, with `averageRating`/`reviewCount`
-- ✅ **M5** — snap-to-fill OCR (backend): `POST /api/coffees/scan` over a swappable
-  `IOcrService` + a pure `CoffeeLabelParser`
-- ✅ **M6** — Angular 22 PWA: auth, catalog (search + ratings-over-time), add/edit,
-  snap-to-fill UX, installable + light/dark theming
-- ✅ **M7** — production multi-stage Docker image + local `docker-compose.yml`
-- ✅ **M8** — CI/CD → GHCR (`latest`/`sha`/semver) + the Unraid template
-
-**Beyond the plan:** ratings **over time** (multiple dated reviews per coffee, not
-one-per-user), **admin photo-cleanup** (reap scan-orphaned photos — backend + UI),
-a **non-root PUID/PGID** container for Unraid bind mounts, **CodeQL + Trivy** image
-scanning, **Dependabot**, build-provenance attestations, and an HTTP **integration
-test** for the admin authorization policy.
 
 ## Ideas for later
 
