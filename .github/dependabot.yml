@@ -57,6 +57,15 @@ updates:
         update-types:
           - version-update:semver-major
           - version-update:semver-minor
+      # Same shape: @angular/build's unit-test builder drives vitest and declares
+      # `peerOptional vitest@^4.0.8` through 22.1.x, so taking vitest 5 alone breaks
+      # `npm install` with ERESOLVE (#122 did, and only `npm ci` hid it because it
+      # replays the lock instead of resolving). The range widens to "^4.0.8 || ^5.0.0"
+      # in @angular/build 22.2 -- drop this ignore when that ships stable and move both
+      # together. Minors and patches still flow.
+      - dependency-name: vitest
+        update-types:
+          - version-update:semver-major
     labels: [dependencies, frontend]
     commit-message:
       prefix: deps
