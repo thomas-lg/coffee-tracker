@@ -61,6 +61,35 @@ approve its own runs. The job summary says so and prints the one command that fi
 gh pr close <number> && gh pr reopen <number>
 ```
 
+## Running the tests
+
+Three suites, all run in CI on every pull request.
+
+```bash
+dotnet test CoffeeTracker.sln     # backend: unit + HTTP integration
+cd frontend && npm test           # frontend: unit (Vitest)
+cd frontend && npm run e2e        # frontend: end-to-end (Playwright, Chromium)
+```
+
+The backend integration tests boot the real API through `WebApplicationFactory<Program>`
+against a throwaway SQLite database — each test gets its own, so they need nothing
+running.
+
+**The e2e suite does.** Playwright starts only the Angular dev server on `:4200`
+(`proxy.conf.json` forwards `/api` and `/photos`), so the API must already be up on
+`:5000`, against an **empty** database: the suite's global setup claims the instance's
+first account — which makes it the administrator — and reopens registration, so that
+parallel tests aren't racing for the one registration a fresh instance allows.
+
+```bash
+rm -f backend/CoffeeTracker.Api/coffee.db
+ASPNETCORE_ENVIRONMENT=Development dotnet run --project backend/CoffeeTracker.Api --urls http://localhost:5000
+```
+
+`Development` opens registration and sets `Ocr__Engine=none`, so no Tesseract is needed.
+Provider sign-in is exercised against a minimal OpenID Connect provider the suite starts
+in-process — real discovery, JWKS, PKCE and nonce — so no external provider is involved.
+
 ## Install on Unraid (or any Docker host)
 
 The published image is **public** at `ghcr.io/thomas-lg/coffee-tracker`. On Unraid,
@@ -224,10 +253,15 @@ All planned milestones (**M0–M8**) are shipped and merged:
 - ✅ **M8** — CI/CD → GHCR (`latest`/`sha`/semver) + the Unraid template
 
 **Beyond the plan:** ratings **over time** (multiple dated reviews per coffee, not
-one-per-user), **admin photo-cleanup** (reap scan-orphaned photos — backend + UI),
-a **non-root PUID/PGID** container for Unraid bind mounts, **CodeQL + Trivy** image
-scanning, **Dependabot**, build-provenance attestations, and an HTTP **integration
-test** for the admin authorization policy.
+one-per-user), **provider sign-in** (OpenID Connect, with admin claim mapping),
+**admin photo-cleanup** (reap scan-orphaned photos — backend + UI), a **non-root
+PUID/PGID** container for Unraid bind mounts, **CodeQL + Trivy** image scanning,
+**Dependabot**, build-provenance attestations, a **`:beta` release channel**, and a
+**three-layer test suite** — backend unit + HTTP integration over a throwaway
+database, Vitest unit tests for the Angular packages, and Playwright end-to-end tests
+driving the real PWA, including the provider sign-in round trip against an in-process
+OpenID Connect provider. All three run in CI on every pull request; see
+[Running the tests](#running-the-tests).
 
 ## Ideas for later
 
