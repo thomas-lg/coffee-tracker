@@ -30,7 +30,6 @@ public class AuthController(IAuthService auth, IExternalSignInService externalSi
         };
     }
 
-    /// <summary>Authenticates a user and returns a bearer token.</summary>
     [HttpPost("login")]
     public async Task<ActionResult<AuthResponseDto>> Login(LoginDto dto, CancellationToken ct)
     {

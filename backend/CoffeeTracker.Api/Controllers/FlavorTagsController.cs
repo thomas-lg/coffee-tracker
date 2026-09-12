@@ -10,7 +10,6 @@ namespace CoffeeTracker.Api.Controllers;
 [Authorize]
 public class FlavorTagsController(IReviewService reviews) : ControllerBase
 {
-    /// <summary>Lists the available flavor tags.</summary>
     [HttpGet]
     public async Task<ActionResult<IReadOnlyList<FlavorTagDto>>> GetFlavorTags(CancellationToken ct) =>
         Ok(await reviews.GetFlavorTagsAsync(ct));
