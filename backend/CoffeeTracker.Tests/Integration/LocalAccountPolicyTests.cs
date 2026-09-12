@@ -68,7 +68,7 @@ public sealed class LocalAccountPolicyTests
     [Fact]
     public async Task A_fresh_instance_registers_its_first_account_then_closes_registration()
     {
-        // No policy stamped and no REGISTRATION_ENABLED: exactly a fresh self-hosted
+        // No policy stamped and nothing configured: exactly a fresh self-hosted
         // install. The operator must be able to create the first account with nothing
         // configured, and the door must shut behind them.
         using var factory = new ApiFactory(stampPolicy: false);

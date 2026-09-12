@@ -70,8 +70,8 @@ public sealed class ApiFactory(
 
     /// <summary>
     /// Stamps the account policy once the host is up, standing in for an administrator
-    /// who set it from the admin view. Going through the policy (rather than the legacy
-    /// REGISTRATION_ENABLED seed) matters: registration opened deliberately stays open,
+    /// who set it from the admin view. Going through the policy (rather than the app's
+    /// own seeding) matters: registration opened deliberately stays open,
     /// whereas the empty-instance bootstrap closes itself after the first account — so a
     /// suite that registers several users would otherwise be gated after the first.
     ///

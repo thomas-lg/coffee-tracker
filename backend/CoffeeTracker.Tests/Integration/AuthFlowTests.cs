@@ -6,7 +6,7 @@ using Xunit;
 namespace CoffeeTracker.Tests.Integration;
 
 // End-to-end auth flow over real HTTP: the first-user-is-admin bootstrap, the
-// REGISTRATION_ENABLED gate, login success/failure, and the duplicate/weak-input
+// local-registration gate, login success/failure, and the duplicate/weak-input
 // rejections. Each test gets its own fresh DB (see IntegrationTest).
 public sealed class AuthFlowTests : IntegrationTest
 {
