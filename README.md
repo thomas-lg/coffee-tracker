@@ -180,22 +180,25 @@ pre-migration file is the only way to truly undo one.
 ## Security notes
 
 This app is designed to be internet-exposed and shared, so: no secrets are baked
-into the image (all injected at runtime), there is no default JWT key, registration
-is gated by a flag, login/register are rate-limited, and the container runs as a
-non-root user. Auth uses **short-lived access tokens plus rotating, revocable refresh
-tokens** (reuse of a rotated token revokes the whole session family). Uploaded photos
-are **re-encoded** on upload (stripping any embedded payload/metadata) and served only
-through **short-lived signed URLs** — never anonymously. Every response carries a
-**content security policy** (no inline script), `X-Frame-Options: DENY`,
-`Referrer-Policy: no-referrer` and `nosniff`, so an injected script — the shortest path
-to the session, which lives in `localStorage` — has no way to run. See the Security section in
+into the image (all injected at runtime), there is no default JWT key, a fresh
+instance closes registration behind its first account, login/register are
+rate-limited, and the container runs as a non-root user. Auth uses **short-lived
+access tokens plus rotating, revocable refresh tokens** (reuse of a rotated token
+revokes the whole session family). Signing out revokes the refresh token
+immediately; an access token already issued stays valid until it expires, which is
+why it is kept to 15 minutes. Uploaded photos are **re-encoded** on upload
+(stripping any embedded payload/metadata) and served only through **short-lived
+signed URLs** — never anonymously. Every response carries a **content security
+policy** (no inline script), `X-Frame-Options: DENY`, `Referrer-Policy: no-referrer`
+and `nosniff`, so an injected script — the shortest path to the session, which lives
+in `localStorage` — has no way to run. See the Security section in
 [PLAN.md](./PLAN.md).
 
 ## Status
 
 All planned milestones (**M0–M8**) are shipped and merged:
 
-- ✅ **M0** — dev container (reproducible .NET 10 + Node 22 + Tesseract toolchain)
+- ✅ **M0** — dev container (reproducible .NET 10 + Node 24 + Tesseract toolchain)
 - ✅ **M1** — backend skeleton over EF Core + SQLite (WAL, auto-migrate),
   **hexagonal architecture** (Domain ← Application ← {Infrastructure, Api})
 - ✅ **M2** — coffee CRUD + photo upload behind an `IPhotoStorage` port
