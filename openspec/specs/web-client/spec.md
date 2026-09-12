@@ -7,12 +7,17 @@ The Angular PWA front-end: authenticate (with registration when enabled), browse
 
 ### Requirement: A visitor can authenticate through the web client
 
-The web client SHALL let a visitor sign in, and register when registration is enabled, then keep them signed in across reloads. It SHALL read `GET /api/config` to decide whether to offer registration, persist the issued token, attach it to API requests, and return to the login screen when the API rejects the token.
+The web client SHALL let a visitor sign in, and register when local registration is open, then keep them signed in across reloads. It SHALL read `GET /api/config` to decide whether to offer local sign-in and registration, persist the issued token, attach it to API requests, and return to the login screen when the API rejects the token.
 
 #### Scenario: Register is hidden when disabled
 
-- **WHEN** the client loads and `GET /api/config` reports registration is not enabled
+- **WHEN** the client loads and `GET /api/config` reports local registration is not open
 - **THEN** the client SHALL NOT offer a registration option
+
+#### Scenario: Local sign-in is hidden when disabled
+
+- **WHEN** the client loads and `GET /api/config` reports local sign-in is not enabled
+- **THEN** the client SHALL NOT offer the email and password form
 
 #### Scenario: Signing in persists the session
 
@@ -24,7 +29,6 @@ The web client SHALL let a visitor sign in, and register when registration is en
 
 - **WHEN** an API call responds `401`
 - **THEN** the client SHALL clear the stored session and route to the login screen
-
 ### Requirement: A user can browse and search the coffee catalog
 
 The web client SHALL present coffees as a responsive card grid showing each coffee's photo, name, roaster, and average rating with review count, and SHALL let the user search and filter the list.
@@ -109,3 +113,45 @@ navigation entry SHALL NOT be reachable by non-administrators.
 - **WHEN** an administrator opens the photo-cleanup screen
 - **THEN** the client SHALL show each stored photo flagged used or unused
 - **AND** SHALL let the administrator select unused photos, delete them after a confirmation, report the deleted/skipped counts, and refresh the list
+### Requirement: The sign-in screen offers the configured provider
+
+The web client SHALL offer a provider sign-in action when `GET /api/config` reports a provider is available, and SHALL NOT render any provider affordance when none is. Choosing it SHALL run the Authorization Code flow with PKCE against the provider and exchange the result for an app session, after which the client SHALL behave exactly as it does after a local sign-in.
+
+#### Scenario: Provider action is hidden when unconfigured
+
+- **WHEN** the client loads and `GET /api/config` reports no provider available
+- **THEN** the client SHALL NOT offer a provider sign-in action
+
+#### Scenario: Signing in through the provider persists the session
+
+- **WHEN** a user completes provider sign-in
+- **THEN** the client SHALL store the returned token and attach it as a bearer token on subsequent API calls
+- **AND** the session SHALL survive a page reload until the token expires
+
+#### Scenario: A refused provider sign-in reports why
+
+- **WHEN** the API refuses a provider sign-in
+- **THEN** the client SHALL return to the sign-in screen with the reason shown
+- **AND** SHALL NOT store a session
+
+### Requirement: An administrator can control local sign-in and registration
+
+The web client SHALL provide administrator-only controls for whether app-created accounts may sign in and whether new ones may be registered, showing both together, reflecting the current settings and applying changes through the API. When the API refuses to disable local sign-in, the client SHALL show the refusal and leave that control in its current state. The controls SHALL NOT be reachable by non-administrators.
+
+#### Scenario: Only admins can reach the control
+
+- **WHEN** a non-administrator navigates to the admin settings route
+- **THEN** the client SHALL redirect them away from it
+- **AND** SHALL NOT show a navigation entry for it
+
+#### Scenario: Toggling either control
+
+- **WHEN** an administrator changes the local sign-in or the local registration control
+- **THEN** the client SHALL apply the change through the API
+- **AND** SHALL reflect the stored value after the change
+
+#### Scenario: A refused change is explained
+
+- **WHEN** an administrator tries to disable local sign-in and the API refuses because no administrator has signed in through the provider
+- **THEN** the client SHALL show that explanation
+- **AND** the sign-in control SHALL remain enabled

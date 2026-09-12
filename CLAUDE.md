@@ -21,12 +21,31 @@ NuGet lock files.
 
 ## Comment style
 
-This codebase comments the **why**, inline, at roughly 25-35% of lines — deliberately
-higher than typical. A comment here explains a decision that the code cannot: why a
-fallback is a fallback, why a check is ordered where it is, what breaks without it.
+**Comment what the code cannot say for itself.** If a reader can answer *"why is this
+here, and why this way?"* from the code alone, a comment adds nothing and starts
+rotting the moment the code moves. If they cannot, the comment is required — not a
+nicety.
 
-Match that density; don't exceed it. Restating what the next line does is noise, and
-so is justifying the comment itself.
+Belongs in a comment, because the code cannot express it:
+
+- why a step is ordered where it is (the fork check *before* the checkout, because the
+  restore that follows is what executes attacker code)
+- why the obvious approach was rejected (the CLI instead of the P/Invoke Tesseract
+  binding)
+- what breaks if the line is removed
+- a constraint that lives somewhere else entirely — a provider's behaviour, a GitHub
+  Actions rule, a library's quirk, a Tesseract 5 path convention
+
+Does not, because the code already says it:
+
+- what the next line does
+- a name, type or signature restated in prose
+- the comment justifying its own existence
+
+Density follows from the rule; it is not the rule. This codebase lands around 25-35%
+comment lines as a *result* — don't pad to reach it, and never delete a comment the
+code genuinely needs to stay under it. But a diff running far above it is usually
+restating rather than explaining, and worth a second look.
 
 ## Commits & PRs
 
