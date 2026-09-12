@@ -237,6 +237,21 @@
           }
         }
       }
+    },
+    "tests": {
+      "projectType": "application",
+      "root": "",
+      "sourceRoot": "packages",
+      "architect": {
+        "test": {
+          "builder": "@angular/build:unit-test",
+          "options": {
+            "buildTarget": "app:build",
+            "tsConfig": "tsconfig.spec.json",
+            "include": ["**/*.spec.ts"]
+          }
+        }
+      }
     }
   }
 }
