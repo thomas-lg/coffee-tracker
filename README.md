@@ -185,7 +185,10 @@ is gated by a flag, login/register are rate-limited, and the container runs as a
 non-root user. Auth uses **short-lived access tokens plus rotating, revocable refresh
 tokens** (reuse of a rotated token revokes the whole session family). Uploaded photos
 are **re-encoded** on upload (stripping any embedded payload/metadata) and served only
-through **short-lived signed URLs** — never anonymously. See the Security section in
+through **short-lived signed URLs** — never anonymously. Every response carries a
+**content security policy** (no inline script), `X-Frame-Options: DENY`,
+`Referrer-Policy: no-referrer` and `nosniff`, so an injected script — the shortest path
+to the session, which lives in `localStorage` — has no way to run. See the Security section in
 [PLAN.md](./PLAN.md).
 
 ## Status
