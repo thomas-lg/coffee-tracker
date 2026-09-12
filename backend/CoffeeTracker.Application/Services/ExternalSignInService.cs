@@ -101,16 +101,9 @@ public sealed class ExternalSignInService(
                 await users.LinkExternalLoginAsync(byEmail.Id, identity.Issuer, identity.Subject, ct);
 
                 // The provider vouches for its side of this address; nothing vouches for
-                // ours. Registration takes any email and there is no confirmation step, so
-                // an account bearing this address may have been created by someone who
-                // simply typed it — in advance, precisely to be linked to. Handing the
-                // account over is still right (the provider's user is who the address
-                // identifies, and the alternative strands their data), but it has to be a
-                // handover rather than a sharing: retiring the local password and the
-                // sessions it opened means whoever registered the account cannot follow it
-                // across, and cannot ride an administrator claim the provider is about to
-                // apply. Matches the credential shape of an account the provider created
-                // itself; from here the account signs in through the provider only.
+                // ours, since registration takes any email and confirms none. So this is a
+                // handover, not a sharing: whoever registered the account cannot follow it
+                // across, nor ride the administrator claim applied just below.
                 await users.RemoveLocalPasswordAsync(byEmail.Id, ct);
                 await refreshTokens.RevokeAllAsync(byEmail.Id, ct);
 

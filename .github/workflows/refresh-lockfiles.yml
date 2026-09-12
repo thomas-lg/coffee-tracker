@@ -44,16 +44,12 @@ jobs:
   refresh:
     runs-on: ubuntu-latest
     steps:
-      # Runs BEFORE the checkout, and that ordering is the point. The next step checks out
-      # a head this workflow was handed by number, and the step after it runs `dotnet
-      # restore`, which evaluates the whole MSBuild graph from that tree — a
-      # Directory.Build.targets with <Exec BeforeTargets="Restore"> is arbitrary code on a
-      # runner holding a contents: write token. `pr` is the only input and nothing about
-      # workflow_dispatch constrains it to a PR from this repository, so a fork PR that
-      # looks exactly like the dependency bump this workflow exists to fix would execute
-      # its payload the moment a maintainer honours a "please refresh the lock files"
-      # request. Refuse a cross-repository head outright; the "reject changes outside the
-      # lock files" guard below runs after restore and cannot help with execution.
+      # Runs BEFORE the checkout, and the ordering is the point: `dotnet restore` below
+      # evaluates the checked-out MSBuild graph, so a Directory.Build.targets with an
+      # <Exec BeforeTargets="Restore"> is arbitrary code on a runner holding a
+      # contents: write token. Nothing about workflow_dispatch constrains `pr` to a PR
+      # from this repository. (The lock-file guard further down runs after restore, so it
+      # cannot help here.)
       - name: Refuse a pull request from a fork
         env:
           GH_TOKEN: ${{ github.token }}
@@ -79,10 +75,8 @@ jobs:
           ref: refs/pull/${{ inputs.pr }}/head
           # A detached merge ref can't be pushed; the branch is resolved above.
           fetch-depth: 0
-          # Defence in depth behind the fork check: `dotnet restore` below evaluates
-          # project files from the checked-out tree, so don't leave a writable token in
-          # .git/config where that evaluation could read it. The push step supplies one
-          # explicitly, for the one command that needs it.
+          # Behind the fork check: don't leave a writable token in .git/config where the
+          # restore could read it. The push step supplies its own.
           persist-credentials: false
 
       - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
@@ -124,8 +118,7 @@ jobs:
           # Two -m flags rather than one multi-line string: a YAML block scalar would
           # carry this step's indentation into the commit message body.
           git commit             -m "deps: refresh packages.lock.json after the NuGet bump"             -m "Dependabot updates only the lock file of the project it edited; Api and Tests reference Application/Infrastructure transitively and go stale, which fails ci.yml's restore --locked-mode with NU1004."
-          # The checkout persisted no credentials, so hand the token to this one command
-          # rather than leaving it on disk for the restore above. Actions masks it in the log.
+          # The checkout persisted no credentials; Actions masks the token in the log.
           git push "https://x-access-token:${GH_TOKEN}@github.com/${REPO}.git" "HEAD:$BRANCH"
           echo "pushed=true" >> "$GITHUB_OUTPUT"
 

@@ -43,16 +43,10 @@ jobs:
     # github.sha is the default branch's head on a workflow_run event, which is exactly
     # what that comparison needs and why it cannot be applied to beta. Tags: publish.
     #
-    # The event/repository pair is the security gate, and it is load-bearing. ci.yml runs
-    # on pull_request, which includes PRs from forks, and `head_branch` is then the branch
-    # name *inside the fork* — so both on.workflow_run.branches and the beta condition
-    # below are satisfied by anyone who names their fork branch `beta`. Without these two
-    # checks that PR's head sha would be checked out and pushed to :beta with a writable
-    # token and a signed provenance attestation, never having been reviewed or merged.
-    # `event == 'push'` is the strong one: it rejects every pull_request-originated run
-    # whatever the branch is called. (The main path was already safe — head_sha ==
-    # github.sha only holds for the real default-branch tip — but it is gated too so the
-    # rule is one rule rather than a property of one branch.)
+    # The event/repository pair is load-bearing, not belt-and-braces: ci.yml runs on
+    # pull_request, so it runs for fork PRs too, and `head_branch` is then the branch name
+    # *inside the fork* — anyone naming theirs `beta` would otherwise have their unmerged
+    # head published. `event == 'push'` is the strong half.
     if: >-
       (github.event_name == 'workflow_run'
         && github.event.workflow_run.conclusion == 'success'
