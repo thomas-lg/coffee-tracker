@@ -15,4 +15,10 @@
     <ProjectReference Include="..\CoffeeTracker.Infrastructure\CoffeeTracker.Infrastructure.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- The content-security-policy builder is tested directly: the property that matters
+         (no inline script outside Development) is invisible to a test that only reads the
+         header off a Development host. -->
+    <InternalsVisibleTo Include="CoffeeTracker.Tests" />
+  </ItemGroup>
 </Project>
