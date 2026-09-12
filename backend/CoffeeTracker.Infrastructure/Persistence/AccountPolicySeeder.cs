@@ -13,16 +13,20 @@ public static class AccountPolicySeeder
     /// <summary>
     /// Seeds the policy if it is absent, and does nothing at all once the row exists.
     ///
-    /// An instance that already has users is being upgraded: sign-in was always on, so
-    /// it stays on, and registration takes <paramref name="legacyRegistrationEnabled"/>
-    /// so the deployment's posture is preserved. That value comes from the legacy
-    /// <c>REGISTRATION_ENABLED</c> variable, and this is the only place it is read.
+    /// Sign-in is always seeded on: no setting should be able to lock an instance out
+    /// by being merely absent.
     ///
-    /// An instance with no users is fresh: both are opened so an operator can create
-    /// the first account with nothing to configure, and the opening is marked as a
-    /// bootstrap so it closes itself once that account exists.
+    /// Registration is seeded open only where there is nobody to protect, so an operator
+    /// can create the first account with nothing configured — and that opening is marked
+    /// as a bootstrap, so it shuts itself once the account exists. An instance that
+    /// already has users has someone who can sign in and open registration deliberately,
+    /// so it starts shut rather than standing open on the internet.
+    ///
+    /// Matches <see cref="EfAccountPolicy"/>'s answer for an instance whose row was never
+    /// written; the two used to disagree, because this one also honoured a legacy
+    /// environment variable.
     /// </summary>
-    public static async Task SeedAsync(AppDbContext db, bool legacyRegistrationEnabled, CancellationToken ct = default)
+    public static async Task SeedAsync(AppDbContext db, CancellationToken ct = default)
     {
         if (await db.AppSettings.AnyAsync(s => s.Id == AppSettings.SingletonId, ct))
         {
@@ -34,7 +38,9 @@ public static class AccountPolicySeeder
         {
             Id = AppSettings.SingletonId,
             LocalLoginEnabled = true,
-            LocalRegistrationEnabled = hasUsers ? legacyRegistrationEnabled : true,
+            // The two coincide here and only here: an administrator who later opens
+            // registration sets the first without re-arming the second.
+            LocalRegistrationEnabled = !hasUsers,
             RegistrationOpenedForBootstrap = !hasUsers,
         });
         await db.SaveChangesAsync(ct);

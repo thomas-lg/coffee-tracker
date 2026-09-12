@@ -95,9 +95,11 @@ jobs:
           node-version: 24
           cache: npm
           cache-dependency-path: frontend/package-lock.json
-      # Start the API on :5000 in the background. Development → REGISTRATION_ENABLED
-      # is true (so tests register their own users) and OCR is disabled (no Tesseract
-      # needed). The Angular dev server that Playwright starts proxies /api here.
+      # Start the API on :5000 in the background against a database that does not exist
+      # yet, so the instance opens registration for its first account — the e2e global
+      # setup claims it (becoming admin) and reopens registration for the rest of the
+      # suite. Development also disables OCR (no Tesseract needed). The Angular dev
+      # server that Playwright starts proxies /api here.
       - name: Start backend API
         env:
           ASPNETCORE_ENVIRONMENT: Development

@@ -43,7 +43,7 @@ public sealed class AccountPolicyTests : IDisposable
     {
         await using var db = NewContext();
 
-        await AccountPolicySeeder.SeedAsync(db, legacyRegistrationEnabled: false);
+        await AccountPolicySeeder.SeedAsync(db);
 
         var policy = await new EfAccountPolicy(NewContext()).GetAsync();
         Assert.True(policy.LocalLoginEnabled);
@@ -51,22 +51,24 @@ public sealed class AccountPolicyTests : IDisposable
         Assert.True(policy.RegistrationOpenedForBootstrap);
     }
 
-    [Theory]
-    [InlineData(true)]
-    [InlineData(false)]
-    public async Task Upgraded_instance_keeps_its_registration_posture(bool legacyRegistrationEnabled)
+    // The sole automated cover for the upgrade path — an instance with users and no
+    // settings row. Nothing else exercises it, so do not delete it without replacing it.
+    [Fact]
+    public async Task An_instance_that_already_has_users_is_seeded_closed()
     {
         AddUser();
         await using var db = NewContext();
 
-        await AccountPolicySeeder.SeedAsync(db, legacyRegistrationEnabled);
+        await AccountPolicySeeder.SeedAsync(db);
 
         var policy = await new EfAccountPolicy(NewContext()).GetAsync();
-        // Sign-in was always on before the policy existed; it must stay on whatever the
-        // legacy flag said, or upgrading locks every user out of an existing instance.
+        // Sign-in was always on before the policy existed; it must stay on, or upgrading
+        // locks every user out of an existing instance.
         Assert.True(policy.LocalLoginEnabled);
-        Assert.Equal(legacyRegistrationEnabled, policy.LocalRegistrationEnabled);
-        // Not a bootstrap: an upgraded instance must never close registration by itself.
+        // Someone can already sign in and open the door deliberately, so it starts shut:
+        // an instance must never end up standing open because a row was merely absent.
+        Assert.False(policy.LocalRegistrationEnabled);
+        // Not a bootstrap, so once that administrator opens registration it stays open.
         Assert.False(policy.RegistrationOpenedForBootstrap);
     }
 
@@ -75,16 +77,16 @@ public sealed class AccountPolicyTests : IDisposable
     {
         await using (var db = NewContext())
         {
-            await AccountPolicySeeder.SeedAsync(db, legacyRegistrationEnabled: true);
+            await AccountPolicySeeder.SeedAsync(db);
         }
 
         await new EfAccountPolicy(NewContext()).SetAsync(
             new AccountPolicy(LocalLoginEnabled: false, LocalRegistrationEnabled: false));
 
-        // A restart with the legacy variable flipped must change nothing.
+        // A restart must not re-seed over a policy an administrator set.
         await using (var db = NewContext())
         {
-            await AccountPolicySeeder.SeedAsync(db, legacyRegistrationEnabled: true);
+            await AccountPolicySeeder.SeedAsync(db);
         }
 
         var policy = await new EfAccountPolicy(NewContext()).GetAsync();
