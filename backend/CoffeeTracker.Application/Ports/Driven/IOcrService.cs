@@ -39,7 +39,6 @@ public interface IOcrService
 /// </param>
 public sealed record OcrLine(string Text, double? Confidence, int? Height);
 
-/// <summary>Outcome of an OCR read.</summary>
 public sealed record OcrResult(bool Available, string RawText, IReadOnlyList<OcrLine> Lines)
 {
     public static OcrResult Unavailable { get; } = new(false, string.Empty, []);

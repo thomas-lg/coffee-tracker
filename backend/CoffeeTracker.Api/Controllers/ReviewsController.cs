@@ -10,7 +10,6 @@ namespace CoffeeTracker.Api.Controllers;
 [Authorize]
 public class ReviewsController(IReviewService reviews) : ControllerBase
 {
-    /// <summary>Lists a coffee's reviews.</summary>
     [HttpGet]
     public async Task<ActionResult<IReadOnlyList<ReviewResponseDto>>> GetReviews(int coffeeId, CancellationToken ct)
     {
@@ -18,7 +17,6 @@ public class ReviewsController(IReviewService reviews) : ControllerBase
         return result.Status == ReviewStatus.CoffeeNotFound ? NotFound() : Ok(result.Reviews);
     }
 
-    /// <summary>Returns a single review.</summary>
     [HttpGet("{id:int}")]
     public async Task<ActionResult<ReviewResponseDto>> GetReview(int coffeeId, int id, CancellationToken ct)
     {
@@ -26,7 +24,6 @@ public class ReviewsController(IReviewService reviews) : ControllerBase
         return result.Status == ReviewStatus.Success ? Ok(result.Review) : NotFound();
     }
 
-    /// <summary>Creates the caller's review for a coffee.</summary>
     [HttpPost]
     public async Task<ActionResult<ReviewResponseDto>> CreateReview(int coffeeId, ReviewCreateDto dto, CancellationToken ct)
     {

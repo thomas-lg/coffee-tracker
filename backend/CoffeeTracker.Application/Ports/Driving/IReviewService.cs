@@ -14,7 +14,6 @@ public interface IReviewService
     /// <summary>Returns a single review (scoped to the coffee), or ReviewNotFound.</summary>
     Task<ReviewResult> GetByIdAsync(int coffeeId, int reviewId, CancellationToken ct = default);
 
-    /// <summary>Creates the caller's review for a coffee.</summary>
     Task<ReviewResult> CreateAsync(int coffeeId, ReviewCreateDto dto, CancellationToken ct = default);
 
     /// <summary>Updates a review the caller owns.</summary>
@@ -23,7 +22,6 @@ public interface IReviewService
     /// <summary>Deletes a review (owner or admin).</summary>
     Task<ReviewStatus> DeleteAsync(int coffeeId, int reviewId, CancellationToken ct = default);
 
-    /// <summary>Lists the available flavor tags.</summary>
     Task<IReadOnlyList<FlavorTagDto>> GetFlavorTagsAsync(CancellationToken ct = default);
 }
 
@@ -38,8 +36,6 @@ public enum ReviewStatus
     InvalidTags,
 }
 
-/// <summary>Result of an operation that returns a single review on success.</summary>
 public sealed record ReviewResult(ReviewStatus Status, ReviewResponseDto? Review);
 
-/// <summary>Result of listing a coffee's reviews.</summary>
 public sealed record ReviewListResult(ReviewStatus Status, IReadOnlyList<ReviewResponseDto>? Reviews);

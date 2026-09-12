@@ -28,7 +28,6 @@ public interface ICoffeeRepository
     /// <summary>Returns the coffee with the given id (tracked, for writes), or null.</summary>
     Task<Coffee?> GetByIdAsync(int id, CancellationToken ct = default);
 
-    /// <summary>Returns whether a coffee with the given id exists.</summary>
     Task<bool> ExistsAsync(int id, CancellationToken ct = default);
 
     /// <summary>
@@ -41,7 +40,6 @@ public interface ICoffeeRepository
     /// <summary>Persists a new coffee and returns it with its assigned id.</summary>
     Task<Coffee> AddAsync(Coffee coffee, CancellationToken ct = default);
 
-    /// <summary>Persists changes to an existing coffee.</summary>
     Task UpdateAsync(Coffee coffee, CancellationToken ct = default);
 
     /// <summary>Removes the coffee with the given id. Returns false if it did not exist.</summary>
