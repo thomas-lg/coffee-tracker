@@ -181,19 +181,32 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
     }
 });
 
-// Throttle the auth endpoints against brute-force/credential-stuffing, keyed by
-// client IP. Account-level lockout (Identity) is the second layer.
+// Throttle the endpoints whose cost an anonymous or single caller could otherwise
+// impose at will.
+//
+// Every policy partitions by client IP rather than by account: the limiter runs before
+// authentication, so the caller's identity is not known here. UseForwardedHeaders has
+// already put the real client's address on the connection wherever KnownProxies names
+// the reverse proxy — without that, all of these bucket every client together.
 builder.Services.AddRateLimiter(options =>
 {
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
-    options.AddPolicy(RateLimiterPolicies.Auth, httpContext =>
-        RateLimitPartition.GetFixedWindowLimiter(
-            partitionKey: httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
-            factory: _ => new FixedWindowRateLimiterOptions
-            {
-                PermitLimit = 10,
-                Window = TimeSpan.FromMinutes(1),
-            }));
+
+    // Each policy's budget — and why it is what it is — lives on RateLimiterPolicies
+    // next to its name, so nothing here or in the tests restates it.
+    void PerClientIp(string policy, int permitsPerMinute) =>
+        options.AddPolicy(policy, httpContext =>
+            RateLimitPartition.GetFixedWindowLimiter(
+                partitionKey: httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+                factory: _ => new FixedWindowRateLimiterOptions
+                {
+                    PermitLimit = permitsPerMinute,
+                    Window = TimeSpan.FromMinutes(1),
+                }));
+
+    PerClientIp(RateLimiterPolicies.Auth, RateLimiterPolicies.AuthPermitsPerMinute);
+    PerClientIp(RateLimiterPolicies.Public, RateLimiterPolicies.PublicPermitsPerMinute);
+    PerClientIp(RateLimiterPolicies.Scan, RateLimiterPolicies.ScanPermitsPerMinute);
 });
 
 // In dev the Angular dev server (ng serve, :4200) is a different origin from the

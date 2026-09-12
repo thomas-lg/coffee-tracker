@@ -2,12 +2,17 @@ using CoffeeTracker.Application.Dtos;
 using CoffeeTracker.Application.Ports.Driving;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace CoffeeTracker.Api.Controllers;
 
 [ApiController]
 [Route("api/coffees/scan")]
 [Authorize]
+// One request occupies an OCR process for as long as the configured timeout, so a
+// single signed-in client could otherwise queue enough of them to starve everyone
+// else's scans.
+[EnableRateLimiting(RateLimiterPolicies.Scan)]
 public class ScanController(ICoffeeScanService scan) : ControllerBase
 {
     /// <summary>
