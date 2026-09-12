@@ -28,7 +28,8 @@ export class PhotoCleanup {
 
   /** Two-step delete: the action button arms a confirm row rather than a modal. */
   protected readonly confirming = signal(false);
-  protected readonly deleting = signal(false);
+  /** In-flight state belongs to the command, which the store now owns. */
+  protected readonly deleting = this.store.pending;
   private readonly cancelBtn = viewChild<ElementRef<HTMLButtonElement>>('cancelBtn');
 
   constructor() {
@@ -36,6 +37,26 @@ export class PhotoCleanup {
     // move it to Cancel once the confirm controls exist in the DOM.
     effect(() => {
       if (this.confirming()) this.cancelBtn()?.nativeElement.focus();
+    });
+
+    // The delete is fire-and-forget now, so its outcome arrives as state. Acknowledging
+    // it clears the slice this effect reads, which is what makes the toast fire once
+    // rather than on every later render.
+    effect(() => {
+      const outcome = this.store.lastOutcome();
+      if (!outcome) return;
+
+      if (outcome.kind === 'ok') {
+        this.toast.show(
+          `Deleted ${outcome.result.deleted}, skipped ${outcome.result.skipped}`,
+          'success',
+        );
+      } else {
+        this.toast.show(this.store.requestError() ?? 'Delete failed — please retry.', 'error');
+      }
+
+      this.confirming.set(false);
+      this.store.acknowledgeOutcome();
     });
   }
 
@@ -54,16 +75,7 @@ export class PhotoCleanup {
     this.confirming.set(false);
   }
 
-  protected async confirmDelete(): Promise<void> {
-    this.deleting.set(true);
-    try {
-      const result = await this.store.deleteSelected();
-      this.toast.show(`Deleted ${result.deleted}, skipped ${result.skipped}`, 'success');
-    } catch {
-      this.toast.show('Delete failed — please retry.', 'error');
-    } finally {
-      this.deleting.set(false);
-      this.confirming.set(false);
-    }
+  protected confirmDelete(): void {
+    this.store.deleteSelected();
   }
 }

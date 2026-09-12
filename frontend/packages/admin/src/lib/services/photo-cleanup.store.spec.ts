@@ -62,26 +62,41 @@ describe('PhotoCleanupStore', () => {
     expect(store.visible().every((p) => !p.used)).toBe(true);
   });
 
-  it('deletes the selection, then clears it and refetches', async () => {
+  it('deletes the selection, then clears it and refetches', () => {
     store.selectAllUnused();
-    const done = store.deleteSelected();
+    store.deleteSelected();
+    expect(store.pending()).toBe(true);
 
     const del = http.expectOne('/api/admin/photos');
     expect(del.request.method).toBe('DELETE');
     expect(del.request.body).toEqual({ paths: ['photos/orphan1.jpg', 'photos/orphan2.jpg'] });
+    // tapResponse runs on the flush itself, not on a later microtask, so the outcome and
+    // the reload are both in place by the time this returns.
     del.flush({ deleted: 2, skipped: 0 });
 
-    // Let deleteSelected resume past its `await` (→ clearSelection + reload), then tick
-    // so the reload's httpResource effect issues a fresh GET we can satisfy.
-    await Promise.resolve();
     appRef.tick();
     http
       .expectOne('/api/admin/photos')
       .flush([{ path: 'photos/used.jpg', url: '/photos/used.jpg?exp=1&sig=a', used: true }]);
 
-    const result = await done;
-    expect(result).toEqual({ deleted: 2, skipped: 0 });
+    expect(store.lastOutcome()).toEqual({ kind: 'ok', result: { deleted: 2, skipped: 0 } });
     expect(store.selectedCount()).toBe(0);
+    expect(store.pending()).toBe(false);
+  });
+
+  it('reports a failed delete without clearing the selection', () => {
+    store.selectAllUnused();
+    store.deleteSelected();
+
+    http
+      .expectOne('/api/admin/photos')
+      .flush('boom', { status: 500, statusText: 'Server Error' });
+
+    expect(store.lastOutcome()).toEqual({ kind: 'error' });
+    expect(store.requestError()).toBe('Delete failed — please retry.');
+    expect(store.pending()).toBe(false);
+    // The selection survives, so the operator can retry without re-picking.
+    expect(store.selectedCount()).toBe(2);
   });
 });
 
