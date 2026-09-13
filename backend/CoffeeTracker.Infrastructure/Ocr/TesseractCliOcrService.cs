@@ -13,7 +13,7 @@ namespace CoffeeTracker.Infrastructure.Ocr;
 /// <summary>
 /// OCR adapter that shells out to the system <c>tesseract</c> CLI (installed via apt
 /// in the dev container and the prod image). We use the CLI rather than a P/Invoke
-/// NuGet because the latter's native-library loading on Linux is brittle — it probes
+/// NuGet because the latter's native-library loading on Linux is brittle: it probes
 /// version-pinned <c>lib*.dll.so</c> names that no distro ships and needs a <c>libdl</c>
 /// shim on modern glibc. The CLI is Tesseract's first-class, stable interface.
 /// </summary>
@@ -23,6 +23,7 @@ public class TesseractCliOcrService(IOptions<OcrOptions> options, ILogger<Tesser
         string.IsNullOrWhiteSpace(options.Value.ExecutablePath) ? "tesseract" : options.Value.ExecutablePath!;
     private readonly string _tessdataPath = ResolveTessdataPath(options.Value);
     private readonly string _language = ResolveLanguage(options.Value.Language, logger);
+    private readonly int _psm = options.Value.Psm;
 
     // Hard per-run ceiling so a hung/pathological process can't pin a worker forever.
     private readonly TimeSpan _timeout =
@@ -36,7 +37,7 @@ public class TesseractCliOcrService(IOptions<OcrOptions> options, ILogger<Tesser
     // Cheap, side-effect-free check: the engine can only run if the language's
     // traineddata is present. A missing `tesseract` binary is handled in ReadAsync
     // (the process fails to start and we degrade to unavailable), so this stays a
-    // pure file check — no process spawn just to test availability.
+    // pure file check, no process spawn just to test availability.
     public bool IsAvailable => File.Exists(Path.Combine(_tessdataPath, $"{_language}.traineddata"));
 
     // The concurrency gate is the only owned disposable. As a DI singleton this is
@@ -83,6 +84,10 @@ public class TesseractCliOcrService(IOptions<OcrOptions> options, ILogger<Tesser
             psi.ArgumentList.Add(_language);
             psi.ArgumentList.Add("--tessdata-dir");
             psi.ArgumentList.Add(_tessdataPath);
+            // See OcrOptions.Psm: the default mode looks for the columns of a scanned
+            // page, which is the wrong question to ask of a coffee bag.
+            psi.ArgumentList.Add("--psm");
+            psi.ArgumentList.Add(_psm.ToString(CultureInfo.InvariantCulture));
             // Ask for TSV rather than plain text: it carries per-word confidence and
             // bounding boxes, which is the only reliable way to tell printed label text
             // from background noise (a photo of a bag on a table produces a dozen
@@ -117,7 +122,7 @@ public class TesseractCliOcrService(IOptions<OcrOptions> options, ILogger<Tesser
         }
         catch (OperationCanceledException) when (ct.IsCancellationRequested)
         {
-            // The caller cancelled — propagate rather than masquerading as an engine
+            // The caller cancelled, so propagate rather than masquerading as an engine
             // outage (which would log noise and skew availability signals).
             throw;
         }
@@ -152,7 +157,7 @@ public class TesseractCliOcrService(IOptions<OcrOptions> options, ILogger<Tesser
                 }
                 catch (InvalidOperationException)
                 {
-                    // Raced with exit — nothing to kill.
+                    // Raced with exit, nothing to kill.
                 }
 
                 await Observe(stdoutTask);
@@ -171,7 +176,7 @@ public class TesseractCliOcrService(IOptions<OcrOptions> options, ILogger<Tesser
     ///
     /// A phone does not rotate pixels when you turn it: it writes them in sensor order
     /// and records an EXIF orientation tag. Every viewer honours that tag, so the photo
-    /// looks upright everywhere the user has seen it — and Leptonica, which is what
+    /// looks upright everywhere the user has seen it, and Leptonica, which is what
     /// Tesseract decodes JPEG with, does not. Without this, a bag photographed in
     /// portrait reaches the engine on its side and comes back as mirrored nonsense.
     /// </summary>
@@ -247,7 +252,7 @@ public class TesseractCliOcrService(IOptions<OcrOptions> options, ILogger<Tesser
         }
         catch
         {
-            // Already handled by the caller's catch, or cancelled — ignore here.
+            // Already handled by the caller's catch, or cancelled; ignore here.
         }
     }
 
@@ -257,7 +262,7 @@ public class TesseractCliOcrService(IOptions<OcrOptions> options, ILogger<Tesser
     // height conf text. level 5 is a word; coarser levels repeat the geometry with
     // conf = -1, so only words are read and then grouped by (block, par, line).
     //
-    // Falls back to treating the output as plain text when it isn't TSV at all — a
+    // Falls back to treating the output as plain text when it isn't TSV at all: a
     // stubbed binary in tests, or a future tesseract that changes the format. Callers
     // then simply get lines with no quality signals rather than an empty read.
     private static OcrResult BuildResult(string stdout)
@@ -269,7 +274,7 @@ public class TesseractCliOcrService(IOptions<OcrOptions> options, ILogger<Tesser
         }
 
         // RawText is what the user sees in the UI, so rebuild it from every recognised
-        // word — unfiltered. Filtering is the parser's job; hiding text here would make
+        // word, unfiltered. Filtering is the parser's job; hiding text here would make
         // a bad scan impossible to diagnose from the response.
         var rawText = string.Join('\n', lines.Select(l => l.Text));
         return OcrResult.Read(rawText, lines);

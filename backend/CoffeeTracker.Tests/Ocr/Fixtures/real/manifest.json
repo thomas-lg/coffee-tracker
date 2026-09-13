@@ -1,0 +1,103 @@
+{
+  "fixtures": [
+    {
+      "file": "lugat-pacific-blend.jpg",
+      "condition": "handheld",
+      "expected": {
+        "name": "Pacific Blend",
+        "roaster": "Lugat",
+        "origin": "Nicaragua",
+        "roastLevel": "Medium",
+        "weight": null
+      }
+    },
+    {
+      "file": "lugat-oasis-blend.jpg",
+      "condition": "handheld",
+      "expected": {
+        "name": "Oasis Blend",
+        "roaster": "Lugat",
+        "origin": "Brazil",
+        "roastLevel": "Medium",
+        "weight": null
+      }
+    },
+    {
+      "file": "lugat-intenso-blend.jpg",
+      "condition": "handheld",
+      "expected": {
+        "name": "Intenso Blend",
+        "roaster": "Lugat",
+        "origin": "Brazil",
+        "roastLevel": "Medium",
+        "weight": null
+      }
+    },
+    {
+      "file": "lugat-la-libertad.jpg",
+      "condition": "handheld",
+      "expected": {
+        "name": "La Libertad",
+        "roaster": "Lugat",
+        "origin": "Guatemala",
+        "roastLevel": "Medium",
+        "weight": null
+      }
+    },
+    {
+      "file": "green-lion-loriginal.jpg",
+      "condition": "handheld",
+      "expected": {
+        "name": "L'Original",
+        "roaster": "Green Lion Coffee",
+        "origin": "Honduras",
+        "roastLevel": null,
+        "weight": null
+      }
+    },
+    {
+      "file": "mokxa-kekchi.jpg",
+      "condition": "dark-bag",
+      "expected": {
+        "name": "Kekchi",
+        "roaster": "Mokxa",
+        "origin": "Guatemala",
+        "roastLevel": null,
+        "weight": null
+      }
+    },
+    {
+      "file": "caffe-mauro-respect-peru.jpg",
+      "condition": "kraft",
+      "expected": {
+        "name": "Respect Perù",
+        "roaster": "Caffè Mauro",
+        "origin": "Peru",
+        "roastLevel": null,
+        "weight": "250g"
+      }
+    },
+    {
+      "file": "lugat-summer-blend.jpg",
+      "condition": "illustrated",
+      "expected": {
+        "name": "Summer Blend",
+        "roaster": "Lugat",
+        "origin": null,
+        "roastLevel": null,
+        "weight": null
+      }
+    },
+    {
+      "file": "lugat-moka-sidama-tabe.jpg",
+      "condition": "exif-rotated",
+      "expected": {
+        "name": "Moka Sidama Tabe",
+        "roaster": "Lugat",
+        "origin": "Ethiopia",
+        "roastLevel": "Medium",
+        "weight": null
+      }
+    }
+  ]
+}

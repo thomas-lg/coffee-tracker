@@ -1,7 +1,7 @@
 name: CI
 
 # Runs on every PR and on pushes to main and beta. Validates backend + frontend + the
-# production Docker build. Does NOT push images — see release.yml for that, which gates
+# production Docker build. It does NOT push images; release.yml does that, and it gates
 # every branch publish on this workflow succeeding.
 on:
   pull_request:
@@ -12,7 +12,7 @@ on:
 permissions:
   contents: read
 
-# A newer push to the same PR (or to main) cancels the in-flight run — the Docker
+# A newer push to the same PR (or to main) cancels the in-flight run. The Docker
 # build job is the expensive one to waste. Keyed by ref, so each PR and main are
 # independent groups; ci.yml never publishes, so cancelling a main run is safe.
 concurrency:
@@ -55,7 +55,8 @@ jobs:
       # Tesseract) and writes its scorecard beside the test assembly. Surfacing it here
       # is what makes a score change reviewable: the number moves in the run summary of
       # the PR that moved it, instead of inside collapsed log output nobody expands.
-      # if: always() — a run that fell under the floor is precisely the one worth reading.
+      # It runs even after a failed test step, because a run that fell under the floor
+      # is exactly the one worth reading.
       - name: OCR benchmark scorecard
         if: ${{ !cancelled() }}
         run: |
@@ -83,14 +84,14 @@ jobs:
         run: npm ci
       - working-directory: frontend
         run: npm run lint --if-present
-      # The production build is the comprehensive compile gate — it type-checks and
+      # The production build is the comprehensive compile gate: it type-checks and
       # bundles the app + every library (via the source path aliases).
       - name: Build (production)
         working-directory: frontend
         run: npx ng build app --configuration production
       # Unit tests via the vitest builder (NOT Karma, so no --browsers). `npm test`
       # runs the workspace-wide `tests` project, which covers every package's specs in
-      # one build — so a laptop runs exactly what CI runs. This used to be seven
+      # one build, so a laptop runs exactly what CI runs. This used to be seven
       # hand-listed commands here, while a bare `ng test` locally covered only the
       # default project and hid 16 of the 19 spec files.
       - name: Unit tests (vitest)
@@ -110,7 +111,7 @@ jobs:
           cache: npm
           cache-dependency-path: frontend/package-lock.json
       # Start the API on :5000 in the background against a database that does not exist
-      # yet, so the instance opens registration for its first account — the e2e global
+      # yet, so the instance opens registration for its first account. The e2e global
       # setup claims it (becoming admin) and reopens registration for the rest of the
       # suite. Development also disables OCR (no Tesseract needed). The Angular dev
       # server that Playwright starts proxies /api here.
@@ -141,7 +142,7 @@ jobs:
           curl -fsS http://localhost:5000/openapi/v1.json -o openapi.json
           npm run gen:api
           git diff --exit-code -- openapi.json packages/data/src/lib/models/api-types.ts \
-            || { echo "::error::OpenAPI client is stale — run 'npm run gen:api' and commit the result."; exit 1; }
+            || { echo "::error::OpenAPI client is stale, run 'npm run gen:api' and commit the result."; exit 1; }
       - name: Install Playwright browser
         working-directory: frontend
         run: npx playwright install --with-deps chromium
@@ -185,7 +186,7 @@ jobs:
       # Report CRITICAL+HIGH CVEs to the Security tab (SARIF), non-blocking: base-image
       # HIGHs come and go with Trivy's vuln DB and are outside our control, so they must
       # not flake PRs. The hard gate below blocks only on a fixable CRITICAL.
-      - name: Scan image for vulnerabilities (Trivy — report)
+      - name: Scan image for vulnerabilities (Trivy, report)
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
           image-ref: coffee-tracker:ci
@@ -213,7 +214,7 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      - name: Fail on fixable CRITICAL vulnerabilities (Trivy — gate)
+      - name: Fail on fixable CRITICAL vulnerabilities (Trivy, gate)
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
           image-ref: coffee-tracker:ci
