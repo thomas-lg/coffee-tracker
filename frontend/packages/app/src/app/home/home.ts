@@ -1,23 +1,17 @@
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { Button, CountUp, Icon } from '@coffee-tracker/ui';
+import { Button, CountUp } from '@coffee-tracker/ui';
+import { LucideCamera } from '@lucide/angular';
 import { BeanScene, CoffeeCard, CoffeeShelfStates, CoffeesStore } from '@coffee-tracker/coffees';
 
 @Component({
   selector: 'app-home',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, Button, CountUp, Icon, BeanScene, CoffeeCard, CoffeeShelfStates],
+  imports: [RouterLink, Button, CountUp, LucideCamera, BeanScene, CoffeeCard, CoffeeShelfStates],
   templateUrl: './home.html',
 })
 export class Home {
   protected readonly store = inject(CoffeesStore);
-
-  /**
-   * The catalog list. `CoffeesStore.coffees` already returns [] while the resource is
-   * in its error state (the store guards the throwing httpResource value), so reads
-   * here are safe; the template shows a retry block when `store.error()` is set.
-   */
-  protected readonly coffees = this.store.coffees;
 
   /**
    * The most recent few bags for the "Fresh on the shelf" teaser. Sort explicitly by
@@ -25,12 +19,12 @@ export class Home {
    * the catalog API's default ordering ever changes.
    */
   protected readonly recent = computed(() =>
-    [...this.coffees()].sort((a, b) => b.id - a.id).slice(0, 4),
+    [...this.store.coffees()].sort((a, b) => b.id - a.id).slice(0, 4),
   );
 
   /** Headline numbers for the hero stat strip. */
   protected readonly stats = computed(() => {
-    const list = this.coffees();
+    const list = this.store.coffees();
     const rated = list.filter((c) => c.reviewCount > 0 && c.averageRating != null);
     const avg = rated.length
       ? rated.reduce((sum, c) => sum + (c.averageRating ?? 0), 0) / rated.length

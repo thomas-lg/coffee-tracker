@@ -1,13 +1,14 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { AuthStore, ProviderSignIn } from '@coffee-tracker/auth';
-import { Icon, Toast } from '@coffee-tracker/ui';
+import { Toast } from '@coffee-tracker/ui';
+import { LucideMoon, LucideSun } from '@lucide/angular';
 import { applyTheme, initialTheme, persistTheme, type ThemeMode } from '@coffee-tracker/util';
 
 @Component({
   selector: 'app-root',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterOutlet, RouterLink, RouterLinkActive, Toast, Icon],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, Toast, LucideSun, LucideMoon],
   templateUrl: './app.html',
   styleUrl: './app.scss',
 })
@@ -39,10 +40,5 @@ export class App {
     this.theme.update((m) => (m === 'dark' ? 'light' : 'dark'));
     applyTheme(this.theme());
     persistTheme(this.theme());
-  }
-
-  protected logout(): void {
-    this.auth.logout();
-    void this.router.navigateByUrl('/login');
   }
 }

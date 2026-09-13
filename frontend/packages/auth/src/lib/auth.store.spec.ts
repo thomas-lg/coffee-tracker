@@ -2,6 +2,8 @@ import { describe, expect, it, beforeEach, afterEach, vi } from 'vitest';
 import { provideZonelessChangeDetection } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { of, throwError } from 'rxjs';
+import { Router } from '@angular/router';
+import { ToastService } from '@coffee-tracker/ui';
 import { AuthApi, type AuthResponse, type Login } from '@coffee-tracker/data';
 import { AuthStore } from './auth.store';
 
@@ -25,6 +27,8 @@ function authResponse(overrides: Partial<AuthResponse> = {}): AuthResponse {
 
 describe('AuthStore', () => {
   let response: AuthResponse;
+  let navigateByUrl: ReturnType<typeof vi.fn>;
+  let toast: { show: ReturnType<typeof vi.fn> };
   let api: {
     login: ReturnType<typeof vi.fn>;
     register: ReturnType<typeof vi.fn>;
@@ -35,6 +39,8 @@ describe('AuthStore', () => {
   beforeEach(() => {
     localStorage.clear();
     response = authResponse();
+    navigateByUrl = vi.fn();
+    toast = { show: vi.fn() };
     api = {
       login: vi.fn(() => of(response)),
       register: vi.fn(() => of(response)),
@@ -45,8 +51,11 @@ describe('AuthStore', () => {
     TestBed.configureTestingModule({
       providers: [
         provideZonelessChangeDetection(),
-        // AuthStore only depends on AuthApi; stub it so no HTTP is needed.
+        // The store owns its own side effects now: it navigates on sign-in/out and
+        // toasts a rejected sign-in, so all three collaborators are stubbed.
         { provide: AuthApi, useValue: api },
+        { provide: Router, useValue: { navigateByUrl } },
+        { provide: ToastService, useValue: toast },
       ],
     });
   });
@@ -276,5 +285,67 @@ describe('AuthStore', () => {
 
     expect(store.session()).toBeNull();
     expect(localStorage.getItem(STORAGE_KEY)).toBeNull();
+  });
+
+  // The message now belongs to the store: the screen fires the command and never sees
+  // the error. These two pin the wording, which nothing else covers.
+  it('reports a rejected login without starting a session', () => {
+    const store = TestBed.inject(AuthStore);
+    api.login.mockReturnValue(throwError(() => ({ status: 401 })));
+
+    store.login({ email: 'a@b.c', password: 'wrong' });
+
+    expect(store.requestError()).toBe('Invalid email or password.');
+    expect(store.pending()).toBe(false);
+    expect(store.session()).toBeNull();
+  });
+
+  it('tells a user refused by policy to use the provider instead of retrying a password', () => {
+    const store = TestBed.inject(AuthStore);
+    // 403 = this instance no longer accepts app accounts at all. Reporting bad
+    // credentials would send the user round in circles.
+    api.login.mockReturnValue(throwError(() => ({ status: 403 })));
+
+    store.login({ email: 'a@b.c', password: 'secret-123' });
+
+    expect(store.requestError()).toContain('identity provider');
+  });
+
+  it('lands on the app after a successful sign-in', () => {
+    const store = TestBed.inject(AuthStore);
+
+    store.login({ email: 'a@b.c', password: 'secret-123' });
+
+    expect(navigateByUrl).toHaveBeenCalledWith('/');
+  });
+
+  it('toasts a rejected sign-in rather than leaving the screen to notice', () => {
+    const store = TestBed.inject(AuthStore);
+    api.login.mockReturnValue(throwError(() => ({ status: 401 })));
+
+    store.login({ email: 'a@b.c', password: 'wrong' });
+
+    expect(toast.show).toHaveBeenCalledWith('Invalid email or password.', 'error');
+    expect(navigateByUrl).not.toHaveBeenCalled();
+  });
+
+  it('returns to the sign-in screen on logout', async () => {
+    const store = TestBed.inject(AuthStore);
+    await store.login({ email: 'a@b.c', password: 'secret-123' });
+    navigateByUrl.mockClear();
+
+    store.logout();
+
+    expect(navigateByUrl).toHaveBeenCalledWith('/login');
+  });
+
+  it('clears a previous error so the sibling screen does not inherit it', () => {
+    const store = TestBed.inject(AuthStore);
+    api.login.mockReturnValue(throwError(() => ({ status: 401 })));
+    store.login({ email: 'a@b.c', password: 'wrong' });
+
+    store.resetRequestStatus();
+
+    expect(store.requestError()).toBeNull();
   });
 });

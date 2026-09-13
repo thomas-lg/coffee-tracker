@@ -77,8 +77,8 @@
 
             <!-- Stays enabled while invalid: submitting then marks every field touched so
                  the validation messages explain what's missing. -->
-            <ct-button type="submit" fullWidth [disabled]="submitting()" class="mt-2">
-              {{ submitting() ? 'Signing in…' : 'Sign in' }}
+            <ct-button type="submit" fullWidth [disabled]="auth.pending()" class="mt-2">
+              {{ auth.pending() ? 'Signing in…' : 'Sign in' }}
             </ct-button>
           </form>
         }
@@ -104,7 +104,7 @@
             [disabled]="redirecting()"
             (click)="signInWithProvider()"
           >
-            <ct-icon name="id-card" [size]="18" />
+            <svg lucideIdCard [size]="18"></svg>
             {{ redirecting() ? 'Redirecting to ' + providerName() + '…' : 'Continue with ' + providerName() }}
           </ct-button>
 

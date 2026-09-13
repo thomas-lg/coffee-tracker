@@ -14,13 +14,13 @@
     <label
       class="flex h-11 flex-1 items-center gap-2 rounded-full border border-line bg-foam px-4 text-muted focus-within:border-crema"
     >
-      <ct-icon name="search" [size]="16" />
+      <svg lucideSearch [size]="16"></svg>
       <input
         #searchEl
         type="search"
         placeholder="Search by name, roaster, or origin…"
         [value]="store.search()"
-        (input)="store.search.set(searchEl.value)"
+        (input)="store.setSearch(searchEl.value)"
         class="w-full min-w-32 bg-transparent text-sm text-ink outline-none"
         aria-label="Search coffees"
       />
@@ -33,7 +33,7 @@
     </ct-select>
 
     @if (store.origins().length > 1) {
-      <ct-select [value]="store.origin()" (valueChange)="store.origin.set($event)" ariaLabel="Filter by origin">
+      <ct-select [value]="store.origin()" (valueChange)="store.setOrigin($event)" ariaLabel="Filter by origin">
         <option value="all">All origins</option>
         @for (o of store.origins(); track o) {
           <option [value]="o">{{ o }}</option>
@@ -42,7 +42,7 @@
     }
 
     @if (store.flavors().length) {
-      <ct-select [value]="store.flavor()" (valueChange)="store.flavor.set($event)" ariaLabel="Filter by flavour">
+      <ct-select [value]="store.flavor()" (valueChange)="store.setFlavor($event)" ariaLabel="Filter by flavour">
         <option value="all">All flavours</option>
         @for (f of store.flavors(); track f) {
           <option [value]="f">{{ f }}</option>
@@ -56,7 +56,7 @@
     @for (r of roasts; track r) {
       <button
         type="button"
-        (click)="store.roast.set(r)"
+        (click)="store.setRoast(r)"
         [attr.aria-pressed]="store.roast() === r"
         class="h-11 rounded-full border px-4 text-sm font-semibold transition"
         [class]="
