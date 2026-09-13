@@ -5,7 +5,7 @@ import { LucideCamera } from '@lucide/angular';
 import { BeanScene, CoffeeCard, CoffeeShelfStates, CoffeesStore } from '@coffee-tracker/coffees';
 
 @Component({
-  selector: 'app-home',
+  selector: 'ct-home',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [RouterLink, Button, CountUp, LucideCamera, BeanScene, CoffeeCard, CoffeeShelfStates],
   templateUrl: './home.html',

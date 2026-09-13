@@ -26,20 +26,16 @@ public class Review
 
     public string? TastingNotes { get; set; }
 
-    /// <summary>Free-text brew method (e.g. "V60", "Espresso").</summary>
     public string? BrewMethod { get; set; }
 
-    /// <summary>Free-text grind setting (e.g. "Medium-fine").</summary>
     public string? Grind { get; set; }
 
-    /// <summary>Free-text brew ratio (e.g. "1:16").</summary>
     public string? Ratio { get; set; }
 
     public DateTimeOffset CreatedAt { get; set; }
 
     public DateTimeOffset? UpdatedAt { get; set; }
 
-    /// <summary>Flavor tags attached to this review (many-to-many).</summary>
     public ICollection<FlavorTag> Tags { get; set; } = [];
 
     /// <summary>Only the author may edit their own review (admins may delete, not rewrite).</summary>

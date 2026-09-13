@@ -41,9 +41,11 @@ module.exports = tseslint.config(
         'error',
         { type: 'attribute', prefix: 'ct', style: 'camelCase' },
       ],
+      // One prefix. `app` was the CLI's default and only ever applied to the root
+      // component; everything written since is `ct`.
       '@angular-eslint/component-selector': [
         'error',
-        { type: 'element', prefix: ['ct', 'app'], style: 'kebab-case' },
+        { type: 'element', prefix: 'ct', style: 'kebab-case' },
       ],
       // Underscore-prefixed names are intentionally unused (e.g. the compile-time
       // type-parity guards in data/models.ts).

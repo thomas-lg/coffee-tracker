@@ -6,7 +6,7 @@ import { LucideMoon, LucideSun } from '@lucide/angular';
 import { applyTheme, initialTheme, persistTheme, type ThemeMode } from '@coffee-tracker/util';
 
 @Component({
-  selector: 'app-root',
+  selector: 'ct-root',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [RouterOutlet, RouterLink, RouterLinkActive, Toast, LucideSun, LucideMoon],
   templateUrl: './app.html',
