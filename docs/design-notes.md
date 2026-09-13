@@ -17,7 +17,8 @@ Development happens **inside a dev container** — reproducible toolchain, no ho
 Deployment is **GitHub Actions → GHCR (public image) → manual install from the NAS's
 Docker GUI**; there is no Watchtower, SSH, or compose-on-NAS. The repo's
 `docker-compose.yml` is a local dev/test and reference convenience, **not** the deploy
-path. The target is an x86-64 Unraid NAS, so images are built for `linux/amd64` only.
+path. Images are published as a manifest list covering `linux/amd64` and
+`linux/arm64`, so an x86 NAS and an ARM one both pull the right one.
 
 ## Settled choices
 

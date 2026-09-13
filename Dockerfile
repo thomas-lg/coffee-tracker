@@ -1,14 +1,17 @@
 # syntax=docker/dockerfile:1
 # Production image: build the Angular app, publish the API, and serve the SPA
-# same-origin from the API on :8080. Built for linux/amd64 (the Unraid NAS).
+# same-origin from the API on :8080. Built for linux/amd64 and linux/arm64.
 
 # --- Stage 1: build the Angular PWA ---
+# Pinned to the BUILD platform, not the target: this stage emits static files, which have
+# no architecture. Letting it follow the target would run the whole Angular build under
+# QEMU for an arm64 image, for bytes that would come out identical.
 # node:24-slim -- keep in step with ci.yml's node-version and the devcontainer's node
 # feature. 24 is the current LTS. Majors are pinned deliberately, not by parity: the gate
 # is frontend/package.json's engines (^20.19 || ^22.12 || ^24, i.e. Angular's supported
 # range) plus LTS status -- an even major is still "Current" until the October of its
 # release year. Dependabot ignores node majors here; move all three references at once.
-FROM node:24-slim@sha256:2fe369e969550cde8e867afc3fe370b260140cab4a23d467074295b42163d553 AS web
+FROM --platform=$BUILDPLATFORM node:24-slim@sha256:2fe369e969550cde8e867afc3fe370b260140cab4a23d467074295b42163d553 AS web
 WORKDIR /web
 # Restore deps in their own layer (cached until a manifest changes). This is an npm
 # workspaces repo, so `npm ci` needs every member's package.json present up front —
@@ -32,7 +35,17 @@ RUN npx ng build app --configuration production
 
 # --- Stage 2: publish the API ---
 # mcr.microsoft.com/dotnet/sdk:10.0
-FROM mcr.microsoft.com/dotnet/sdk:10.0@sha256:2fa828c68761b1b8c23d7662dc134421b9d3b59fe1425fdbc80804e390cdb24d AS api
+#
+# Also pinned to the BUILD platform. The publish is portable — no -r/-a, so the output is
+# architecture-neutral IL plus a runtimes/ folder carrying every native asset, and the
+# entrypoint starts it through the `dotnet` muxer rather than the apphost. The runtime
+# stage below is what makes the image arm64 or amd64.
+#
+# Cross-compiling instead (-a $TARGETARCH) is not an option here: a RID-specific restore
+# fails --locked-mode with NU1004, because the committed lock files carry no runtime
+# identifiers. Emulating this stage would cost minutes per build for no difference in
+# output.
+FROM --platform=$BUILDPLATFORM mcr.microsoft.com/dotnet/sdk:10.0@sha256:2fa828c68761b1b8c23d7662dc134421b9d3b59fe1425fdbc80804e390cdb24d AS api
 WORKDIR /src
 # Restore in its own layer (cached until a manifest or lock file changes), the same shape
 # as the npm restore in stage 1 — otherwise every edit to any .cs file re-resolves and
@@ -51,6 +64,8 @@ RUN dotnet publish backend/CoffeeTracker.Api/CoffeeTracker.Api.csproj -c Release
 
 # --- Stage 3: runtime ---
 # mcr.microsoft.com/dotnet/aspnet:10.0
+# The only stage that follows the target platform, and the only one that needs to: the
+# apt packages below (tesseract, gosu, curl) are the image's native dependencies.
 FROM mcr.microsoft.com/dotnet/aspnet:10.0@sha256:6a94333d37514e385650a3c81a55e5350b67253dbe136e9cf17e499c35606a8c AS runtime
 # OCR via the tesseract CLI (the app shells out to it). The tesseract-ocr package
 # pulls its own runtime libs; tesseract-ocr-eng ships eng.traineddata. gosu drops

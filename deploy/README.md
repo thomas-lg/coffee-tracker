@@ -2,7 +2,7 @@
 
 How Coffee Tracker ships and runs in production. The model is **GitHub Actions →
 GHCR (public image) → manual install via the Unraid Docker GUI** — no Watchtower,
-SSH, or compose-on-NAS. Images are `linux/amd64` only.
+SSH, or compose-on-NAS. Images cover `linux/amd64` and `linux/arm64`.
 
 Canonical image: `ghcr.io/thomas-lg/coffee-tracker` (tags: `latest`, `sha-<short>`,
 and `vX.Y.Z` on version tags).

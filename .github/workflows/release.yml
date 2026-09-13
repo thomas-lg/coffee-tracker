@@ -104,6 +104,10 @@ jobs:
             org.opencontainers.image.revision=${{ github.event.workflow_run.head_sha || github.sha }}
       # Build first WITHOUT pushing so Trivy can gate on the exact image; the push
       # step below reuses the warm buildx cache, so it doesn't rebuild.
+      #
+      # amd64 only here because `load` can only take one platform. Both images install
+      # the same packages from the same base, so scanning one covers the CVEs of the
+      # manifest the push step publishes.
       - name: Build image (no push)
         uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7
         with:
@@ -125,12 +129,14 @@ jobs:
           exit-code: '1'
           severity: CRITICAL
           ignore-unfixed: true
+      # Publishes a manifest list, so `docker pull` resolves the right image on an
+      # x86 NAS and on an ARM one (Raspberry Pi, ARM-based NAS) alike.
       - id: build
         name: Push image
         uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7
         with:
           context: .
-          platforms: linux/amd64
+          platforms: linux/amd64,linux/arm64
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
