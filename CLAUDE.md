@@ -151,10 +151,9 @@ squash-merge → a separate PR archiving the change into `openspec/specs/`.
 ## Deployment context
 
 Self-hosted on a NAS, internet-exposed behind a TLS-terminating reverse proxy with
-forward auth. The app keeps **its own** login —
-every endpoint requires a token; the reverse proxy is not the authentication. The
-production container starts as root, `chown`s `/config` and `/photos` to `PUID:PGID`,
-then drops privileges via `gosu`.
+forward auth. The app keeps **its own** login — every endpoint requires a token; the
+reverse proxy is not the authentication. The production container starts as root,
+`chown`s `/config` and `/photos` to `PUID:PGID`, then drops privileges via `gosu`.
 
 ## Frontend upgrades — current state
 

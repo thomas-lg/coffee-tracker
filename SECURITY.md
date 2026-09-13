@@ -22,8 +22,7 @@ Useful things to include, in rough order of value:
 
 ## What to expect
 
-This is a personal, for-fun project maintained by one person in their spare time, so
-please calibrate accordingly:
+One person maintains this, around a job and a life. So:
 
 - an acknowledgement within about a week
 - an assessment — including "this is working as intended, and here's why" — once I've
@@ -43,18 +42,17 @@ branches, so "upgrade to the current image" is the fix for everything.
 
 Not vulnerabilities — please don't report these:
 
-- **The first account to register becomes an administrator.** A fresh instance accepts
-  exactly one registration and then closes. This is the documented bootstrap; the window
-  is the operator's responsibility to close by registering promptly.
-- **Session tokens live in `localStorage`.** Any XSS is therefore an account
-  compromise. The mitigations are a strict content security policy with no inline
-  script, Angular's default escaping, and no `innerHTML` or `bypassSecurityTrust`
-  anywhere in the codebase. An actual XSS *is* worth reporting — the storage choice
-  by itself isn't.
-- **TLS is the reverse proxy's job.** The container speaks plain HTTP by design and is
-  not meant to be published directly to the internet.
-- **Anyone signed in can see the whole catalog.** The shelf is shared on purpose;
-  only ratings are per-user.
+- The first account to register becomes an administrator. A fresh instance accepts
+  exactly one registration and then closes itself. That window is the documented
+  bootstrap, and closing it promptly is the operator's job.
+- **Session tokens live in `localStorage`**, so any XSS is an account compromise. What
+  stands between the two is a content security policy with no inline script, Angular's
+  default escaping, and no `innerHTML` or `bypassSecurityTrust` anywhere in the
+  codebase. An actual XSS *is* worth reporting; the storage choice by itself isn't.
+- TLS is the reverse proxy's job. The container speaks plain HTTP by design and is not
+  meant to be published straight to the internet.
+- Anyone signed in can see the whole catalog. The shelf is shared on purpose; only the
+  ratings are per-user.
 
 ## Hardening your own instance
 
