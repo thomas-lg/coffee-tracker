@@ -76,9 +76,22 @@ Instances may be internet-exposed and shared, so:
 startup auto-migration has no rollback, and the schema change survives a rollback of the
 container even though the old code does not expect it.
 
-In WAL mode the live database is three files (`coffee.db`, `-wal`, `-shm`). For a
+In WAL mode the live database is three files (`coffee.db`, `-wal`, `-shm`), so for a
 consistent single-file snapshot use `sqlite3 coffee.db ".backup backup.db"` rather than
-copying `coffee.db` alone.
+copying `coffee.db` alone. That is why **Admin → Backup** exists: it exports the catalog
+over HTTP, which needs no shell on the host and cannot catch the database mid-write.
+
+The export is data only, and it is the catalog only. It carries every coffee with its
+reviews and flavour tags, and nothing else, so it is not a substitute for the two backups
+above:
+
+- **Photos are not in it.** A restored coffee keeps its photo path, which resolves only if
+  `photos/` came along.
+- **Accounts, sessions and settings are not in it.** A restore cannot grant anyone access,
+  and cannot bring an instance's configuration back.
+- **Restoring replaces the catalog**, so it is a recovery tool, not a merge tool. Flavour
+  tags are matched by name against the seeded set; an unfamiliar name is skipped and
+  reported rather than created.
 
 ## Known risks
 
