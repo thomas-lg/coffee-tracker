@@ -41,8 +41,14 @@ Thumbs.db
 # Per-machine Claude Code state (local paths, permission entries).
 .claude/settings.local.json
 
-# APM dependencies
+# APM dependencies. `.claude/skills/` and `.claude/agents/` are vendored copies of
+# third-party plugin packs (dotnet/skills, github/awesome-copilot) that apm restores
+# from apm.lock.yaml's pinned commits — build output, not source, and redistributing
+# them here would ship someone else's code under this repo's LICENSE.
+# `.claude/commands/` stays tracked: OpenSpec is part of this repo's own workflow.
 apm_modules/
+.claude/skills/
+.claude/agents/
 
 # Scratch output from local test runs
 .tmp-*
