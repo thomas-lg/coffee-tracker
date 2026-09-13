@@ -31,6 +31,16 @@ Thumbs.db
 *.swp
 
 
+# Secrets — `docker compose up` reads JWT_KEY from a .env file, and that key signs
+# every token the app issues. .dockerignore already keeps it out of the build context;
+# this keeps it out of the (public) repo.
+.env
+.env.*
+!.env.example
+
+# Per-machine Claude Code state (local paths, permission entries).
+.claude/settings.local.json
+
 # APM dependencies
 apm_modules/
 
