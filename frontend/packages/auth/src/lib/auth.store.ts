@@ -99,7 +99,9 @@ export const AuthStore = signalStore(
      * freshly-authenticated user off-site.
      */
     const afterSignIn = (): string => {
-      const target = store._router.parseUrl(store._router.url).queryParams['returnUrl'];
+      // Router's Params is an index signature of `any`; take it as unknown so the
+      // narrowing below is what establishes the type.
+      const target: unknown = store._router.parseUrl(store._router.url).queryParams['returnUrl'];
       return typeof target === 'string' && target.startsWith('/') && !target.startsWith('//')
         ? target
         : '/';

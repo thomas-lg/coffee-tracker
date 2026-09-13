@@ -1,0 +1,13 @@
+{
+  // The e2e suite had no tsconfig at all: Playwright transpiles without type-checking,
+  // so nothing ever checked these files. This gives them the same strictness as the app
+  // and lets the type-aware lint rules resolve them.
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "outDir": "../out-tsc/e2e",
+    "types": ["node"],
+    "module": "esnext",
+    "moduleResolution": "bundler"
+  },
+  "include": ["**/*.ts"]
+}

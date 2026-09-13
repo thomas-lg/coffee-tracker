@@ -12,7 +12,8 @@ import { FormField, FormRoot, form, min, required, validate } from '@angular/for
 import { Button, ImageLightbox, Skeleton } from '@coffee-tracker/ui';
 import { LucideCamera } from '@lucide/angular';
 import { ROAST_LEVELS } from '@coffee-tracker/data';
-import { CoffeeFormStore, today } from '../services/coffee-form.store';
+import { today } from '@coffee-tracker/util';
+import { CoffeeFormStore } from '../services/coffee-form.store';
 import { CoffeesStore } from '../services/coffees.store';
 import { COFFEE_ORIGINS } from '../utils/coffee-origins';
 

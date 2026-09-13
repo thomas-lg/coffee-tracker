@@ -10,7 +10,6 @@ import { applyTheme, initialTheme, persistTheme, type ThemeMode } from '@coffee-
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [RouterOutlet, RouterLink, RouterLinkActive, Toast, LucideSun, LucideMoon],
   templateUrl: './app.html',
-  styleUrl: './app.scss',
 })
 export class App {
   protected readonly auth = inject(AuthStore);

@@ -66,20 +66,31 @@ describe('CoffeeForm', () => {
     return fixture;
   }
 
-  it('is invalid before any required field is filled', () => {
+  it('marks required fields invalid before anything is filled in', () => {
     const fixture = create();
-    const ci = fixture.componentInstance as unknown as { f: () => { invalid: () => boolean } };
-    expect(ci.f().invalid()).toBe(true);
+    const form = fixture.nativeElement as HTMLElement;
+
+    // Submitting an empty form is what a user does; the messages are the visible result.
+    form.querySelector('form')?.dispatchEvent(new Event('submit'));
+    fixture.detectChanges();
+
+    const errors = [...form.querySelectorAll('.field-error')].map((e) => e.textContent?.trim());
+    expect(errors).toContain('A name is required.');
+    expect(errors).toContain('A roaster is required.');
+    expect(errors).toContain('An origin is required.');
   });
 
   it('offers curated origin suggestions, sorted and deduped', () => {
     // (Shelf-merge of store.origins() is covered directly by CoffeesStore's spec.)
     const fixture = create();
-    const sug = (fixture.componentInstance as unknown as { originSuggestions: () => string[] }).originSuggestions();
-    expect(sug).toContain('Ethiopia');
-    expect(sug).toContain('Colombia');
-    expect(sug).toEqual([...sug].sort());
-    expect(new Set(sug).size).toBe(sug.length);
+    const options = [
+      ...(fixture.nativeElement as HTMLElement).querySelectorAll('#originOptions option'),
+    ].map((o) => o.getAttribute('value') ?? '');
+
+    expect(options).toContain('Ethiopia');
+    expect(options).toContain('Colombia');
+    expect(options).toEqual([...options].sort());
+    expect(new Set(options).size).toBe(options.length);
   });
 
   it('previews the photo already attached to the coffee being edited', async () => {
@@ -95,7 +106,7 @@ describe('CoffeeForm', () => {
 
     // Without this the edit screen shows no thumbnail at all, so nobody can tell which
     // photo is already attached.
-    const img = fixture.nativeElement.querySelector('img[src*="/photos/a.jpg"]');
+    const img = (fixture.nativeElement as HTMLElement).querySelector('img[src*="/photos/a.jpg"]');
     expect(img).not.toBeNull();
   });
 });

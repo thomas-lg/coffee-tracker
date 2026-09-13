@@ -76,8 +76,10 @@ test.describe('session lifetime', () => {
     await expect(page.getByRole('heading', { name: /browse your shelf/i })).toBeVisible();
 
     // The guard swapped the dead token for a live one rather than sending them to /login.
-    const stored = await page.evaluate(() => JSON.parse(localStorage.getItem('ct.session') ?? '{}'));
-    expect(new Date(stored.expiresAt).getTime()).toBeGreaterThan(Date.now());
+    const stored = await page.evaluate(
+      () => JSON.parse(localStorage.getItem('ct.session') ?? '{}') as { expiresAt?: string },
+    );
+    expect(new Date(stored.expiresAt ?? 0).getTime()).toBeGreaterThan(Date.now());
   });
 });
 
@@ -119,7 +121,9 @@ test.describe('admin screens', () => {
     await injectSession(page, sessionFor(admin, { isAdmin: true }));
 
     await page.goto('/admin/settings');
-    const signIn = page.getByRole('checkbox').first();
+    // By name, not position: both switches are checkboxes, and swapping them in the
+    // template would leave .first() silently asserting against the wrong one.
+    const signIn = page.getByRole('checkbox', { name: /sign in with an app account/i });
     await expect(signIn).toBeChecked();
 
     await signIn.uncheck();

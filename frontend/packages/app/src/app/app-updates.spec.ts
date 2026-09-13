@@ -30,7 +30,7 @@ describe('setupAppUpdates', () => {
     const h = harness(false);
     h.versionUpdates.next(versionReady);
     h.events.next(navEnd());
-    h.unrecoverable.next({ type: 'UNRECOVERABLE_STATE', reason: 'x' } as UnrecoverableStateEvent);
+    h.unrecoverable.next({ type: 'UNRECOVERABLE_STATE', reason: 'x' });
     expect(h.reload).not.toHaveBeenCalled();
     expect(h.checkForUpdate).not.toHaveBeenCalled();
   });
@@ -64,7 +64,7 @@ describe('setupAppUpdates', () => {
 
   it('reloads immediately on an unrecoverable service-worker state', () => {
     const h = harness();
-    h.unrecoverable.next({ type: 'UNRECOVERABLE_STATE', reason: 'cache gone' } as UnrecoverableStateEvent);
+    h.unrecoverable.next({ type: 'UNRECOVERABLE_STATE', reason: 'cache gone' });
     expect(h.reload).toHaveBeenCalledTimes(1);
   });
 });

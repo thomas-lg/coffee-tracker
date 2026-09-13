@@ -16,3 +16,8 @@ export function formatDate(iso: string, locale = 'en-GB'): string {
     year: 'numeric',
   });
 }
+
+/** Today as `YYYY-MM-DD`, for <input type="date"> values and max attributes. */
+export function today(): string {
+  return new Date().toISOString().slice(0, 10);
+}

@@ -38,7 +38,7 @@ function setup() {
   TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
   const fixture = TestBed.createComponent(Host);
   fixture.autoDetectChanges();
-  const dialog = () => fixture.nativeElement.querySelector('dialog') as HTMLDialogElement;
+  const dialog = () => (fixture.nativeElement as HTMLElement).querySelector('dialog') as HTMLDialogElement;
   return { fixture, host: fixture.componentInstance, dialog };
 }
 

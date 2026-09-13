@@ -21,11 +21,11 @@ describe('CountUp', () => {
 
   it('renders the final integer value', () => {
     const fixture = render(14);
-    expect((fixture.componentInstance as unknown as { display: () => string }).display()).toBe('14');
+    expect((fixture.nativeElement as HTMLElement).textContent?.trim()).toBe('14');
   });
 
   it('formats with the requested decimal places', () => {
     const fixture = render(4.4, 1);
-    expect((fixture.componentInstance as unknown as { display: () => string }).display()).toBe('4.4');
+    expect((fixture.nativeElement as HTMLElement).textContent?.trim()).toBe('4.4');
   });
 });
