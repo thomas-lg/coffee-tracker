@@ -103,7 +103,7 @@ describe('CoffeeFormStore', () => {
 
   // exhaustMap, not switchMap: the reason is that cancel-and-restart would let a
   // double-clicked Save create two coffees.
-  it('ignores a second submit while the first is in flight', async () => {
+  it('ignores a second submit while the first is in flight', () => {
     const store = newStore();
     fill(store);
 
