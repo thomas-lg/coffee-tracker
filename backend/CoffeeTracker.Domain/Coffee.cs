@@ -21,14 +21,18 @@ public class Coffee
 
     public DateOnly DateBought { get; set; }
 
-    /// <summary>Relative path to the bag photo, set in M2; null until a photo is uploaded.</summary>
+    /// <summary>Relative path to the bag photo; null until one is uploaded.</summary>
     public string? PhotoPath { get; set; }
 
     public string? ShopName { get; set; }
 
     public string? PurchaseUrl { get; set; }
 
-    /// <summary>Id of the user who created the record. Populated from the auth token in M3.</summary>
+    /// <summary>
+    /// Id of the user who created the record, from the auth token. Null on rows written
+    /// before owner-stamping existed, which is why <see cref="IsModifiableBy"/> treats them
+    /// as admin-only.
+    /// </summary>
     public string? CreatedByUserId { get; set; }
 
     public DateTimeOffset CreatedAt { get; set; }
