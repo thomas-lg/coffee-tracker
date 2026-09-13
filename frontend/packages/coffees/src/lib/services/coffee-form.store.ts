@@ -51,11 +51,6 @@ function toDto(m: CoffeeFormModel): CoffeeCreate {
   };
 }
 
-/**
- * Page-scoped store for the add/edit screen: the form's value and the three commands
- * that act on it. The screen keeps only what needs a view — the validation rules bound
- * to the template, the blob-URL lifecycle, and unwrapping file inputs.
- */
 export const CoffeeFormStore = signalStore(
   withState({ loading: false, scanning: false, submitting: false }),
   withProps(() => ({
@@ -73,9 +68,9 @@ export const CoffeeFormStore = signalStore(
   })),
   withMethods((store) => ({
     /**
-     * Loads the coffee being edited. Fed a signal, so it re-runs when the route id
-     * changes; switchMap then abandons a load still in flight, which the previous
-     * effect-plus-await could not — two quick edits raced and the slower response won.
+     * Fed a signal, so it re-runs when the route id changes. switchMap then abandons a
+     * load still in flight, which the previous effect-plus-await could not — two quick
+     * edits raced and the slower response won.
      */
     load: rxMethod<number | null>(
       pipe(
@@ -139,8 +134,6 @@ export const CoffeeFormStore = signalStore(
     ),
 
     /**
-     * Saves the coffee, then best-effort uploads the photo.
-     *
      * exhaustMap, not switchMap: a second submit while one is in flight must be ignored,
      * not cancel-and-restart, or a double click creates two coffees.
      *

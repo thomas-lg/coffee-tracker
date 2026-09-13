@@ -15,5 +15,4 @@ import { CoffeeShelfStates } from './coffee-shelf-states';
 export class CoffeeGrid {
   protected readonly store = inject(CoffeesStore);
   protected readonly roasts: RoastFilter[] = ['all', ...ROAST_LEVELS];
-  // The store's list is a resource — it fetches on first injection, no manual load.
 }

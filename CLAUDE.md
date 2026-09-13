@@ -21,10 +21,18 @@ NuGet lock files.
 
 ## Comment style
 
-**Comment what the code cannot say for itself.** If a reader can answer *"why is this
-here, and why this way?"* from the code alone, a comment adds nothing and starts
-rotting the moment the code moves. If they cannot, the comment is required — not a
-nicety.
+**Write the simplest code you can, then comment the parts that still look complex.**
+A comment earns its place by decoding a line that will make a reader stop — never by
+narrating how the code is organised.
+
+If a reader can answer *"why is this here, and why this way?"* from the code alone, a
+comment adds nothing and starts rotting the moment the code moves. If they cannot, the
+comment is required — not a nicety.
+
+The trap is the plausible-sounding comment that decodes nothing. A class header saying
+*"everything stateful lives in the store and the template reads it directly"* reads well
+and is useless: the injected store and the single effect already say it. Architecture is
+visible in the code; surprises are not.
 
 Belongs in a comment, because the code cannot express it:
 
@@ -40,6 +48,8 @@ Does not, because the code already says it:
 
 - what the next line does
 - a name, type or signature restated in prose
+- **where things live** — which layer owns what, what moved to a store, what a screen
+  keeps. That is the file's shape, and the shape is readable
 - the comment justifying its own existence
 
 Density follows from the rule; it is not the rule. This codebase lands around 25-35%

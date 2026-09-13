@@ -13,9 +13,6 @@ import { PhotoCleanupStore } from '../services/photo-cleanup.store';
  * Admin photo-cleanup screen: audit every stored photo (used vs orphaned) and delete
  * a selected set of orphans. Used photos aren't selectable — the API skips them, and
  * disabling selection makes that guarantee visible.
- *
- * Everything stateful lives in the store and the template reads it directly. What is
- * left here is the one thing a store cannot own: focus, which needs the view.
  */
 @Component({
   selector: 'ct-photo-cleanup',

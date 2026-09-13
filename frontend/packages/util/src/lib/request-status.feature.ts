@@ -13,9 +13,6 @@ export type RequestStatus = 'idle' | 'pending' | 'fulfilled' | { readonly error:
 export type RequestStatusState = { requestStatus: RequestStatus };
 
 /**
- * Pending/error state for store-owned commands, so a component reads `pending()` and
- * `requestError()` instead of wrapping an awaited call in try/catch.
- *
  * The members are `pending`/`requestError`, not `loading`/`error`: the stores that read
  * through a resource already expose `loading` and `error` for the *read*, and a
  * SignalStore rejects colliding member names at the type level. Keeping them distinct is

@@ -16,12 +16,6 @@ import { CoffeeFormStore, today } from '../services/coffee-form.store';
 import { CoffeesStore } from '../services/coffees.store';
 import { COFFEE_ORIGINS } from '../utils/coffee-origins';
 
-/**
- * Add/edit screen. The form's value and the load/scan/save commands live in
- * CoffeeFormStore; what stays here needs a view: the validation rules the template
- * binds to, the object-URL lifecycle behind the photo preview, and unwrapping the
- * file inputs.
- */
 @Component({
   selector: 'ct-coffee-form',
   changeDetection: ChangeDetectionStrategy.OnPush,

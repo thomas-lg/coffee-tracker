@@ -25,9 +25,6 @@ type PhotoCleanupState = {
 };
 
 /**
- * Page-scoped store (provided by the component, not root) for the admin photo-cleanup
- * screen. No `providedIn`, so it stays in the component's `providers`.
- *
  * `selection` is an array rather than a Set: patchState deep-freezes state in dev and
  * builds deep signals from record-shaped slices, and a Set sits awkwardly in both. The
  * derived `selectionSet` keeps `isSelected` O(1) inside the template's @for.
@@ -101,8 +98,6 @@ export const PhotoCleanupStore = signalStore(
     },
 
     /**
-     * Deletes the current selection, clears it, and refetches the list.
-     *
      * switchMap rather than concatMap: the screen arms a confirmation and disables the
      * button while `pending()`, so a second delete cannot overlap — and if one somehow
      * did, abandoning the stale request is the right answer.

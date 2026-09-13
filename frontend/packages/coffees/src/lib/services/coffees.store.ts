@@ -24,10 +24,6 @@ const initialFilters: CoffeesFilters = {
   sort: 'new',
 };
 
-/**
- * Catalog store. The list is a resource (auto-fetches, reactive, refetchable); the
- * filters are state composed into `filtered`.
- */
 export const CoffeesStore = signalStore(
   { providedIn: 'root' },
   withState(initialFilters),
