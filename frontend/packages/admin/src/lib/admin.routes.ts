@@ -18,6 +18,10 @@ export const ADMIN_ROUTES: Routes = [
         loadComponent: () =>
           import('./components/account-settings').then((m) => m.AccountSettingsScreen),
       },
+      {
+        path: 'backup',
+        loadComponent: () => import('./components/backup').then((m) => m.BackupScreen),
+      },
       { path: '', pathMatch: 'full', redirectTo: 'photos' },
     ],
   },

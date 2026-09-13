@@ -41,6 +41,9 @@ about when anything lands.
   admin rights mapped from a group claim. See [Signing in](#signing-in).
 - **Admin screens** for account policy (who may register, whether app accounts can
   sign in at all) and for reaping photos left behind by abandoned scans.
+- **Backup and restore.** Download the whole catalog as a JSON file, and restore one,
+  onto this instance or another. Data only: the photos are files on the photo volume,
+  which you copy the same way you copy anything else off it.
 
 ## Stack
 - **Backend:** ASP.NET Core Web API (.NET 10), EF Core + SQLite (WAL mode),

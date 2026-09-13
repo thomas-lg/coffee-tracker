@@ -14,4 +14,5 @@ export * from './lib/apis/scan.api';
 export * from './lib/apis/config.api';
 export * from './lib/apis/auth.api';
 export * from './lib/apis/admin-photos.api';
+export * from './lib/apis/admin-backup.api';
 export * from './lib/apis/admin-settings.api';
