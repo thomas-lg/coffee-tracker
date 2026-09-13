@@ -52,7 +52,8 @@ commitments, no SLAs, no deadlines.
 - **Deploy:** GitHub Actions builds a `linux/amd64` image and publishes it to
   GHCR; you install/update it manually from your NAS's Docker GUI.
 
-See [PLAN.md](./PLAN.md) for the full design and build milestones (M0–M8).
+See [docs/design-notes.md](./docs/design-notes.md) for the standing design rationale,
+and [`openspec/changes/archive/`](./openspec/changes/archive/) for how each piece was built.
 
 ## Getting started (Dev Container)
 
@@ -238,8 +239,7 @@ served only through **short-lived signed URLs** — never anonymously. Every res
 carries a **content security policy** (no inline script), `X-Frame-Options: DENY`,
 `Referrer-Policy: no-referrer` and `nosniff`, so an injected script — the shortest
 path to the session, which lives in `localStorage` — has no way to run. See the
-Security section in
-[PLAN.md](./PLAN.md).
+Security section in [docs/design-notes.md](./docs/design-notes.md).
 
 ## Ideas for later
 
@@ -253,6 +253,16 @@ Nothing committed — a parking lot for when the mood strikes:
   real bags.
 - **Multi-arch image** (add `linux/arm64`) for ARM NAS / Raspberry Pi.
 - **i18n** — the UI is English-only today.
+
+## Contributing
+
+Bug reports and questions are welcome — see [CONTRIBUTING.md](./CONTRIBUTING.md) for
+how the repo works, and [CLAUDE.md](./CLAUDE.md) for the architecture rules and the
+gotchas worth knowing before changing anything.
+
+Found a security problem? Please report it privately rather than in an issue —
+[SECURITY.md](./SECURITY.md) has the details and says what's already known and
+deliberate.
 
 ## Built with Claude
 

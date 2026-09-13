@@ -27,7 +27,7 @@ docker pull ghcr.io/thomas-lg/coffee-tracker:latest
 
 ## 2. Branch protection on `main` (applied)
 
-Configured via the API to match `PLAN.md`. Current ruleset:
+Configured via the API. Current ruleset:
 
 - Pull request required before merge (**0** required approvals — solo maintainer).
 - Required status checks, **up to date**: `backend`, `frontend`, `docker-build`.
@@ -108,4 +108,4 @@ consistent single-file snapshot use `sqlite3 coffee.db ".backup backup.db"`.
 ---
 
 See the repo [README](../README.md) for the full environment-variable reference and
-[PLAN.md](../PLAN.md) for the design rationale.
+[docs/design-notes.md](../docs/design-notes.md) for the design rationale.
