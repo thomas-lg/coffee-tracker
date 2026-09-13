@@ -1,4 +1,12 @@
-import { ChangeDetectionStrategy, Component, booleanAttribute, computed, input } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  ElementRef,
+  booleanAttribute,
+  computed,
+  inject,
+  input,
+} from '@angular/core';
 import { NgTemplateOutlet } from '@angular/common';
 import { RouterLink } from '@angular/router';
 
@@ -39,6 +47,8 @@ import { RouterLink } from '@angular/router';
   `,
 })
 export class Button {
+  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
+
   readonly type = input<'button' | 'submit'>('button');
   readonly variant = input<'primary' | 'crema' | 'ghost'>('primary');
   readonly disabled = input(false);
@@ -59,4 +69,14 @@ export class Button {
   protected readonly cls = computed(
     () => `${this.base} ${this.classes[this.variant()]}${this.fullWidth() ? ' w-full' : ''}`,
   );
+
+  /**
+   * Moves focus to the real control. Callers hold a template reference to the component,
+   * not to the element — the host itself is not focusable, and which element exists
+   * depends on whether `link` is set. Used when a dismissed confirm has to put focus back
+   * where it came from.
+   */
+  focus(): void {
+    this.host.nativeElement.querySelector<HTMLElement>('button, a')?.focus();
+  }
 }
