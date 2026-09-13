@@ -52,10 +52,11 @@
                 autocomplete="email"
                 [formField]="f.email"
                 [attr.aria-invalid]="f.email().touched() && f.email().invalid() ? 'true' : null"
+                [attr.aria-describedby]="f.email().touched() && f.email().invalid() ? 'login-email-error' : null"
                 class="input"
               />
               @if (f.email().touched() && f.email().invalid()) {
-                <span class="field-error">
+                <span id="login-email-error" class="field-error">
                   Enter a valid email address.
                 </span>
               }
@@ -68,10 +69,11 @@
                 autocomplete="current-password"
                 [formField]="f.password"
                 [attr.aria-invalid]="f.password().touched() && f.password().invalid() ? 'true' : null"
+                [attr.aria-describedby]="f.password().touched() && f.password().invalid() ? 'login-password-error' : null"
                 class="input"
               />
               @if (f.password().touched() && f.password().invalid()) {
-                <span class="field-error">Password is required.</span>
+                <span id="login-password-error" class="field-error">Password is required.</span>
               }
             </label>
 

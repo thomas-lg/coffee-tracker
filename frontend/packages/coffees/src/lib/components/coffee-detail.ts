@@ -149,12 +149,25 @@ export class CoffeeDetail {
   protected readonly confirmingDelete = signal(false);
   protected readonly deleting = signal(false);
   private readonly cancelDeleteBtn = viewChild<ElementRef<HTMLButtonElement>>('cancelDeleteBtn');
+  private readonly armDeleteBtn = viewChild<ElementRef<HTMLButtonElement>>('armDeleteBtn');
 
   constructor() {
-    // Arming removes the Delete button, so focus would drop to <body>. autofocus is
-    // banned by the template a11y lint, so move it by hand — see photo-cleanup.
+    // Arming and disarming each remove the element that currently has focus, so without
+    // this focus drops to <body> and a keyboard user loses their place mid-flow. Moving
+    // it in both directions is what makes the confirm dismissable as well as reachable.
+    // autofocus is banned by the template a11y lint, so it is moved by hand.
+    //
+    // Only on a transition: this effect also runs on first render, and focusing the
+    // Delete button merely because the page loaded would yank focus out of wherever the
+    // reader actually is.
+    let wasConfirming: boolean | undefined;
     effect(() => {
-      if (this.confirmingDelete()) this.cancelDeleteBtn()?.nativeElement.focus();
+      const confirming = this.confirmingDelete();
+      if (wasConfirming !== undefined && wasConfirming !== confirming) {
+        const button = confirming ? this.cancelDeleteBtn() : this.armDeleteBtn();
+        button?.nativeElement.focus();
+      }
+      wasConfirming = confirming;
     });
   }
 
