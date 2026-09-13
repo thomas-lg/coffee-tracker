@@ -974,7 +974,6 @@ export interface components {
         ScanResponseDto: {
             rawText: string;
             parsed: components["schemas"]["ScannedCoffeeDto"];
-            photoUrl: string;
         };
         UpdateAccountSettingsDto: {
             localLoginEnabled: null | boolean;

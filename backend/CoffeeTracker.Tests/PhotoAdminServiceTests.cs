@@ -16,6 +16,9 @@ public class PhotoAdminServiceTests
         public List<string> Deleted { get; } = [];
 
         // Reflects deletes so ListAsync after a delete is consistent.
+        public Task<PhotoStorageStatus> ValidateAsync(Stream content, string? contentType, long length, CancellationToken ct = default)
+            => Task.FromResult(PhotoStorageStatus.Stored);
+
         public Task<IReadOnlyList<string>> ListAsync(CancellationToken ct = default)
             => Task.FromResult<IReadOnlyList<string>>(_stored.Where(p => !Deleted.Contains(p)).ToList());
 

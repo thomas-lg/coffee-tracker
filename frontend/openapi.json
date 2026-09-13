@@ -1758,8 +1758,7 @@
       "ScanResponseDto": {
         "required": [
           "rawText",
-          "parsed",
-          "photoUrl"
+          "parsed"
         ],
         "type": "object",
         "properties": {
@@ -1768,9 +1767,6 @@
           },
           "parsed": {
             "$ref": "#/components/schemas/ScannedCoffeeDto"
-          },
-          "photoUrl": {
-            "type": "string"
           }
         }
       },

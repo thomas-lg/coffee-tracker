@@ -97,8 +97,6 @@ export interface ScannedCoffee {
 export interface ScanResult {
   rawText: string;
   parsed: ScannedCoffee;
-  /** Signed, ready-to-use preview URL for the stored photo. */
-  photoUrl: string;
 }
 
 export interface AuthResponse {

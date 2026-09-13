@@ -45,68 +45,10 @@ public class FileSystemPhotoStorage : IPhotoStorage
 
     public async Task<PhotoStorageResult> SaveAsync(Stream content, string? contentType, long length, CancellationToken ct = default)
     {
-        if (contentType is null || !AllowedTypes.TryGetValue(contentType, out var extension))
+        var (status, image, extension) = await DecodeAsync(content, contentType, length, ct);
+        if (image is null)
         {
-            return PhotoStorageResult.Rejected(PhotoStorageStatus.InvalidContentType);
-        }
-
-        if (length > _maxBytes)
-        {
-            return PhotoStorageResult.Rejected(PhotoStorageStatus.TooLarge);
-        }
-
-        // Buffer the upload so we can both sniff it and hand it to the decoder. Bounded
-        // by the cap: guard against a stream that lied about its length (chunked uploads
-        // where Length was 0/unknown).
-        using var buffer = new MemoryStream();
-        await content.CopyToAsync(buffer, ct);
-        if (buffer.Length > _maxBytes)
-        {
-            return PhotoStorageResult.Rejected(PhotoStorageStatus.TooLarge);
-        }
-
-        // The Content-Type header is client-controlled, so acceptance (and the stored
-        // extension) must not rest on it alone: confirm the file's actual magic-number
-        // signature matches the claimed type before doing the expensive decode.
-        buffer.Position = 0;
-        var header = new byte[HeaderBytes];
-        var headerLength = await buffer.ReadAtLeastAsync(header, header.Length, throwOnEndOfStream: false, ct);
-        if (!SignatureMatches(contentType, header.AsSpan(0, headerLength)))
-        {
-            return PhotoStorageResult.Rejected(PhotoStorageStatus.InvalidContentType);
-        }
-
-        // Read only the header to learn the pixel dimensions, and reject a decompression
-        // bomb (a tiny file that declares huge dimensions) BEFORE the full decode would
-        // allocate gigabytes. The byte cap above bounds compressed size, not decoded size.
-        buffer.Position = 0;
-        ImageInfo info;
-        try
-        {
-            info = await Image.IdentifyAsync(buffer, ct);
-        }
-        catch (Exception ex) when (ex is UnknownImageFormatException or InvalidImageContentException)
-        {
-            return PhotoStorageResult.Rejected(PhotoStorageStatus.InvalidContentType);
-        }
-
-        if ((long)info.Width * info.Height > _maxPixels)
-        {
-            return PhotoStorageResult.Rejected(PhotoStorageStatus.TooLarge);
-        }
-
-        // Decode then re-encode: the stored file is rebuilt from pixels only, so any
-        // trailing/embedded payload (polyglot) or metadata in the upload is discarded.
-        // A file that sniffed as an image but can't actually be decoded is rejected.
-        buffer.Position = 0;
-        Image image;
-        try
-        {
-            image = await Image.LoadAsync(buffer, ct);
-        }
-        catch (Exception ex) when (ex is UnknownImageFormatException or InvalidImageContentException)
-        {
-            return PhotoStorageResult.Rejected(PhotoStorageStatus.InvalidContentType);
+            return PhotoStorageResult.Rejected(status);
         }
 
         using (image)
@@ -121,7 +63,7 @@ public class FileSystemPhotoStorage : IPhotoStorage
             try
             {
                 await using var file = new FileStream(fullPath, FileMode.CreateNew, FileAccess.Write, FileShare.None);
-                await image.SaveAsync(file, EncoderFor(extension), ct);
+                await image.SaveAsync(file, EncoderFor(extension!), ct);
             }
             catch
             {
@@ -132,6 +74,88 @@ public class FileSystemPhotoStorage : IPhotoStorage
             }
 
             return PhotoStorageResult.Stored($"{PhotoRoute.PublicPrefix}/{fileName}");
+        }
+    }
+
+    public async Task<PhotoStorageStatus> ValidateAsync(Stream content, string? contentType, long length, CancellationToken ct = default)
+    {
+        var (status, image, _) = await DecodeAsync(content, contentType, length, ct);
+        image?.Dispose();
+        return status;
+    }
+
+    /// <summary>
+    /// Every acceptance check, in the order that keeps the cheap ones first: an image is
+    /// only decoded once its declared type, its size, its magic number and its declared
+    /// dimensions have all been accepted.
+    ///
+    /// Returns the decoded image so a caller that means to keep it does not pay for a
+    /// second decode. A null image means rejection, and the status says why.
+    /// </summary>
+    private async Task<(PhotoStorageStatus Status, Image? Image, string? Extension)> DecodeAsync(
+        Stream content, string? contentType, long length, CancellationToken ct)
+    {
+        if (contentType is null || !AllowedTypes.TryGetValue(contentType, out var extension))
+        {
+            return (PhotoStorageStatus.InvalidContentType, null, null);
+        }
+
+        if (length > _maxBytes)
+        {
+            return (PhotoStorageStatus.TooLarge, null, null);
+        }
+
+        // Buffer the upload so we can both sniff it and hand it to the decoder. Bounded
+        // by the cap: guard against a stream that lied about its length (chunked uploads
+        // where Length was 0/unknown).
+        using var buffer = new MemoryStream();
+        await content.CopyToAsync(buffer, ct);
+        if (buffer.Length > _maxBytes)
+        {
+            return (PhotoStorageStatus.TooLarge, null, null);
+        }
+
+        // The Content-Type header is client-controlled, so acceptance (and the stored
+        // extension) must not rest on it alone: confirm the file's actual magic-number
+        // signature matches the claimed type before doing the expensive decode.
+        buffer.Position = 0;
+        var header = new byte[HeaderBytes];
+        var headerLength = await buffer.ReadAtLeastAsync(header, header.Length, throwOnEndOfStream: false, ct);
+        if (!SignatureMatches(contentType, header.AsSpan(0, headerLength)))
+        {
+            return (PhotoStorageStatus.InvalidContentType, null, null);
+        }
+
+        // Read only the header to learn the pixel dimensions, and reject a decompression
+        // bomb (a tiny file that declares huge dimensions) BEFORE the full decode would
+        // allocate gigabytes. The byte cap above bounds compressed size, not decoded size.
+        buffer.Position = 0;
+        ImageInfo info;
+        try
+        {
+            info = await Image.IdentifyAsync(buffer, ct);
+        }
+        catch (Exception ex) when (ex is UnknownImageFormatException or InvalidImageContentException)
+        {
+            return (PhotoStorageStatus.InvalidContentType, null, null);
+        }
+
+        if ((long)info.Width * info.Height > _maxPixels)
+        {
+            return (PhotoStorageStatus.TooLarge, null, null);
+        }
+
+        // Decoding is itself the last check: a file that sniffed as an image but cannot
+        // actually be decoded is rejected. Callers that store it re-encode from these
+        // pixels, which is what discards any trailing payload or metadata in the upload.
+        buffer.Position = 0;
+        try
+        {
+            return (PhotoStorageStatus.Stored, await Image.LoadAsync(buffer, ct), extension);
+        }
+        catch (Exception ex) when (ex is UnknownImageFormatException or InvalidImageContentException)
+        {
+            return (PhotoStorageStatus.InvalidContentType, null, null);
         }
     }
 
