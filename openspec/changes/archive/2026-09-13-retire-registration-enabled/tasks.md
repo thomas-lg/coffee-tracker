@@ -30,10 +30,6 @@
 - [x] 5.1 `dotnet test CoffeeTracker.sln` green — run by CI (`ci.yml` builds and tests the solution in Release); green on the merge commit of #133
 - [x] 5.2 `grep -rn REGISTRATION_ENABLED` returns only this change's deployment delta — confirmed: the only hits outside `PLAN.md` are the two lines in `specs/deployment/spec.md` that declare the variable inert
 
-The three below need a running instance. They were **not** performed: the only
-Docker host available cannot start (its WSL backend is unresponsive), and ticking
-them off unverified would make this record lie about what was checked.
-
-- [ ] 5.3 Fresh install by hand: register once (admin), second attempt refused, `/api/config` reports registration closed
-- [ ] 5.4 Upgrade path by hand: a database with users and no settings row starts with sign-in on and registration off, and an administrator can open it durably
-- [ ] 5.5 `docker compose down -v && docker compose up -d --build` with only `JWT_KEY` set
+- [x] 5.3 Fresh install by hand: register once (admin), second attempt refused, `/api/config` reports registration closed — first register returned `200` with `isAdmin: true`, the second `403`, and `/api/config` flipped to `registrationEnabled: false`
+- [x] 5.4 Upgrade path by hand: a database with users and no settings row starts with sign-in on and registration off, and an administrator can open it durably — stopped the container, `DELETE FROM AppSettings` against a database holding one user, restarted: `localLoginEnabled: true`, `registrationEnabled: false`. An administrator opened it through `PUT /api/admin/settings`, and it survived a `docker compose restart`
+- [x] 5.5 `docker compose down -v && docker compose up -d --build` with only `JWT_KEY` set — container reached `healthy`
