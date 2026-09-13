@@ -32,9 +32,9 @@ describe('authInterceptor', () => {
     token = 'jwt-abc';
     canRefresh = false;
     // Successful refresh rotates the token the interceptor re-reads for the retry.
-    refresh = vi.fn(async () => {
+    refresh = vi.fn(() => {
       token = 'jwt-new';
-      return true;
+      return Promise.resolve(true);
     });
     sessionStorage.clear();
 

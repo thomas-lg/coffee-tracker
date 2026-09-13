@@ -9,11 +9,14 @@ describe('Rating', () => {
     return TestBed.createComponent(Rating);
   }
 
-  it('maps value to a fill percentage', () => {
+  it('fills three stars out of five for a rating of 3', () => {
     const fixture = create();
     fixture.componentRef.setInput('value', 3);
     fixture.detectChanges();
-    expect((fixture.componentInstance as unknown as { fillPct: () => number }).fillPct()).toBe(60);
+
+    // The rendered width is the user-visible fact; fillPct() is how it is computed.
+    const fill = (fixture.nativeElement as HTMLElement).querySelector<HTMLElement>('[style*="width"]');
+    expect(fill?.style.width).toBe('60%');
   });
 
   it('emits the picked star in interactive mode', () => {
@@ -23,7 +26,7 @@ describe('Rating', () => {
 
     let picked = 0;
     fixture.componentInstance.rated.subscribe((v) => (picked = v));
-    const stars = fixture.nativeElement.querySelectorAll('button');
+    const stars = (fixture.nativeElement as HTMLElement).querySelectorAll('button');
     expect(stars.length).toBe(5);
     (stars[3] as HTMLButtonElement).click();
     expect(picked).toBe(4);

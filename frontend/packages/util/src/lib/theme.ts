@@ -3,7 +3,7 @@ export type ThemeMode = 'light' | 'dark';
 const THEME_KEY = 'ct.theme';
 
 /** The OS-preferred theme — used as the default when the user hasn't chosen one. */
-export function prefersDark(): boolean {
+function prefersDark(): boolean {
   return typeof matchMedia !== 'undefined' && matchMedia('(prefers-color-scheme: dark)').matches;
 }
 

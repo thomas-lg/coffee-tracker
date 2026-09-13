@@ -53,7 +53,7 @@ describe('CoffeeGrid', () => {
     // throwing resource value this rethrew during change detection and crashed the grid.
     expect(() => fixture.detectChanges()).not.toThrow();
 
-    const text = fixture.nativeElement.textContent as string;
+    const text = (fixture.nativeElement as HTMLElement).textContent;
     expect(text).toContain('Could not load your coffees.');
     expect(text).toContain('Try again');
   });

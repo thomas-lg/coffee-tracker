@@ -6,6 +6,7 @@ import { tapResponse } from '@ngrx/operators';
 import { catchError, exhaustMap, filter, map, of, pipe, switchMap, tap } from 'rxjs';
 import { HttpErrorResponse } from '@angular/common/http';
 import { ToastService } from '@coffee-tracker/ui';
+import { today } from '@coffee-tracker/util';
 import { CoffeesApi, ScanApi, type CoffeeCreate, type RoastLevel } from '@coffee-tracker/data';
 import { CoffeesStore } from './coffees.store';
 import { roastBucket } from '../utils/coffee-visual';
@@ -20,10 +21,6 @@ export interface CoffeeFormModel {
   dateBought: string;
   shopName: string;
   purchaseUrl: string;
-}
-
-export function today(): string {
-  return new Date().toISOString().slice(0, 10);
 }
 
 const emptyModel = (): CoffeeFormModel => ({

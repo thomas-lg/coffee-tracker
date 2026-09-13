@@ -1,0 +1,15 @@
+{
+  // The e2e suite had no tsconfig at all: Playwright transpiles without type-checking, so
+  // nothing ever checked these files. This gives them the same strictness as the app and
+  // lets the type-aware lint rules resolve them.
+  //
+  // Node types rather than DOM-only: the suite reads fixture files and resolves paths from
+  // __dirname. It must be __dirname and not import.meta.url — Playwright transpiles this
+  // suite to CommonJS, where import.meta is a load-time syntax error.
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "outDir": "../out-tsc/e2e",
+    "types": ["node"]
+  },
+  "include": ["**/*.ts"]
+}

@@ -25,7 +25,7 @@
           [formField]="f.displayName"
           [attr.aria-invalid]="f.displayName().touched() && f.displayName().invalid() ? 'true' : null"
           [attr.aria-describedby]="f.displayName().touched() && f.displayName().invalid() ? 'register-displayname-error' : null"
-          class="rounded-xl border border-line bg-foam px-4 py-3 outline-none transition focus:border-crema focus:ring-4 focus:ring-crema/20"
+          class="input"
         />
         @if (f.displayName().touched() && f.displayName().invalid()) {
           <span id="register-displayname-error" class="field-error">A display name is required.</span>
@@ -40,7 +40,7 @@
           [formField]="f.email"
           [attr.aria-invalid]="f.email().touched() && f.email().invalid() ? 'true' : null"
           [attr.aria-describedby]="f.email().touched() && f.email().invalid() ? 'register-email-error' : null"
-          class="rounded-xl border border-line bg-foam px-4 py-3 outline-none transition focus:border-crema focus:ring-4 focus:ring-crema/20"
+          class="input"
         />
         @if (f.email().touched() && f.email().invalid()) {
           <span id="register-email-error" class="field-error">Enter a valid email address.</span>
@@ -55,7 +55,7 @@
           [formField]="f.password"
           [attr.aria-invalid]="f.password().touched() && f.password().invalid() ? 'true' : null"
           [attr.aria-describedby]="f.password().touched() && f.password().invalid() ? 'register-password-error' : null"
-          class="rounded-xl border border-line bg-foam px-4 py-3 outline-none transition focus:border-crema focus:ring-4 focus:ring-crema/20"
+          class="input"
         />
         @if (f.password().touched() && f.password().invalid()) {
           <span id="register-password-error" class="field-error">At least 8 characters.</span>
