@@ -67,6 +67,12 @@
     },
     {
       "path": "./packages/coffees/tsconfig.spec.json"
+    },
+    {
+      "path": "./packages/admin/tsconfig.lib.json"
+    },
+    {
+      "path": "./packages/admin/tsconfig.spec.json"
     }
   ]
 }

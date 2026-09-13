@@ -12,6 +12,10 @@
       >
     </div>
   } @else if (registrationEnabled() === true) {
+    @if (auth.requestError(); as message) {
+      <p role="alert" class="form-alert mb-4">{{ message }}</p>
+    }
+
     <form [formRoot]="f" (submit)="$event.preventDefault(); onSubmit()" class="flex flex-col gap-4">
       <label class="flex flex-col gap-1.5">
         <span class="text-sm font-semibold">Display name</span>

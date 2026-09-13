@@ -31,12 +31,28 @@ const SEED: Coffee[] = [
   coffee({ id: 1, name: 'Cerrado', roaster: 'Onyx', origin: 'Brazil', roastLevel: 'Medium', averageRating: 3.9, reviewCount: 1, shopName: 'Local Roast', flavorTags: ['Nutty', 'Chocolatey'] }),
 ];
 
+// CoffeesStore keys its resource on the signed-in user, so it stays idle until there is
+// a session — seed one the way a real browser would before TestBed builds the store.
+function seedSession(): void {
+  localStorage.setItem(
+    'ct.session',
+    JSON.stringify({
+      token: 't',
+      userId: 'u1',
+      displayName: 'Tester',
+      isAdmin: false,
+      expiresAt: new Date(Date.now() + 900_000).toISOString(),
+    }),
+  );
+}
+
 describe('CoffeesStore', () => {
   let store: CoffeesStore;
   let http: HttpTestingController;
   let appRef: ApplicationRef;
 
   beforeEach(() => {
+    seedSession();
     TestBed.configureTestingModule({
       providers: [
         provideZonelessChangeDetection(),
@@ -106,6 +122,7 @@ describe('CoffeesStore (error path)', () => {
   let appRef: ApplicationRef;
 
   beforeEach(() => {
+    seedSession();
     TestBed.configureTestingModule({
       providers: [
         provideZonelessChangeDetection(),
