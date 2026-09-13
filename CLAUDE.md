@@ -132,9 +132,17 @@ from the images. Rendered type is cleaner than a real bag, so treat the score as
 **regression signal, not an accuracy figure** — `Ocr/Fixtures/real/README.md` explains
 how to add real photographs, which is what settles an engine question.
 
-One thing has been swept against it so far: preprocessing, which bought nothing.
-Grayscale was worth +0.3 and upscaling *cost* two to four points, so don't re-add a
-preprocessing pipeline without a scorecard showing it pays.
+Three things have been swept against it, and each result is recorded next to the constant
+it set:
+
+- **Preprocessing bought nothing.** Grayscale was worth +0.3, and upscaling *cost* two to
+  four points. Don't re-add a pipeline without a scorecard showing it pays.
+- **Line merging** (`BandTolerance`, `MaxLineGap` in the parser) is where the points
+  actually were: 65.7% to 76.7%.
+- **The confidence gate stayed at 55 against the corpus's advice.** 45 scores 1.3 points
+  better here, but the 55 was set from a real photograph where background noise reached
+  48.8, and this corpus photographs bags on a plain table. A rendered corpus does not get
+  to overrule a real measurement about noise, so revisit it with real photos.
 
 What preprocessing *is* there is EXIF auto-orientation, and it earns its place on a
 different argument: Leptonica ignores the orientation tag, so a bag photographed in

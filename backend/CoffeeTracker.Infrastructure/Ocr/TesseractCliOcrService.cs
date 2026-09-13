@@ -289,15 +289,17 @@ public class TesseractCliOcrService(IOptions<OcrOptions> options, ILogger<Tesser
 
         var (levelAt, blockAt, parAt, lineAt) =
             (Column("level"), Column("block_num"), Column("par_num"), Column("line_num"));
-        var (heightAt, confAt, textAt) = (Column("height"), Column("conf"), Column("text"));
-        if (levelAt < 0 || blockAt < 0 || parAt < 0 || lineAt < 0 || heightAt < 0 || confAt < 0 || textAt < 0)
+        var (topAt, heightAt, confAt, textAt) =
+            (Column("top"), Column("height"), Column("conf"), Column("text"));
+        if (levelAt < 0 || blockAt < 0 || parAt < 0 || lineAt < 0
+            || topAt < 0 || heightAt < 0 || confAt < 0 || textAt < 0)
         {
             return null;
         }
 
         // Ordered by first appearance so reading order survives for engines/pages where
         // height is uninformative.
-        var grouped = new Dictionary<(string Block, string Par, string Line), List<(double Conf, int Height)>>();
+        var grouped = new Dictionary<(string Block, string Par, string Line), List<(double Conf, int Height, int Top)>>();
         var texts = new Dictionary<(string Block, string Par, string Line), List<string>>();
         var order = new List<(string Block, string Par, string Line)>();
 
@@ -321,6 +323,7 @@ public class TesseractCliOcrService(IOptions<OcrOptions> options, ILogger<Tesser
             }
 
             _ = int.TryParse(cells[heightAt], NumberStyles.Integer, CultureInfo.InvariantCulture, out var height);
+            _ = int.TryParse(cells[topAt], NumberStyles.Integer, CultureInfo.InvariantCulture, out var top);
 
             var key = (cells[blockAt], cells[parAt], cells[lineAt]);
             if (!grouped.TryGetValue(key, out var stats))
@@ -330,7 +333,7 @@ public class TesseractCliOcrService(IOptions<OcrOptions> options, ILogger<Tesser
                 order.Add(key);
             }
 
-            stats.Add((conf, height));
+            stats.Add((conf, height, top));
             texts[key].Add(word);
         }
 
@@ -339,7 +342,8 @@ public class TesseractCliOcrService(IOptions<OcrOptions> options, ILogger<Tesser
             .. order.Select(key => new OcrLine(
                 string.Join(' ', texts[key]),
                 grouped[key].Average(w => w.Conf),
-                grouped[key].Max(w => w.Height))),
+                grouped[key].Max(w => w.Height),
+                grouped[key].Min(w => w.Top))),
         ];
     }
 
