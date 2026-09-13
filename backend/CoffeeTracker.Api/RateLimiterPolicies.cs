@@ -19,6 +19,9 @@ public static class RateLimiterPolicies
     /// <summary>Throttles label scanning, which occupies an OCR process per request.</summary>
     public const string Scan = "scan";
 
+    /// <summary>Throttles photo upload, which fully decodes and re-encodes the image.</summary>
+    public const string Upload = "upload";
+
     /// <summary>
     /// Low: the only honest reason to reach these ten times in a minute is a script.
     /// Account-level lockout (Identity) is the second layer.
@@ -36,4 +39,12 @@ public static class RateLimiterPolicies
     /// what stops one client queueing enough of them to starve everyone else's.
     /// </summary>
     public const int ScanPermitsPerMinute = 12;
+
+    /// <summary>
+    /// Every upload is decoded and re-encoded in full — up to the configured pixel
+    /// ceiling — so the cost is CPU and memory, not just disk. Higher than the scan
+    /// budget because uploading is a normal thing to do repeatedly while filling in a
+    /// coffee, and unlike a scan it does not hold a subprocess.
+    /// </summary>
+    public const int UploadPermitsPerMinute = 20;
 }

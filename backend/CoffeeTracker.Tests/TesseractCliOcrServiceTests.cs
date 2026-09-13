@@ -64,14 +64,9 @@ public class TesseractCliOcrServiceTests : IDisposable
         return script;
     }
 
-    [Fact]
+    [UnixOnlyFact("the engine stub is a /bin/sh script")]
     public async Task ReadAsync_ReturnsStdout_FromTheEngine()
     {
-        if (OperatingSystem.IsWindows())
-        {
-            return; // sh stub — suite runs on macOS/Linux
-        }
-
         var service = NewService(new OcrOptions
         {
             TessdataPath = _tempDir,
@@ -84,14 +79,9 @@ public class TesseractCliOcrServiceTests : IDisposable
         Assert.Equal("Hello OCR", result.RawText);
     }
 
-    [Fact]
+    [UnixOnlyFact("the engine stub is a /bin/sh script")]
     public async Task ReadAsync_KillsAHungEngine_AndReportsUnavailable_OnTimeout()
     {
-        if (OperatingSystem.IsWindows())
-        {
-            return;
-        }
-
         // The stub hangs far beyond the 1s configured ceiling; the adapter must give
         // up on its own timeout (NOT the caller's ct) and degrade to unavailable.
         var service = NewService(new OcrOptions
@@ -110,14 +100,9 @@ public class TesseractCliOcrServiceTests : IDisposable
             $"timed-out run should return promptly, took {started.Elapsed}");
     }
 
-    [Fact]
+    [UnixOnlyFact("the engine stub is a /bin/sh script")]
     public async Task ReadAsync_CapsConcurrentEngineProcesses_ToMaxConcurrency()
     {
-        if (OperatingSystem.IsWindows())
-        {
-            return;
-        }
-
         // The stub takes an atomic mkdir lock: if two stub processes ever run at the
         // same time the second fails the mkdir and prints OVERLAP. With
         // MaxConcurrency=1 the semaphore must serialize the runs, so every result

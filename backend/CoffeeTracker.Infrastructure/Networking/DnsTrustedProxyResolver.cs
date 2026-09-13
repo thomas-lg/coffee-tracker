@@ -1,12 +1,18 @@
 using System.Net;
 using System.Net.Sockets;
-using CoffeeTracker.Application.Ports.Driven;
 using Microsoft.Extensions.Logging;
 
 namespace CoffeeTracker.Infrastructure.Networking;
 
 /// <summary>
-/// Resolves the trusted-proxy list through DNS.
+/// Turns the configured <c>ForwardedHeaders:KnownProxies</c> list into addresses.
+///
+/// Entries may be addresses or host names. Names matter because a container
+/// orchestrator assigns the address, not the operator: pinning the reverse proxy's
+/// current IP works until it restarts onto another one, at which point forwarded
+/// headers are silently ignored and the rate limiter goes back to seeing every request
+/// as the proxy. Naming the proxy — a container name, a service name, a DNS record —
+/// is the thing that stays true.
 ///
 /// Resolution happens once, at startup, because that is when the forwarded-headers
 /// options are built. A proxy that moves to another address while the app is running
@@ -15,8 +21,13 @@ namespace CoffeeTracker.Infrastructure.Networking;
 /// configuring nothing at all. Never the other way round: an address is never trusted
 /// because it once belonged to the proxy.
 /// </summary>
-public sealed class DnsTrustedProxyResolver(ILogger<DnsTrustedProxyResolver> logger) : ITrustedProxyResolver
+public sealed class DnsTrustedProxyResolver(ILogger<DnsTrustedProxyResolver> logger)
 {
+    /// <summary>
+    /// Resolves the list. Entries that are neither an address nor a resolvable name are
+    /// dropped, never guessed: trusting the wrong hop would let a client forge its own
+    /// address. A caller gets fewer trusted proxies than it asked for, never more.
+    /// </summary>
     public IReadOnlyList<IPAddress> Resolve(string? configuredValue)
     {
         var resolved = new List<IPAddress>();
