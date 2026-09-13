@@ -13,8 +13,6 @@ namespace CoffeeTracker.Infrastructure.Storage;
 /// </summary>
 public sealed class PhotoUrlSigner : IPhotoUrlSigner
 {
-    private const string PublicPrefix = "photos";
-
     private readonly byte[] _key;
     private readonly TimeProvider _clock;
     private readonly int _lifetimeMinutes;
@@ -35,13 +33,13 @@ public sealed class PhotoUrlSigner : IPhotoUrlSigner
             return null;
         }
 
-        var fileName = relativePath.StartsWith(PublicPrefix + "/", StringComparison.Ordinal)
-            ? relativePath[(PublicPrefix.Length + 1)..]
+        var fileName = relativePath.StartsWith(PhotoRoute.PublicPrefix + "/", StringComparison.Ordinal)
+            ? relativePath[(PhotoRoute.PublicPrefix.Length + 1)..]
             : relativePath;
 
         var exp = _clock.GetUtcNow().AddMinutes(_lifetimeMinutes).ToUnixTimeSeconds();
         var sig = Compute(fileName, exp);
-        return $"/{PublicPrefix}/{Uri.EscapeDataString(fileName)}?exp={exp}&sig={sig}";
+        return $"/{PhotoRoute.PublicPrefix}/{Uri.EscapeDataString(fileName)}?exp={exp}&sig={sig}";
     }
 
     public bool Validate(string fileName, string? exp, string? sig)

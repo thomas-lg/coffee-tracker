@@ -42,8 +42,15 @@ public sealed class EfAccountPolicy(AppDbContext db) : IAccountPolicy
     /// setting should ever be able to lock everyone out by being merely absent, and
     /// registration is open only while there is nobody to protect.
     /// </summary>
-    private async Task<AccountPolicy> DefaultForUnseededInstanceAsync(CancellationToken ct) =>
-        new(LocalLoginEnabled: true,
-            LocalRegistrationEnabled: !await db.Users.AnyAsync(ct),
-            RegistrationOpenedForBootstrap: !await db.Users.AnyAsync(ct));
+    private async Task<AccountPolicy> DefaultForUnseededInstanceAsync(CancellationToken ct)
+    {
+        // One read, used twice. Asking twice also let the two flags disagree if a user
+        // registered in between — the exact state AccountPolicySeeder says can only ever
+        // coincide here.
+        var hasNoUsers = !await db.Users.AnyAsync(ct);
+        return new AccountPolicy(
+            LocalLoginEnabled: true,
+            LocalRegistrationEnabled: hasNoUsers,
+            RegistrationOpenedForBootstrap: hasNoUsers);
+    }
 }
