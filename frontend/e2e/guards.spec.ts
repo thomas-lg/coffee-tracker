@@ -3,13 +3,16 @@ import { injectSession } from './support/session';
 
 /**
  * Route-guard smoke — cheap (no auth calls): the guard must keep unauthenticated
- * and expired sessions out of the app and bounce them to /login.
+ * and expired sessions out of the app and bounce them to /login, carrying the page it
+ * interrupted so sign-in can resume it.
  */
 test.describe('route guards', () => {
-  test('an unauthenticated visitor is sent to /login', async ({ page }) => {
+  test('an unauthenticated visitor is sent to /login with the page they wanted', async ({
+    page,
+  }) => {
     await page.goto('/coffees');
 
-    await expect(page).toHaveURL(/\/login$/);
+    await expect(page).toHaveURL(/\/login\?returnUrl=%2Fcoffees$/);
     await expect(page.getByRole('heading', { name: /sign in/i })).toBeVisible();
   });
 
@@ -26,6 +29,6 @@ test.describe('route guards', () => {
 
     await page.goto('/coffees');
 
-    await expect(page).toHaveURL(/\/login$/);
+    await expect(page).toHaveURL(/\/login\?returnUrl=%2Fcoffees$/);
   });
 });
