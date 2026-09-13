@@ -30,9 +30,13 @@ docker pull ghcr.io/thomas-lg/coffee-tracker:latest
 Configured via the API. Current ruleset:
 
 - Pull request required before merge (**0** required approvals — solo maintainer).
-- Required status checks, **up to date**: `backend`, `frontend`, `docker-build`.
+- Required status checks, **up to date**: `backend`, `frontend`, `docker-build`, `e2e`,
+  `Analyze (csharp)`, `Analyze (javascript-typescript)`. `e2e` matters more than its name
+  suggests — it runs the OpenAPI drift guard, so without it a backend contract change can
+  merge with a stale typed client.
 - **Linear history** (squash- or rebase-merge only — no merge commits).
-- Force-pushes and branch deletion **blocked**.
+- Branch deletion **blocked**. Force-pushes are *allowed*, deliberately: rewriting `main`
+  is occasionally the only way to purge something that should never have been committed.
 - **Not enforced for admins** (the maintainer self-merges).
 
 View or edit at **Settings → Branches → Branch protection rules**, or via:

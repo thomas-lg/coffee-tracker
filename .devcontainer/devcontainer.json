@@ -15,10 +15,17 @@
     "ghcr.io/devcontainers/features/github-cli:1": {}
   },
   // Reuse the host's Claude Code credentials so the CLI is logged in inside the
-  // container without re-running OAuth on every rebuild. Drop this line to log
-  // in interactively instead.
+  // container without re-running OAuth on every rebuild.
+  //
+  // HOME is set on macOS/Linux and USERPROFILE on Windows, never both, so concatenating
+  // them yields whichever exists — a bare ${localEnv:USERPROFILE} resolves to empty off
+  // Windows and silently binds /.claude instead.
+  //
+  // This hands host credentials to a container that builds npm and NuGet dependency
+  // trees, so an install script runs with reach into them. Drop this line to log in
+  // interactively inside the container instead.
   "mounts": [
-    "source=${localEnv:USERPROFILE}/.claude,target=/home/vscode/.claude,type=bind"
+    "source=${localEnv:HOME}${localEnv:USERPROFILE}/.claude,target=/home/vscode/.claude,type=bind"
   ],
   // This container ships the tesseract CLI (see .devcontainer/Dockerfile), so turn the
   // real OCR engine on here. Overrides appsettings.Development.json's Ocr:Engine=none —

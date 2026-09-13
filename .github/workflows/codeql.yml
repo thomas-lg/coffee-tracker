@@ -14,6 +14,14 @@ permissions:
   contents: read
   security-events: write # upload analysis results to code scanning
 
+# A newer push to the same PR supersedes the in-flight scan; without this, two full
+# two-language analyses run and the stale one still uploads to the Security tab.
+# Cancelling is safe here — CodeQL publishes nothing a cancel could leave half-written.
+# The scheduled run is keyed by ref too, so it never cancels a PR's scan.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   analyze:
     name: Analyze (${{ matrix.language }})

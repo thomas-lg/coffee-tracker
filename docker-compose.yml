@@ -23,6 +23,18 @@ services:
     volumes:
       - config:/config # coffee.db (+ -wal/-shm). Back up before updating the image.
       - photos:/photos # uploaded coffee photos
+    # This file is labelled "reference" above, which means people copy it to real hosts.
+    # The entrypoint needs exactly four capabilities to chown the volumes and drop to
+    # PUID:PGID; everything else goes, and no process can regain privileges it dropped.
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN # re-own /config and /photos to PUID:PGID
+      - FOWNER # operate on those paths regardless of their current owner
+      - SETUID # gosu drops to the target user
+      - SETGID # ...and its group
     healthcheck:
       test: ['CMD', 'curl', '-fsS', 'http://localhost:8080/health']
       interval: 30s
