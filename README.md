@@ -52,7 +52,8 @@ commitments, no SLAs, no deadlines.
 - **Deploy:** GitHub Actions builds a `linux/amd64` image and publishes it to
   GHCR; you install/update it manually from your NAS's Docker GUI.
 
-See [PLAN.md](./PLAN.md) for the full design and build milestones (M0–M8).
+See [docs/design-notes.md](./docs/design-notes.md) for the standing design rationale,
+and [`openspec/changes/archive/`](./openspec/changes/archive/) for how each piece was built.
 
 ## Getting started (Dev Container)
 
@@ -238,8 +239,7 @@ served only through **short-lived signed URLs** — never anonymously. Every res
 carries a **content security policy** (no inline script), `X-Frame-Options: DENY`,
 `Referrer-Policy: no-referrer` and `nosniff`, so an injected script — the shortest
 path to the session, which lives in `localStorage` — has no way to run. See the
-Security section in
-[PLAN.md](./PLAN.md).
+Security section in [docs/design-notes.md](./docs/design-notes.md).
 
 ## Ideas for later
 

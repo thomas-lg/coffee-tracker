@@ -35,9 +35,9 @@
   "remoteEnv": {
     "GH_TOKEN": "${localEnv:GH_TOKEN}"
   },
-  // Dev runs the API HTTP-only on localhost:5000 (http://localhost is a secure
-  // context, so PWA service worker + camera still work) and ng serve on 4200.
-  // No 5001/HTTPS in the container — see the dev-HTTPS note in PLAN.md (M0).
+  // Dev runs the API HTTP-only on localhost:5000 and ng serve on 4200. No HTTPS in the
+  // container: http://localhost is already a secure context, so the PWA service worker
+  // and the camera work without a certificate.
   "forwardPorts": [5000, 4200],
   // Runs once from the workspace root after the container is created.
   "postCreateCommand": "bash .devcontainer/post-create.sh",
