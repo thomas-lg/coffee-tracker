@@ -1,6 +1,6 @@
 import { type APIRequestContext, type Page } from '@playwright/test';
 import { readFile } from 'node:fs/promises';
-import { fileURLToPath } from 'node:url';
+import { resolve } from 'node:path';
 
 /** Helpers shared across e2e specs. The suite deliberately makes very few auth
  *  calls — the API rate-limits /api/auth to 10/min — so most setup is done by
@@ -45,10 +45,12 @@ export async function injectSession(page: Page, session: StoredSession): Promise
 
 /**
  * Where global setup leaves the suite's administrator, for tests that need one.
- * Resolved from this file rather than the process cwd, so the suite runs from
- * anywhere — `npx playwright test` in a repo root, or an IDE with its own cwd.
+ * Resolved from this file rather than the process cwd, so the suite runs from anywhere —
+ * `npx playwright test` in a repo root, or an IDE with its own cwd. __dirname rather than
+ * import.meta: Playwright transpiles these to CommonJS (no "type": "module" here), so
+ * import.meta.url is a syntax error at load time.
  */
-export const ADMIN_STATE_FILE = fileURLToPath(new URL('../.auth/admin.json', import.meta.url));
+export const ADMIN_STATE_FILE = resolve(__dirname, '../.auth/admin.json');
 
 /** What the API hands back on register/login, trimmed to what the suite uses. */
 export interface ProvisionedUser {
