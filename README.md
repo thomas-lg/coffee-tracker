@@ -254,6 +254,16 @@ Nothing committed — a parking lot for when the mood strikes:
 - **Multi-arch image** (add `linux/arm64`) for ARM NAS / Raspberry Pi.
 - **i18n** — the UI is English-only today.
 
+## Contributing
+
+Bug reports and questions are welcome — see [CONTRIBUTING.md](./CONTRIBUTING.md) for
+how the repo works, and [CLAUDE.md](./CLAUDE.md) for the architecture rules and the
+gotchas worth knowing before changing anything.
+
+Found a security problem? Please report it privately rather than in an issue —
+[SECURITY.md](./SECURITY.md) has the details and says what's already known and
+deliberate.
+
 ## Built with Claude
 
 I use [Claude](https://claude.ai) (via Claude Code) to help design and build this
