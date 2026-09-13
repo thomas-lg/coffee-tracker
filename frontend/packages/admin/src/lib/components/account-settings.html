@@ -7,14 +7,19 @@
     </p>
   </div>
 
+  <!-- role="alert" because this appears asynchronously in response to a toggle that
+       then snaps back: without it the switch visibly reverts and nothing is announced. -->
   @if (refusal(); as message) {
-    <p class="mb-6 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+    <p
+      role="alert"
+      class="mb-6 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-900/60 dark:bg-amber-950/40 dark:text-amber-200"
+    >
       {{ message }}
     </p>
   }
 
   @if (loading()) {
-    <p class="text-sm text-muted">Loading…</p>
+    <p class="text-sm text-muted" role="status" aria-live="polite">Loading…</p>
   } @else if (settings(); as s) {
     <div class="flex flex-col gap-4">
       <label class="flex items-start justify-between gap-6 rounded-xl border border-line bg-foam p-4">

@@ -24,13 +24,29 @@ import { PhotoCleanupStore } from '../services/photo-cleanup.store';
 export class PhotoCleanup {
   protected readonly store = inject(PhotoCleanupStore);
   private readonly cancelBtn = viewChild<ElementRef<HTMLButtonElement>>('cancelBtn');
+  // ct-button renders the real control inside its host, so the host itself is not
+  // focusable — reach through to the button it stamped out.
+  private readonly armBtn = viewChild('armBtn', { read: ElementRef<HTMLElement> });
 
   constructor() {
-    // Arming removes the Delete button, so focus would drop to <body>. autofocus on
+    // Arming removes the Delete button and cancelling removes the Cancel button, so
+    // either way the focused element disappears and focus drops to <body>. autofocus on
     // the Cancel button does work here — @if inserts it for real, and all three engines
     // honour that — but the template a11y lint bans the attribute outright.
+    //
+    // Only on a transition: this effect also runs on first render, and focusing a
+    // toolbar button merely because the screen loaded would yank focus from the reader.
+    let wasConfirming: boolean | undefined;
     effect(() => {
-      if (this.store.confirming()) this.cancelBtn()?.nativeElement.focus();
+      const confirming = this.store.confirming();
+      if (wasConfirming !== undefined && wasConfirming !== confirming) {
+        if (confirming) {
+          this.cancelBtn()?.nativeElement.focus();
+        } else {
+          this.armBtn()?.nativeElement.querySelector('button')?.focus();
+        }
+      }
+      wasConfirming = confirming;
     });
   }
 
