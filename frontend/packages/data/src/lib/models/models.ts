@@ -186,6 +186,56 @@ type SameKeys<A, B> = [keyof A] extends [keyof B]
   : { extra_in_model: Exclude<keyof A, keyof B> };
 type Assert<T extends true> = T;
 
+/**
+ * A whole catalog, as an administrator downloads and restores it. The client only ever
+ * reads it back out of a file and hands it straight to the API, so the shapes exist to
+ * keep that round trip type-checked rather than to be built by hand here.
+ */
+export interface Backup {
+  formatVersion: number;
+  /** ISO date-time */
+  exportedAt: string;
+  coffees: BackupCoffee[];
+}
+
+export interface BackupCoffee {
+  name: string;
+  roaster: string;
+  origin: string;
+  roastLevel: RoastLevel;
+  price: number;
+  /** ISO date */
+  dateBought: string;
+  photoPath: string | null;
+  shopName: string | null;
+  purchaseUrl: string | null;
+  createdByUserId: string | null;
+  createdAt: string;
+  reviews: BackupReview[];
+}
+
+export interface BackupReview {
+  userId: string;
+  rating: number;
+  stage: string | null;
+  tastingNotes: string | null;
+  brewMethod: string | null;
+  grind: string | null;
+  ratio: string | null;
+  createdAt: string;
+  updatedAt: string | null;
+  /** Flavour tags by name, since ids are per-instance. */
+  tags: string[];
+}
+
+/** What a restore wrote, and anything it skipped on the way. */
+export interface ImportResult {
+  coffees: number;
+  reviews: number;
+  warnings: string[];
+}
+
+
 type _GCoffee = Assert<SameKeys<Coffee, Schemas['CoffeeResponseDto']>>;
 type _GCoffeeCreate = Assert<SameKeys<CoffeeCreate, Schemas['CoffeeCreateDto']>>;
 type _GReview = Assert<SameKeys<Review, Schemas['ReviewResponseDto']>>;
@@ -203,3 +253,7 @@ type _GOidcSignIn = Assert<SameKeys<OidcSignIn, Schemas['OidcSignInDto']>>;
 type _GAccountSettings = Assert<SameKeys<AccountSettings, Schemas['AccountSettingsDto']>>;
 type _GPhotoListItem = Assert<SameKeys<PhotoListItem, Schemas['PhotoListItemDto']>>;
 type _GPhotoDeleteResult = Assert<SameKeys<PhotoDeleteResult, Schemas['PhotoDeleteResultDto']>>;
+type _GBackup = Assert<SameKeys<Backup, Schemas['BackupDto']>>;
+type _GBackupCoffee = Assert<SameKeys<BackupCoffee, Schemas['BackupCoffeeDto']>>;
+type _GBackupReview = Assert<SameKeys<BackupReview, Schemas['BackupReviewDto']>>;
+type _GImportResult = Assert<SameKeys<ImportResult, Schemas['ImportResultDto']>>;

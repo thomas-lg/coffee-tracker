@@ -1,0 +1,90 @@
+<header class="mb-6">
+  <h1 class="font-display text-2xl font-semibold text-ink">Backup</h1>
+  <p class="mt-1 text-sm text-muted">
+    Download the catalog as a JSON file, or restore one taken from this or another instance.
+  </p>
+</header>
+
+<div class="grid gap-5 md:grid-cols-2">
+  <section class="rounded-2xl border border-line bg-foam p-6">
+    <h2 class="font-display text-lg font-semibold text-ink">Export</h2>
+    <p class="mt-1 text-sm text-muted">
+      Every coffee with its reviews and flavour tags. Photos stay on the server — the file
+      is data only.
+    </p>
+    <ct-button
+      class="mt-4 inline-block"
+      variant="primary"
+      [disabled]="store.exporting()"
+      (click)="store.exportCatalog()"
+    >
+      {{ store.exporting() ? 'Preparing…' : 'Download backup' }}
+    </ct-button>
+  </section>
+
+  <section class="rounded-2xl border border-line bg-foam p-6">
+    <h2 class="font-display text-lg font-semibold text-ink">Restore</h2>
+    <p class="mt-1 text-sm text-muted">
+      A restore <strong class="font-semibold text-ink">replaces</strong> the whole catalog.
+      Whatever is on the shelf now is deleted.
+    </p>
+
+    <!-- The native control is hidden rather than styled: file inputs cannot be themed
+         across engines, and a button that forwards the click keeps the house styling. -->
+    <input
+      #fileInput
+      type="file"
+      accept="application/json,.json"
+      class="sr-only"
+      aria-hidden="true"
+      tabindex="-1"
+      (change)="pick($event)"
+    />
+
+    <!-- aria-live on the stable wrapper so arming the confirm step is announced. -->
+    <div class="mt-4" aria-live="polite">
+      @if (store.staged(); as staged) {
+        <p class="text-sm font-semibold text-ink">
+          Replace the catalog with {{ staged.backup.coffees.length }} coffee(s) from
+          <span class="font-mono font-normal">{{ staged.fileName }}</span
+          >?
+        </p>
+        <div class="mt-3 flex items-center gap-2">
+          <button
+            type="button"
+            #cancelBtn
+            (click)="store.cancel()"
+            class="rounded-full px-3 py-1.5 text-sm font-semibold text-muted hover:text-ink"
+            [disabled]="store.importing()"
+          >
+            Cancel
+          </button>
+          <ct-button
+            variant="primary"
+            [disabled]="store.importing()"
+            (click)="store.confirmImport()"
+          >
+            {{ store.importing() ? 'Restoring…' : 'Replace catalog' }}
+          </ct-button>
+        </div>
+      } @else {
+        <ct-button variant="ghost" (click)="browse()">Choose a backup file…</ct-button>
+      }
+    </div>
+
+    @if (store.lastResult(); as result) {
+      <div class="mt-5 rounded-xl border border-line bg-latte p-4">
+        <p class="text-sm font-semibold text-ink">
+          Restored {{ result.coffees }} coffee(s) and {{ result.reviews }} review(s).
+        </p>
+        @if (result.warnings.length > 0) {
+          <ul class="mt-2 list-disc space-y-1 pl-5 text-sm text-muted">
+            @for (warning of result.warnings; track warning) {
+              <li>{{ warning }}</li>
+            }
+          </ul>
+        }
+      </div>
+    }
+  </section>
+</div>

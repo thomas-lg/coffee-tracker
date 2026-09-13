@@ -98,7 +98,7 @@ test.describe('admin screens', () => {
     await expect(page.getByRole('link', { name: /^admin$/i })).toHaveCount(0);
   });
 
-  test('the two admin sections are reachable as tabs', async ({ page }) => {
+  test('the admin sections are reachable as tabs', async ({ page }) => {
     const admin = await suiteAdmin();
     await injectSession(page, sessionFor(admin, { isAdmin: true }));
 
@@ -114,6 +114,10 @@ test.describe('admin screens', () => {
     await page.getByRole('link', { name: /^accounts$/i }).click();
     await expect(page).toHaveURL(/\/admin\/settings/);
     await expect(page.getByRole('heading', { name: /account settings/i })).toBeVisible();
+
+    await page.getByRole('link', { name: /^backup$/i }).click();
+    await expect(page).toHaveURL(/\/admin\/backup/);
+    await expect(page.getByRole('heading', { name: /^backup$/i })).toBeVisible();
   });
 
   test('disabling local sign-in is refused while it is the only way in', async ({ page }) => {

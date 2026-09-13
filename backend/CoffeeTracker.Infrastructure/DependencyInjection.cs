@@ -24,6 +24,7 @@ public static class DependencyInjection
         services.Configure<PhotoStorageOptions>(configuration.GetSection(PhotoStorageOptions.SectionName));
 
         services.AddScoped<ICoffeeRepository, EfCoffeeRepository>();
+        services.AddScoped<IBackupStore, EfBackupStore>();
         services.AddScoped<IReviewRepository, EfReviewRepository>();
         services.AddScoped<IFlavorTagRepository, EfFlavorTagRepository>();
         services.AddScoped<IRefreshTokenStore, EfRefreshTokenStore>();

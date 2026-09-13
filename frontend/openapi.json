@@ -10,6 +10,102 @@
     }
   ],
   "paths": {
+    "/api/admin/backup": {
+      "get": {
+        "tags": [
+          "AdminBackup"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackupDto"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackupDto"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackupDto"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "AdminBackup"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "$ref": "#/components/schemas/BackupDto"
+                  }
+                ]
+              }
+            },
+            "text/json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "$ref": "#/components/schemas/BackupDto"
+                  }
+                ]
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "$ref": "#/components/schemas/BackupDto"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImportResultDto"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImportResultDto"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImportResultDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/admin/photos": {
       "get": {
         "tags": [
@@ -1075,6 +1171,186 @@
           }
         }
       },
+      "BackupCoffeeDto": {
+        "required": [
+          "name",
+          "roaster",
+          "origin",
+          "roastLevel",
+          "price",
+          "dateBought",
+          "photoPath",
+          "shopName",
+          "purchaseUrl",
+          "createdByUserId",
+          "createdAt",
+          "reviews"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "roaster": {
+            "type": "string"
+          },
+          "origin": {
+            "type": "string"
+          },
+          "roastLevel": {
+            "$ref": "#/components/schemas/RoastLevel"
+          },
+          "price": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "dateBought": {
+            "type": "string",
+            "format": "date"
+          },
+          "photoPath": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "shopName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "purchaseUrl": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "createdByUserId": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "reviews": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BackupReviewDto"
+            }
+          }
+        }
+      },
+      "BackupDto": {
+        "required": [
+          "formatVersion",
+          "exportedAt",
+          "coffees"
+        ],
+        "type": "object",
+        "properties": {
+          "formatVersion": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "exportedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "coffees": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BackupCoffeeDto"
+            }
+          }
+        }
+      },
+      "BackupReviewDto": {
+        "required": [
+          "userId",
+          "rating",
+          "stage",
+          "tastingNotes",
+          "brewMethod",
+          "grind",
+          "ratio",
+          "createdAt",
+          "updatedAt",
+          "tags"
+        ],
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "string"
+          },
+          "rating": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "stage": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "tastingNotes": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "brewMethod": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "grind": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "ratio": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
       "CoffeeCreateDto": {
         "required": [
           "name",
@@ -1342,6 +1618,38 @@
       "IFormFile": {
         "type": "string",
         "format": "binary"
+      },
+      "ImportResultDto": {
+        "required": [
+          "coffees",
+          "reviews",
+          "warnings"
+        ],
+        "type": "object",
+        "properties": {
+          "coffees": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "reviews": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "warnings": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
       },
       "LoginDto": {
         "required": [
@@ -1794,6 +2102,9 @@
     }
   },
   "tags": [
+    {
+      "name": "AdminBackup"
+    },
     {
       "name": "AdminPhotos"
     },

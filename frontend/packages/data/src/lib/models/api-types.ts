@@ -4,6 +4,70 @@
  */
 
 export interface paths {
+    "/api/admin/backup": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["BackupDto"];
+                        "application/json": components["schemas"]["BackupDto"];
+                        "text/json": components["schemas"]["BackupDto"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: {
+                content: {
+                    "application/json": null | components["schemas"]["BackupDto"];
+                    "text/json": null | components["schemas"]["BackupDto"];
+                    "application/*+json": null | components["schemas"]["BackupDto"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ImportResultDto"];
+                        "application/json": components["schemas"]["ImportResultDto"];
+                        "text/json": components["schemas"]["ImportResultDto"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/admin/photos": {
         parameters: {
             query?: never;
@@ -829,6 +893,45 @@ export interface components {
             displayName: null | string;
             isAdmin: boolean;
         };
+        BackupCoffeeDto: {
+            name: string;
+            roaster: string;
+            origin: string;
+            roastLevel: components["schemas"]["RoastLevel"];
+            /** Format: double */
+            price: number | string;
+            /** Format: date */
+            dateBought: string;
+            photoPath: null | string;
+            shopName: null | string;
+            purchaseUrl: null | string;
+            createdByUserId: null | string;
+            /** Format: date-time */
+            createdAt: string;
+            reviews: components["schemas"]["BackupReviewDto"][];
+        };
+        BackupDto: {
+            /** Format: int32 */
+            formatVersion: number | string;
+            /** Format: date-time */
+            exportedAt: string;
+            coffees: components["schemas"]["BackupCoffeeDto"][];
+        };
+        BackupReviewDto: {
+            userId: string;
+            /** Format: int32 */
+            rating: number | string;
+            stage: null | string;
+            tastingNotes: null | string;
+            brewMethod: null | string;
+            grind: null | string;
+            ratio: null | string;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: null | string;
+            tags: string[];
+        };
         CoffeeCreateDto: {
             name: string;
             roaster: string;
@@ -888,6 +991,13 @@ export interface components {
         };
         /** Format: binary */
         IFormFile: string;
+        ImportResultDto: {
+            /** Format: int32 */
+            coffees: number | string;
+            /** Format: int32 */
+            reviews: number | string;
+            warnings: string[];
+        };
         LoginDto: {
             email: string;
             password: string;

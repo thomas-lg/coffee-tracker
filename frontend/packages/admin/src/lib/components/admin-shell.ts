@@ -28,6 +28,15 @@ import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
             [class]="settings.isActive ? active : idle"
             >Accounts</a
           >
+          <a
+            routerLink="backup"
+            routerLinkActive
+            #backup="routerLinkActive"
+            [attr.aria-current]="backup.isActive ? 'page' : null"
+            class="-mb-px border-b-2 px-4 pb-3 text-sm font-semibold transition-colors"
+            [class]="backup.isActive ? active : idle"
+            >Backup</a
+          >
         </nav>
       </header>
 
