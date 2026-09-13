@@ -34,8 +34,20 @@ RUN npx ng build app --configuration production
 # mcr.microsoft.com/dotnet/sdk:10.0
 FROM mcr.microsoft.com/dotnet/sdk:10.0@sha256:2fa828c68761b1b8c23d7662dc134421b9d3b59fe1425fdbc80804e390cdb24d AS api
 WORKDIR /src
+# Restore in its own layer (cached until a manifest or lock file changes), the same shape
+# as the npm restore in stage 1 — otherwise every edit to any .cs file re-resolves and
+# re-downloads the whole package graph. Only the Api's transitive closure is restored, so
+# the test project's dependencies never enter the image's build.
+COPY backend/Directory.Build.props ./backend/
+COPY backend/CoffeeTracker.Api/CoffeeTracker.Api.csproj backend/CoffeeTracker.Api/packages.lock.json ./backend/CoffeeTracker.Api/
+COPY backend/CoffeeTracker.Application/CoffeeTracker.Application.csproj backend/CoffeeTracker.Application/packages.lock.json ./backend/CoffeeTracker.Application/
+COPY backend/CoffeeTracker.Domain/CoffeeTracker.Domain.csproj backend/CoffeeTracker.Domain/packages.lock.json ./backend/CoffeeTracker.Domain/
+COPY backend/CoffeeTracker.Infrastructure/CoffeeTracker.Infrastructure.csproj backend/CoffeeTracker.Infrastructure/packages.lock.json ./backend/CoffeeTracker.Infrastructure/
+# --locked-mode for the same reason CI uses it: the image must be built from the exact
+# package graph the committed lock files describe, not whatever resolves today.
+RUN dotnet restore backend/CoffeeTracker.Api/CoffeeTracker.Api.csproj --locked-mode
 COPY backend/ ./backend/
-RUN dotnet publish backend/CoffeeTracker.Api/CoffeeTracker.Api.csproj -c Release -o /publish
+RUN dotnet publish backend/CoffeeTracker.Api/CoffeeTracker.Api.csproj -c Release -o /publish --no-restore
 
 # --- Stage 3: runtime ---
 # mcr.microsoft.com/dotnet/aspnet:10.0
