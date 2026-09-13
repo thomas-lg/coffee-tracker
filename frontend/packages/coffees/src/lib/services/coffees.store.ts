@@ -2,6 +2,7 @@ import { computed, inject } from '@angular/core';
 import { rxResource } from '@angular/core/rxjs-interop';
 import { patchState, signalStore, withComputed, withMethods, withProps, withState } from '@ngrx/signals';
 import { extendResource, withValueOnError } from '@ngrx/signals/resource';
+import { AuthStore } from '@coffee-tracker/auth';
 import { CoffeesApi, type Coffee } from '@coffee-tracker/data';
 import { roastBucket } from '../utils/coffee-visual';
 
@@ -29,12 +30,24 @@ export const CoffeesStore = signalStore(
   withState(initialFilters),
   withProps(() => {
     const api = inject(CoffeesApi);
+    const auth = inject(AuthStore);
     return {
       // A resource's value() THROWS while it is in an error state, even with a default.
       // withValueOnError makes it answer [] instead, so every derived signal and every
       // template consumer below is safe without re-implementing the guard.
       _list: extendResource(
-        rxResource({ stream: () => api.list(), defaultValue: [] as Coffee[] }),
+        rxResource({
+          // Keyed on who is asking, not because the catalog differs per user — it is
+          // shared — but because this store is providedIn: 'root' and signing out is a
+          // client-side navigation. Without a key the instance outlives the session and
+          // the next person to sign in reads the previous one's snapshot: coffees added
+          // since are missing, and every photo URL in it is a signed URL that has since
+          // expired, so the images 401. Undefined while signed out keeps the resource
+          // idle rather than firing an unauthenticated request from the login screen.
+          params: () => auth.session()?.userId,
+          stream: () => api.list(),
+          defaultValue: [] as Coffee[],
+        }),
         withValueOnError([]),
       ),
     };
