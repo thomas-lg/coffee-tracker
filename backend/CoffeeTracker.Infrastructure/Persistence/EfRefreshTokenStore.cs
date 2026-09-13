@@ -10,8 +10,14 @@ namespace CoffeeTracker.Infrastructure.Persistence;
 
 /// <summary>
 /// EF Core adapter for <see cref="IRefreshTokenStore"/>. Tokens are 256-bit random
-/// values; only their SHA-256 hash is persisted. Rotation and revocation rely on
-/// SQLite's single-writer serialisation for atomicity.
+/// values; only their SHA-256 hash is persisted.
+///
+/// Every state change to a token row is a single guarded UPDATE rather than a
+/// read-then-write: SQLite serialises writes, but not a read on one connection against
+/// a write on another, and the context is scoped per request. Rotation in particular
+/// must claim the row atomically — if two requests could both observe an unrevoked
+/// token and both proceed, one stolen token would yield two live session families and
+/// the reuse detection below would never fire.
 /// </summary>
 public sealed class EfRefreshTokenStore(
     AppDbContext db,
@@ -72,7 +78,22 @@ public sealed class EfRefreshTokenStore(
             return new RefreshRotation(false, null, null);
         }
 
-        existing.RevokedAtUtc = now;
+        // Claim the row: revoke it only if it is still unrevoked, and let the database
+        // report whether this request is the one that did it. A concurrent rotation of
+        // the same token loses here (0 rows) rather than both sides succeeding — and
+        // losing means someone else already spent this token, which is reuse.
+        var claimed = await db.RefreshTokens
+            .Where(t => t.TokenHash == hash && t.RevokedAtUtc == null)
+            .ExecuteUpdateAsync(s => s.SetProperty(t => t.RevokedAtUtc, now), ct);
+        if (claimed != 1)
+        {
+            logger.LogWarning(
+                "Concurrent refresh-token rotation for user {UserId}; revoking all their sessions.",
+                existing.UserId);
+            await RevokeAllAsync(existing.UserId, ct);
+            return new RefreshRotation(false, null, null);
+        }
+
         var (raw, newHash) = NewToken();
         var expires = now.AddDays(_lifetimeDays);
         db.RefreshTokens.Add(new RefreshToken
