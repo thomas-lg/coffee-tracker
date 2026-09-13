@@ -52,7 +52,13 @@ function toDto(m: CoffeeFormModel): CoffeeCreate {
 }
 
 export const CoffeeFormStore = signalStore(
-  withState({ loading: false, scanning: false, submitting: false }),
+  withState({
+    loading: false,
+    scanning: false,
+    submitting: false,
+    /** Photo already attached to the coffee being edited; the screen previews it. */
+    photoUrl: null as string | null,
+  }),
   withProps(() => ({
     _api: inject(CoffeesApi),
     _scanApi: inject(ScanApi),
@@ -79,7 +85,8 @@ export const CoffeeFormStore = signalStore(
         switchMap((id) =>
           store._api.get(id).pipe(
             tapResponse({
-              next: (c) =>
+              next: (c) => {
+                patchState(store, { loading: false, photoUrl: c.photoUrl ?? null });
                 store.model.set({
                   name: c.name,
                   roaster: c.roaster,
@@ -89,9 +96,15 @@ export const CoffeeFormStore = signalStore(
                   dateBought: c.dateBought,
                   shopName: c.shopName ?? '',
                   purchaseUrl: c.purchaseUrl ?? '',
-                }),
-              error: () => store._toast.show('Could not load that coffee.', 'error'),
-              finalize: () => patchState(store, { loading: false }),
+                });
+              },
+              // Not finalize: switchMap unsubscribes the previous request only after the
+              // outer tap has set loading, so a finalize would immediately clear the flag
+              // for the request that just started.
+              error: () => {
+                patchState(store, { loading: false });
+                store._toast.show('Could not load that coffee.', 'error');
+              },
             }),
           ),
         ),
@@ -114,19 +127,22 @@ export const CoffeeFormStore = signalStore(
                   // OCR returns free text (e.g. "medium-dark"); map it onto the enum.
                   roastLevel: parsed.roastLevel ? roastBucket(parsed.roastLevel) : m.roastLevel,
                 }));
+                patchState(store, { scanning: false });
                 store._toast.show(
                   'Bag scanned — fields pre-filled. Check them before saving.',
                   'success',
                 );
               },
-              error: (err: unknown) =>
+              error: (err: unknown) => {
+                patchState(store, { scanning: false });
+                const off = err instanceof HttpErrorResponse && err.status === 503;
                 store._toast.show(
-                  err instanceof HttpErrorResponse && err.status === 503
+                  off
                     ? 'OCR is off on this host — fill the form in manually.'
                     : 'Could not read that photo.',
-                  err instanceof HttpErrorResponse && err.status === 503 ? 'info' : 'error',
-                ),
-              finalize: () => patchState(store, { scanning: false }),
+                  off ? 'info' : 'error',
+                );
+              },
             }),
           ),
         ),

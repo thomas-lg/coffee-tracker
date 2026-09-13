@@ -51,7 +51,9 @@ export class CoffeeForm implements OnDestroy {
   protected readonly roastLevels = ROAST_LEVELS;
   protected readonly today = today;
   private readonly photoFile = signal<File | null>(null);
-  protected readonly photoPreview = signal<string | null>(null);
+  /** Object URL for a file just chosen here; null until one is. */
+  private readonly chosenPreview = signal<string | null>(null);
+  protected readonly photoPreview = computed(() => this.chosenPreview() ?? this.store.photoUrl());
 
   constructor() {
     this.store.load(this.coffeeId);
@@ -59,10 +61,10 @@ export class CoffeeForm implements OnDestroy {
 
   /** Set the chosen file + preview, revoking any previous blob URL to avoid leaks. */
   private setPhoto(file: File): void {
-    const prev = this.photoPreview();
-    if (prev?.startsWith('blob:')) URL.revokeObjectURL(prev);
+    const prev = this.chosenPreview();
+    if (prev) URL.revokeObjectURL(prev);
     this.photoFile.set(file);
-    this.photoPreview.set(URL.createObjectURL(file));
+    this.chosenPreview.set(URL.createObjectURL(file));
   }
 
   protected onPhotoSelected(event: Event): void {
@@ -89,7 +91,7 @@ export class CoffeeForm implements OnDestroy {
   }
 
   ngOnDestroy(): void {
-    const p = this.photoPreview();
-    if (p?.startsWith('blob:')) URL.revokeObjectURL(p);
+    const p = this.chosenPreview();
+    if (p) URL.revokeObjectURL(p);
   }
 }

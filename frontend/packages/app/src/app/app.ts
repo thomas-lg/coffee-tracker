@@ -41,5 +41,4 @@ export class App {
     applyTheme(this.theme());
     persistTheme(this.theme());
   }
-
 }

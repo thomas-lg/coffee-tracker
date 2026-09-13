@@ -33,3 +33,6 @@ Thumbs.db
 
 # APM dependencies
 apm_modules/
+
+# Scratch output from local test runs
+.tmp-*

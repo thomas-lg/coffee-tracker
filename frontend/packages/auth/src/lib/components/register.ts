@@ -32,6 +32,13 @@ export class Register {
     minLength(p.password, 8);
   });
 
+  constructor() {
+    // AuthStore is root-provided, so Login and Register share one requestStatus. Without
+    // this, a sign-in still in flight renders the sibling screen's button disabled, and a
+    // failed one leaves its error sitting there.
+    this.auth.resetRequestStatus();
+  }
+
   protected onSubmit(): void {
     if (this.auth.pending()) return;
     if (this.f().invalid()) {
