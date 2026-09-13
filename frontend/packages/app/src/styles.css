@@ -82,6 +82,11 @@
   .field-error {
     @apply text-xs font-medium text-red-700 dark:text-red-400;
   }
+  /* Whole-form failures ("that email is taken", "sign-in failed"), as opposed to a
+     single invalid field. Always paired with role="alert" so it is announced. */
+  .form-alert {
+    @apply rounded-2xl border border-red-500/40 bg-red-500/10 px-4 py-3 text-sm text-red-700 dark:text-red-300;
+  }
 }
 
 /* Brand mark — a glossy coffee-bean chip for the header (the seam is the ::after arc). */
