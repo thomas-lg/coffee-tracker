@@ -1,0 +1,334 @@
+{
+  "fixtures": [
+    {
+      "file": "kirinyaga-flat.jpg",
+      "condition": "flat",
+      "expected": {
+        "name": "Kirinyaga AA",
+        "roaster": "La Cabra Coffee Roasters",
+        "origin": "Kenya",
+        "roastLevel": "Light",
+        "weight": "250g"
+      }
+    },
+    {
+      "file": "kirinyaga-angled.jpg",
+      "condition": "angled",
+      "expected": {
+        "name": "Kirinyaga AA",
+        "roaster": "La Cabra Coffee Roasters",
+        "origin": "Kenya",
+        "roastLevel": "Light",
+        "weight": "250g"
+      }
+    },
+    {
+      "file": "kirinyaga-dark.jpg",
+      "condition": "dark",
+      "expected": {
+        "name": "Kirinyaga AA",
+        "roaster": "La Cabra Coffee Roasters",
+        "origin": "Kenya",
+        "roastLevel": "Light",
+        "weight": "250g"
+      }
+    },
+    {
+      "file": "kirinyaga-glare.jpg",
+      "condition": "glare",
+      "expected": {
+        "name": "Kirinyaga AA",
+        "roaster": "La Cabra Coffee Roasters",
+        "origin": "Kenya",
+        "roastLevel": "Light",
+        "weight": "250g"
+      }
+    },
+    {
+      "file": "kirinyaga-soft.jpg",
+      "condition": "soft",
+      "expected": {
+        "name": "Kirinyaga AA",
+        "roaster": "La Cabra Coffee Roasters",
+        "origin": "Kenya",
+        "roastLevel": "Light",
+        "weight": "250g"
+      }
+    },
+    {
+      "file": "yirgacheffe-flat.jpg",
+      "condition": "flat",
+      "expected": {
+        "name": "Konga Natural",
+        "roaster": "Tim Wendelboe Roastery",
+        "origin": "Yirgacheffe",
+        "roastLevel": "Medium",
+        "weight": "340g"
+      }
+    },
+    {
+      "file": "yirgacheffe-angled.jpg",
+      "condition": "angled",
+      "expected": {
+        "name": "Konga Natural",
+        "roaster": "Tim Wendelboe Roastery",
+        "origin": "Yirgacheffe",
+        "roastLevel": "Medium",
+        "weight": "340g"
+      }
+    },
+    {
+      "file": "yirgacheffe-dark.jpg",
+      "condition": "dark",
+      "expected": {
+        "name": "Konga Natural",
+        "roaster": "Tim Wendelboe Roastery",
+        "origin": "Yirgacheffe",
+        "roastLevel": "Medium",
+        "weight": "340g"
+      }
+    },
+    {
+      "file": "yirgacheffe-glare.jpg",
+      "condition": "glare",
+      "expected": {
+        "name": "Konga Natural",
+        "roaster": "Tim Wendelboe Roastery",
+        "origin": "Yirgacheffe",
+        "roastLevel": "Medium",
+        "weight": "340g"
+      }
+    },
+    {
+      "file": "yirgacheffe-soft.jpg",
+      "condition": "soft",
+      "expected": {
+        "name": "Konga Natural",
+        "roaster": "Tim Wendelboe Roastery",
+        "origin": "Yirgacheffe",
+        "roastLevel": "Medium",
+        "weight": "340g"
+      }
+    },
+    {
+      "file": "huila-flat.jpg",
+      "condition": "flat",
+      "expected": {
+        "name": "El Mirador",
+        "roaster": "Coffee Collective Roasters",
+        "origin": "Huila",
+        "roastLevel": "Medium-Dark",
+        "weight": "1kg"
+      }
+    },
+    {
+      "file": "huila-angled.jpg",
+      "condition": "angled",
+      "expected": {
+        "name": "El Mirador",
+        "roaster": "Coffee Collective Roasters",
+        "origin": "Huila",
+        "roastLevel": "Medium-Dark",
+        "weight": "1kg"
+      }
+    },
+    {
+      "file": "huila-dark.jpg",
+      "condition": "dark",
+      "expected": {
+        "name": "El Mirador",
+        "roaster": "Coffee Collective Roasters",
+        "origin": "Huila",
+        "roastLevel": "Medium-Dark",
+        "weight": "1kg"
+      }
+    },
+    {
+      "file": "huila-glare.jpg",
+      "condition": "glare",
+      "expected": {
+        "name": "El Mirador",
+        "roaster": "Coffee Collective Roasters",
+        "origin": "Huila",
+        "roastLevel": "Medium-Dark",
+        "weight": "1kg"
+      }
+    },
+    {
+      "file": "huila-soft.jpg",
+      "condition": "soft",
+      "expected": {
+        "name": "El Mirador",
+        "roaster": "Coffee Collective Roasters",
+        "origin": "Huila",
+        "roastLevel": "Medium-Dark",
+        "weight": "1kg"
+      }
+    },
+    {
+      "file": "guji-flat.jpg",
+      "condition": "flat",
+      "expected": {
+        "name": "Hambela Estate",
+        "roaster": "Square Mile Coffee Roasters",
+        "origin": "Guji",
+        "roastLevel": "Light-Medium",
+        "weight": "500g"
+      }
+    },
+    {
+      "file": "guji-angled.jpg",
+      "condition": "angled",
+      "expected": {
+        "name": "Hambela Estate",
+        "roaster": "Square Mile Coffee Roasters",
+        "origin": "Guji",
+        "roastLevel": "Light-Medium",
+        "weight": "500g"
+      }
+    },
+    {
+      "file": "guji-dark.jpg",
+      "condition": "dark",
+      "expected": {
+        "name": "Hambela Estate",
+        "roaster": "Square Mile Coffee Roasters",
+        "origin": "Guji",
+        "roastLevel": "Light-Medium",
+        "weight": "500g"
+      }
+    },
+    {
+      "file": "guji-glare.jpg",
+      "condition": "glare",
+      "expected": {
+        "name": "Hambela Estate",
+        "roaster": "Square Mile Coffee Roasters",
+        "origin": "Guji",
+        "roastLevel": "Light-Medium",
+        "weight": "500g"
+      }
+    },
+    {
+      "file": "guji-soft.jpg",
+      "condition": "soft",
+      "expected": {
+        "name": "Hambela Estate",
+        "roaster": "Square Mile Coffee Roasters",
+        "origin": "Guji",
+        "roastLevel": "Light-Medium",
+        "weight": "500g"
+      }
+    },
+    {
+      "file": "antigua-flat.jpg",
+      "condition": "flat",
+      "expected": {
+        "name": "Finca El Injerto",
+        "roaster": null,
+        "origin": "Guatemala",
+        "roastLevel": "Dark",
+        "weight": "200g"
+      }
+    },
+    {
+      "file": "antigua-angled.jpg",
+      "condition": "angled",
+      "expected": {
+        "name": "Finca El Injerto",
+        "roaster": null,
+        "origin": "Guatemala",
+        "roastLevel": "Dark",
+        "weight": "200g"
+      }
+    },
+    {
+      "file": "antigua-dark.jpg",
+      "condition": "dark",
+      "expected": {
+        "name": "Finca El Injerto",
+        "roaster": null,
+        "origin": "Guatemala",
+        "roastLevel": "Dark",
+        "weight": "200g"
+      }
+    },
+    {
+      "file": "antigua-glare.jpg",
+      "condition": "glare",
+      "expected": {
+        "name": "Finca El Injerto",
+        "roaster": null,
+        "origin": "Guatemala",
+        "roastLevel": "Dark",
+        "weight": "200g"
+      }
+    },
+    {
+      "file": "antigua-soft.jpg",
+      "condition": "soft",
+      "expected": {
+        "name": "Finca El Injerto",
+        "roaster": null,
+        "origin": "Guatemala",
+        "roastLevel": "Dark",
+        "weight": "200g"
+      }
+    },
+    {
+      "file": "sumatra-flat.jpg",
+      "condition": "flat",
+      "expected": {
+        "name": "Bies Penantan",
+        "roaster": null,
+        "origin": "Sumatra",
+        "roastLevel": "Espresso",
+        "weight": "12oz"
+      }
+    },
+    {
+      "file": "sumatra-angled.jpg",
+      "condition": "angled",
+      "expected": {
+        "name": "Bies Penantan",
+        "roaster": null,
+        "origin": "Sumatra",
+        "roastLevel": "Espresso",
+        "weight": "12oz"
+      }
+    },
+    {
+      "file": "sumatra-dark.jpg",
+      "condition": "dark",
+      "expected": {
+        "name": "Bies Penantan",
+        "roaster": null,
+        "origin": "Sumatra",
+        "roastLevel": "Espresso",
+        "weight": "12oz"
+      }
+    },
+    {
+      "file": "sumatra-glare.jpg",
+      "condition": "glare",
+      "expected": {
+        "name": "Bies Penantan",
+        "roaster": null,
+        "origin": "Sumatra",
+        "roastLevel": "Espresso",
+        "weight": "12oz"
+      }
+    },
+    {
+      "file": "sumatra-soft.jpg",
+      "condition": "soft",
+      "expected": {
+        "name": "Bies Penantan",
+        "roaster": null,
+        "origin": "Sumatra",
+        "roastLevel": "Espresso",
+        "weight": "12oz"
+      }
+    }
+  ]
+}

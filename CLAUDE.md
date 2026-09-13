@@ -113,6 +113,32 @@ needs a `libdl` shim.
   piped over **stdin**, and the language is allowlisted. Keep it that way — no
   caller-controlled value may become an argument.
 
+### Measuring it
+
+**Do not change the OCR adapter or the label parser without running the benchmark.**
+`OcrBenchmarkTests` scores the whole pipeline against a fixed corpus and fails below a
+floor, so a change can be compared instead of argued about. It runs inside the normal
+backend suite (the `backend` CI job already installs Tesseract) and prints a scorecard:
+per field, per shooting condition, and every wrong answer as `wanted X, got Y`. CI copies
+it into the run summary.
+
+On a host without Tesseract the benchmark **skips with a reason** rather than passing —
+so on a bare Windows host you have measured nothing, and the number to quote is CI's.
+
+The corpus is rendered, not photographed: `node scripts/generate-ocr-fixtures.mjs` draws
+six labels under five bad-photo conditions (angle, glare, dark packaging, blur, flat) and
+writes the manifest from the same objects that drew them, so expectations cannot drift
+from the images. Rendered type is cleaner than a real bag, so treat the score as a
+**regression signal, not an accuracy figure** — `Ocr/Fixtures/real/README.md` explains
+how to add real photographs, which is what settles an engine question.
+
+Two scoring rules are deliberate and worth knowing before reading a scorecard:
+
+- A `null` expectation is a real assertion: it says the parser should leave the field
+  alone. Inventing a value there scores as **wrong**, not as a pass.
+- Origin, roast level and weight are closed vocabularies, so they are scored
+  exact-or-nothing. "Kenyq" is not a near miss; it is a value no filter will match.
+
 ## Backend dependency bumps
 
 `backend/Directory.Build.props` enables NuGet lock files and CI restores with
