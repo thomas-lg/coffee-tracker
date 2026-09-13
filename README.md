@@ -49,8 +49,8 @@ about when anything lands.
   shipped as an installable PWA.
 - **Snap-to-fill:** photograph a coffee bag, and open-source OCR (Tesseract first,
   behind a swappable `IOcrService`) pre-fills the Add Coffee form.
-- **Deploy:** GitHub Actions builds a `linux/amd64` image and publishes it to
-  GHCR; you install/update it manually from your NAS's Docker GUI.
+- **Deploy:** GitHub Actions builds a `linux/amd64` + `linux/arm64` image and
+  publishes it to GHCR; you install/update it manually from your NAS's Docker GUI.
 
 See [docs/design-notes.md](./docs/design-notes.md) for the standing design rationale,
 and [`openspec/changes/archive/`](./openspec/changes/archive/) for how each piece was built.
@@ -253,7 +253,6 @@ Nothing committed, just a parking lot for when the mood strikes:
 - **Export / import** (JSON/CSV) and a one-click backup endpoint.
 - **OCR upgrade** to PaddleOCR or RapidOCR behind `IOcrService`, if Tesseract turns out
   weak on real bags.
-- **Multi-arch image** (add `linux/arm64`) for ARM NAS / Raspberry Pi.
 - **i18n**. The UI is English-only today.
 
 ## Contributing
