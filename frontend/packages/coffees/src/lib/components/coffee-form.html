@@ -28,35 +28,35 @@
     <form [formRoot]="f" (submit)="$event.preventDefault(); onSubmit()" class="mt-5 flex flex-col gap-4">
       <label class="flex flex-col gap-1.5">
         <span class="text-sm font-semibold">Name</span>
-        <input [formField]="f.name" class="input" />
+        <input [formField]="f.name" [attr.aria-invalid]="f.name().touched() && f.name().invalid() ? 'true' : null" [attr.aria-describedby]="f.name().touched() && f.name().invalid() ? 'coffee-name-error' : null" class="input" />
         @if (f.name().touched() && f.name().invalid()) {
-          <span class="field-error">A name is required.</span>
+          <span id="coffee-name-error" class="field-error">A name is required.</span>
         }
       </label>
 
       <div class="grid grid-cols-2 gap-3">
         <label class="flex flex-col gap-1.5">
           <span class="text-sm font-semibold">Roaster</span>
-          <input [formField]="f.roaster" class="input" list="roasterOptions" autocomplete="off" />
+          <input [formField]="f.roaster" [attr.aria-invalid]="f.roaster().touched() && f.roaster().invalid() ? 'true' : null" [attr.aria-describedby]="f.roaster().touched() && f.roaster().invalid() ? 'coffee-roaster-error' : null" class="input" list="roasterOptions" autocomplete="off" />
           <datalist id="roasterOptions">
             @for (r of catalog.roasters(); track r) {
               <option [value]="r"></option>
             }
           </datalist>
           @if (f.roaster().touched() && f.roaster().invalid()) {
-            <span class="field-error">A roaster is required.</span>
+            <span id="coffee-roaster-error" class="field-error">A roaster is required.</span>
           }
         </label>
         <label class="flex flex-col gap-1.5">
           <span class="text-sm font-semibold">Origin</span>
-          <input [formField]="f.origin" class="input" list="originOptions" autocomplete="off" />
+          <input [formField]="f.origin" [attr.aria-invalid]="f.origin().touched() && f.origin().invalid() ? 'true' : null" [attr.aria-describedby]="f.origin().touched() && f.origin().invalid() ? 'coffee-origin-error' : null" class="input" list="originOptions" autocomplete="off" />
           <datalist id="originOptions">
             @for (o of originSuggestions(); track o) {
               <option [value]="o"></option>
             }
           </datalist>
           @if (f.origin().touched() && f.origin().invalid()) {
-            <span class="field-error">An origin is required.</span>
+            <span id="coffee-origin-error" class="field-error">An origin is required.</span>
           }
         </label>
       </div>
@@ -64,30 +64,30 @@
       <div class="grid grid-cols-2 gap-3">
         <label class="flex flex-col gap-1.5">
           <span class="text-sm font-semibold">Roast level</span>
-          <select [formField]="f.roastLevel" class="input">
+          <select [formField]="f.roastLevel" [attr.aria-invalid]="f.roastLevel().touched() && f.roastLevel().invalid() ? 'true' : null" [attr.aria-describedby]="f.roastLevel().touched() && f.roastLevel().invalid() ? 'coffee-roastlevel-error' : null" class="input">
             <option value="" disabled>Choose a roast…</option>
             @for (r of roastLevels; track r) {
               <option [value]="r">{{ r }}</option>
             }
           </select>
           @if (f.roastLevel().touched() && f.roastLevel().invalid()) {
-            <span class="field-error">Pick a roast level.</span>
+            <span id="coffee-roastlevel-error" class="field-error">Pick a roast level.</span>
           }
         </label>
         <label class="flex flex-col gap-1.5">
           <span class="text-sm font-semibold">Price</span>
-          <input type="number" step="0.01" [formField]="f.price" class="input" />
+          <input type="number" step="0.01" [formField]="f.price" [attr.aria-invalid]="f.price().touched() && f.price().invalid() ? 'true' : null" [attr.aria-describedby]="f.price().touched() && f.price().invalid() ? 'coffee-price-error' : null" class="input" />
           @if (f.price().touched() && f.price().invalid()) {
-            <span class="field-error">Price can't be negative.</span>
+            <span id="coffee-price-error" class="field-error">Price can't be negative.</span>
           }
         </label>
       </div>
 
       <label class="flex flex-col gap-1.5">
         <span class="text-sm font-semibold">Date bought</span>
-        <input type="date" [formField]="f.dateBought" [max]="today()" class="input" />
+        <input type="date" [formField]="f.dateBought" [attr.aria-invalid]="f.dateBought().touched() && f.dateBought().invalid() ? 'true' : null" [attr.aria-describedby]="f.dateBought().touched() && f.dateBought().invalid() ? 'coffee-datebought-error' : null" [max]="today()" class="input" />
         @if (f.dateBought().touched() && f.dateBought().invalid()) {
-          <span class="field-error">Pick a date that isn't in the future.</span>
+          <span id="coffee-datebought-error" class="field-error">Pick a date that isn't in the future.</span>
         }
       </label>
 

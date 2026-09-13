@@ -23,10 +23,12 @@
           type="text"
           autocomplete="nickname"
           [formField]="f.displayName"
+          [attr.aria-invalid]="f.displayName().touched() && f.displayName().invalid() ? 'true' : null"
+          [attr.aria-describedby]="f.displayName().touched() && f.displayName().invalid() ? 'register-displayname-error' : null"
           class="input"
         />
         @if (f.displayName().touched() && f.displayName().invalid()) {
-          <span class="field-error">A display name is required.</span>
+          <span id="register-displayname-error" class="field-error">A display name is required.</span>
         }
       </label>
 
@@ -36,10 +38,12 @@
           type="email"
           autocomplete="email"
           [formField]="f.email"
+          [attr.aria-invalid]="f.email().touched() && f.email().invalid() ? 'true' : null"
+          [attr.aria-describedby]="f.email().touched() && f.email().invalid() ? 'register-email-error' : null"
           class="input"
         />
         @if (f.email().touched() && f.email().invalid()) {
-          <span class="field-error">Enter a valid email address.</span>
+          <span id="register-email-error" class="field-error">Enter a valid email address.</span>
         }
       </label>
 
@@ -49,10 +53,12 @@
           type="password"
           autocomplete="new-password"
           [formField]="f.password"
+          [attr.aria-invalid]="f.password().touched() && f.password().invalid() ? 'true' : null"
+          [attr.aria-describedby]="f.password().touched() && f.password().invalid() ? 'register-password-error' : null"
           class="input"
         />
         @if (f.password().touched() && f.password().invalid()) {
-          <span class="field-error">At least 8 characters.</span>
+          <span id="register-password-error" class="field-error">At least 8 characters.</span>
         }
       </label>
 
