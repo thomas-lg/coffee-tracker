@@ -167,19 +167,24 @@ builder.Services.AddAuthorization(options =>
 // only until the proxy restarts onto another one — after which headers are silently
 // ignored and every request looks like it came from the proxy. Resolution happens here,
 // once, because that is when these options are built.
-builder.Services.Configure<ForwardedHeadersOptions>(options =>
-{
-    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
-    options.KnownIPNetworks.Clear();
-    options.KnownProxies.Clear();
-
-    var resolver = new DnsTrustedProxyResolver(
-        LoggerFactory.Create(b => b.AddConsole()).CreateLogger<DnsTrustedProxyResolver>());
-    foreach (var address in resolver.Resolve(builder.Configuration["ForwardedHeaders:KnownProxies"]))
+builder.Services
+    .AddOptions<ForwardedHeadersOptions>()
+    // Take the logger from the container rather than standing up a private console
+    // factory: an entry dropped here is the reason a proxy silently stops being trusted,
+    // so it has to reach the rolling file the rest of the app logs to — and the factory
+    // this replaced was never disposed.
+    .Configure<ILogger<DnsTrustedProxyResolver>>((options, logger) =>
     {
-        options.KnownProxies.Add(address);
-    }
-});
+        options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+        options.KnownIPNetworks.Clear();
+        options.KnownProxies.Clear();
+
+        foreach (var address in new DnsTrustedProxyResolver(logger)
+                     .Resolve(builder.Configuration["ForwardedHeaders:KnownProxies"]))
+        {
+            options.KnownProxies.Add(address);
+        }
+    });
 
 // Throttle the endpoints whose cost an anonymous or single caller could otherwise
 // impose at will.
@@ -207,6 +212,7 @@ builder.Services.AddRateLimiter(options =>
     PerClientIp(RateLimiterPolicies.Auth, RateLimiterPolicies.AuthPermitsPerMinute);
     PerClientIp(RateLimiterPolicies.Public, RateLimiterPolicies.PublicPermitsPerMinute);
     PerClientIp(RateLimiterPolicies.Scan, RateLimiterPolicies.ScanPermitsPerMinute);
+    PerClientIp(RateLimiterPolicies.Upload, RateLimiterPolicies.UploadPermitsPerMinute);
 });
 
 // In dev the Angular dev server (ng serve, :4200) is a different origin from the
@@ -311,11 +317,14 @@ photoContentTypes.Mappings[".webp"] = "image/webp";
 var photoUrlSigner = app.Services.GetRequiredService<CoffeeTracker.Application.Ports.Driven.IPhotoUrlSigner>();
 app.Use(async (context, next) =>
 {
-    if (context.Request.Path.StartsWithSegments("/photos", out var remainder))
+    if (context.Request.Path.StartsWithSegments(PhotoRoute.RequestPath, out var remainder))
     {
+        // Already percent-decoded by the path parser — decoding again would sign a
+        // different string than the static-file middleware resolves on disk for any name
+        // containing a '%'.
         var fileName = remainder.Value?.TrimStart('/') ?? string.Empty;
         if (fileName.Length == 0 ||
-            !photoUrlSigner.Validate(Uri.UnescapeDataString(fileName), context.Request.Query["exp"], context.Request.Query["sig"]))
+            !photoUrlSigner.Validate(fileName, context.Request.Query["exp"], context.Request.Query["sig"]))
         {
             context.Response.StatusCode = StatusCodes.Status401Unauthorized;
             return;
@@ -328,7 +337,7 @@ app.Use(async (context, next) =>
 app.UseStaticFiles(new StaticFileOptions
 {
     FileProvider = new PhysicalFileProvider(photosPath),
-    RequestPath = "/photos",
+    RequestPath = PhotoRoute.RequestPath,
     ContentTypeProvider = photoContentTypes,
     // These are user-uploaded files: stop browsers from MIME-sniffing a stored
     // file into active content (e.g. a script disguised as an image).

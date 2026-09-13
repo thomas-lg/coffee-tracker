@@ -2,6 +2,7 @@ using CoffeeTracker.Application.Dtos;
 using CoffeeTracker.Application.Ports.Driving;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace CoffeeTracker.Api.Controllers;
 
@@ -62,6 +63,9 @@ public class CoffeesController(ICoffeeCatalogService catalog) : ControllerBase
     }
 
     /// <summary>Uploads a photo for a coffee and stores its relative path (creator or admin only).</summary>
+    // Authenticated, and not cheap: the adapter decodes and re-encodes every upload up to
+    // the configured pixel ceiling. Throttled so one account cannot pin CPU with it.
+    [EnableRateLimiting(RateLimiterPolicies.Upload)]
     [HttpPost("{id:int}/photo")]
     public async Task<ActionResult<CoffeeResponseDto>> UploadPhoto(int id, IFormFile file, CancellationToken ct)
     {
