@@ -22,7 +22,7 @@
           class="rounded-xl border border-line bg-foam px-4 py-3 outline-none transition focus:border-crema focus:ring-4 focus:ring-crema/20"
         />
         @if (f.displayName().touched() && f.displayName().invalid()) {
-          <span class="text-xs font-medium text-red-500">A display name is required.</span>
+          <span class="field-error">A display name is required.</span>
         }
       </label>
 
@@ -35,7 +35,7 @@
           class="rounded-xl border border-line bg-foam px-4 py-3 outline-none transition focus:border-crema focus:ring-4 focus:ring-crema/20"
         />
         @if (f.email().touched() && f.email().invalid()) {
-          <span class="text-xs font-medium text-red-500">Enter a valid email address.</span>
+          <span class="field-error">Enter a valid email address.</span>
         }
       </label>
 
@@ -48,7 +48,7 @@
           class="rounded-xl border border-line bg-foam px-4 py-3 outline-none transition focus:border-crema focus:ring-4 focus:ring-crema/20"
         />
         @if (f.password().touched() && f.password().invalid()) {
-          <span class="text-xs font-medium text-red-500">At least 8 characters.</span>
+          <span class="field-error">At least 8 characters.</span>
         }
       </label>
 
