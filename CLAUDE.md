@@ -15,6 +15,17 @@ Hexagonal, and enforced in that direction: **Domain ← Application ← {Infrast
 - Business rules that an adapter cannot hold belong in the application layer — which
   account an assertion resolves to, who is an administrator, who may edit what.
 
+Two carve-outs, both deliberate, both documented where they happen — if you are about
+to "fix" one, read the comment first:
+
+- **`RoastLevel` does cross the edge.** It is a closed three-value enum with a
+  `[JsonConverter]` pinning the wire format, and that one annotation drives both the
+  JSON and the generated OpenAPI schema. Mirroring it in the Api layer would buy
+  nothing and cost a type that has to be kept in step.
+- **`ConfigController` depends on two driven ports**, not a driving one. It is the
+  anonymous pre-sign-in endpoint, and routing it through a use case would make every
+  unauthenticated caller construct the auth stack to read two booleans.
+
 `backend/Directory.Build.props` carries the shared build settings: `net10.0`, nullable,
 .NET analyzers, `TreatWarningsAsErrors` in **Release** only (CI builds Release), and
 NuGet lock files.

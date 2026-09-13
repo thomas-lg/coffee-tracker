@@ -46,7 +46,6 @@ public class CoffeeCatalogService(
         };
 
         var saved = await repository.AddAsync(coffee, ct);
-        // A brand-new coffee has no reviews yet.
         return ToDto(saved, averageRating: null, reviewCount: 0);
     }
 
