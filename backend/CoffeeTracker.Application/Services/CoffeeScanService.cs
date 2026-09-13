@@ -5,70 +5,52 @@ using CoffeeTracker.Application.Ports.Driving;
 namespace CoffeeTracker.Application.Services;
 
 /// <summary>
-/// Application service for snap-to-fill: stores the uploaded photo, OCRs it, and
-/// parses the text into best-effort fields. Does not create a coffee.
+/// Application service for snap-to-fill: checks the uploaded photo is a real image, OCRs
+/// it, and parses the text into best-effort fields. Creates no coffee and keeps no file.
 ///
-/// A successful scan therefore leaves a stored photo that nothing yet references — by
-/// design, so the coffee the user is about to save can reuse it without a second upload.
-/// If the user abandons the form instead, that photo is never claimed. The failure paths
-/// below delete what they stored; the success path cannot know yet whether it should.
+/// The bytes are validated but never written. Scanning and saving are separate requests
+/// and the client uploads the photo again when it saves, so a file kept here was claimed
+/// by nothing — on every scan, not only an abandoned one. Keeping it grew the photos
+/// directory with the same image the save was about to store a second time, and left the
+/// admin cleanup as the only thing bounding it.
 ///
-/// This makes the admin photo cleanup load-bearing rather than housekeeping: on an
-/// instance where people scan more bags than they save, it is the only thing bounding
-/// the photos directory.
+/// Validation still runs in full: an OCR process should not be handed a decompression
+/// bomb or a file that merely claims to be an image.
 /// </summary>
 public class CoffeeScanService(
     IOcrService ocr,
     IPhotoStorage photoStorage,
-    IPhotoUrlSigner photoUrlSigner,
     ICoffeeLabelParser parser) : ICoffeeScanService
 {
     public async Task<ScanResult> ScanAsync(Stream image, string? contentType, long length, CancellationToken ct = default)
     {
         // Short-circuit before any work when OCR can't run here (e.g. the host with
-        // no native Tesseract libs) — no photo stored, endpoint maps this to 503.
+        // no native Tesseract libs) — endpoint maps this to 503.
         if (!ocr.IsAvailable)
         {
             return new ScanResult(ScanStatus.OcrUnavailable, null);
         }
 
-        // Buffer once so the same bytes feed both photo storage and OCR.
+        // Buffer once so the same bytes feed both validation and OCR.
         using var buffer = new MemoryStream();
         await image.CopyToAsync(buffer, ct);
 
-        // Validate + store first: cheaply rejects non-images before expensive OCR,
-        // and retains the photo so the eventual coffee can reuse it.
+        // Validate first: cheaply rejects non-images before the expensive OCR run.
         buffer.Position = 0;
-        var stored = await photoStorage.SaveAsync(buffer, contentType, buffer.Length, ct);
-        if (stored.Status != PhotoStorageStatus.Stored)
+        var accepted = await photoStorage.ValidateAsync(buffer, contentType, buffer.Length, ct);
+        if (accepted != PhotoStorageStatus.Stored)
         {
-            return new ScanResult(MapRejection(stored.Status), null);
+            return new ScanResult(MapRejection(accepted), null);
         }
 
         buffer.Position = 0;
-        try
+        var result = await ocr.ReadAsync(buffer, ct);
+        if (!result.Available)
         {
-            var result = await ocr.ReadAsync(buffer, ct);
-            if (!result.Available)
-            {
-                // Engine reported available but failed mid-read; don't orphan the file.
-                await photoStorage.DeleteAsync(stored.RelativePath!, ct);
-                return new ScanResult(ScanStatus.OcrUnavailable, null);
-            }
+            return new ScanResult(ScanStatus.OcrUnavailable, null);
+        }
 
-            var parsed = parser.Parse(result);
-            return new ScanResult(ScanStatus.Success, new ScanResponseDto(result.RawText, parsed, photoUrlSigner.Sign(stored.RelativePath!)!));
-        }
-        catch
-        {
-            // OCR threw (most commonly OperationCanceledException when the caller cancels
-            // mid-read — clients often navigate away). The photo is already on disk, so
-            // delete it before propagating or it leaks as an orphan. Use
-            // CancellationToken.None: on the cancellation path the request's ct is already
-            // tripped, and the compensating cleanup must still run.
-            await photoStorage.DeleteAsync(stored.RelativePath!, CancellationToken.None);
-            throw;
-        }
+        return new ScanResult(ScanStatus.Success, new ScanResponseDto(result.RawText, parser.Parse(result)));
     }
 
     private static ScanStatus MapRejection(PhotoStorageStatus status) => status switch

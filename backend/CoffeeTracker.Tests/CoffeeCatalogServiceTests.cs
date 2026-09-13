@@ -92,6 +92,9 @@ public class CoffeeCatalogServiceTests
             return Task.FromResult(true);
         }
 
+        public Task<PhotoStorageStatus> ValidateAsync(Stream content, string? contentType, long length, CancellationToken ct = default)
+            => Task.FromResult(PhotoStorageStatus.Stored);
+
         public Task<IReadOnlyList<string>> ListAsync(CancellationToken ct = default)
             => Task.FromResult<IReadOnlyList<string>>([]);
     }
