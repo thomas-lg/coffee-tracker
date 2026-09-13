@@ -15,12 +15,14 @@
     </div>
 
     @if (providerError(); as message) {
-      <p
-        role="alert"
-        class="mt-8 rounded-2xl border border-red-500/40 bg-red-500/10 px-4 py-3 text-sm text-red-700 dark:text-red-300"
-      >
-        {{ message }}
-      </p>
+      <p role="alert" class="form-alert mt-8">{{ message }}</p>
+    }
+
+    <!-- The store already records why a sign-in failed; before this it was only ever
+         shown as a toast, which self-dismisses after 2.8s and leaves the form looking
+         like nothing happened. -->
+    @if (auth.requestError(); as message) {
+      <p role="alert" class="form-alert mt-8">{{ message }}</p>
     }
 
     @if (noMethod()) {

@@ -28,6 +28,8 @@ function authResponse(overrides: Partial<AuthResponse> = {}): AuthResponse {
 describe('AuthStore', () => {
   let response: AuthResponse;
   let navigateByUrl: ReturnType<typeof vi.fn>;
+  /** Stands in for the browser's current URL so the returnUrl handling can be driven. */
+  let routerUrl: string;
   let toast: { show: ReturnType<typeof vi.fn> };
   let api: {
     login: ReturnType<typeof vi.fn>;
@@ -40,6 +42,7 @@ describe('AuthStore', () => {
     localStorage.clear();
     response = authResponse();
     navigateByUrl = vi.fn();
+    routerUrl = '/login';
     toast = { show: vi.fn() };
     api = {
       login: vi.fn(() => of(response)),
@@ -54,7 +57,19 @@ describe('AuthStore', () => {
         // The store owns its own side effects now: it navigates on sign-in/out and
         // toasts a rejected sign-in, so all three collaborators are stubbed.
         { provide: AuthApi, useValue: api },
-        { provide: Router, useValue: { navigateByUrl } },
+        {
+          provide: Router,
+          useValue: {
+            navigateByUrl,
+            get url() {
+              return routerUrl;
+            },
+            parseUrl: (url: string) => {
+              const query = url.includes('?') ? url.slice(url.indexOf('?') + 1) : '';
+              return { queryParams: Object.fromEntries(new URLSearchParams(query)) };
+            },
+          },
+        },
         { provide: ToastService, useValue: toast },
       ],
     });
@@ -318,6 +333,27 @@ describe('AuthStore', () => {
 
     expect(navigateByUrl).toHaveBeenCalledWith('/');
   });
+
+  it('resumes the page the guard interrupted, rather than dropping the user on home', () => {
+    routerUrl = '/login?returnUrl=%2Fcoffees%2F42';
+    const store = TestBed.inject(AuthStore);
+
+    store.login({ email: 'a@b.c', password: 'secret-123' });
+
+    expect(navigateByUrl).toHaveBeenCalledWith('/coffees/42');
+  });
+
+  it.each(['//evil.example', 'https://evil.example/steal', 'javascript:alert(1)'])(
+    'refuses to bounce a freshly signed-in user off-site via returnUrl=%s',
+    (target) => {
+      routerUrl = `/login?returnUrl=${encodeURIComponent(target)}`;
+      const store = TestBed.inject(AuthStore);
+
+      store.login({ email: 'a@b.c', password: 'secret-123' });
+
+      expect(navigateByUrl).toHaveBeenCalledWith('/');
+    },
+  );
 
   it('toasts a rejected sign-in rather than leaving the screen to notice', () => {
     const store = TestBed.inject(AuthStore);

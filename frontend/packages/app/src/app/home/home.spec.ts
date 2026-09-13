@@ -6,10 +6,26 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { provideRouter } from '@angular/router';
 import { Home } from './home';
 
+// CoffeesStore keys its resource on the signed-in user, so it stays idle until there is
+// a session — seed one the way a real browser would before TestBed builds the store.
+function seedSession(): void {
+  localStorage.setItem(
+    'ct.session',
+    JSON.stringify({
+      token: 't',
+      userId: 'u1',
+      displayName: 'Tester',
+      isAdmin: false,
+      expiresAt: new Date(Date.now() + 900_000).toISOString(),
+    }),
+  );
+}
+
 describe('Home', () => {
   let http: HttpTestingController;
 
   beforeEach(() => {
+    seedSession();
     TestBed.configureTestingModule({
       providers: [
         provideZonelessChangeDetection(),
