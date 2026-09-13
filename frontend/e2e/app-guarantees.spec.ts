@@ -86,12 +86,32 @@ test.describe('admin screens', () => {
     const user = await provisionUser(request, 'plain');
     await injectSession(page, sessionFor(user, { isAdmin: false }));
 
+    // Both sections, since the guard now sits on the shell rather than on each one.
     await page.goto('/admin/settings');
+    await expect(page).not.toHaveURL(/\/admin/);
+    await page.goto('/admin/photos');
     await expect(page).not.toHaveURL(/\/admin/);
 
     await page.goto('/');
-    await expect(page.getByRole('link', { name: /^accounts$/i })).toHaveCount(0);
     await expect(page.getByRole('link', { name: /^admin$/i })).toHaveCount(0);
+  });
+
+  test('the two admin sections are reachable as tabs', async ({ page }) => {
+    const admin = await suiteAdmin();
+    await injectSession(page, sessionFor(admin, { isAdmin: true }));
+
+    // One nav entry now; the sections are tabs inside it.
+    await page.goto('/');
+    await expect(page.getByRole('link', { name: /^accounts$/i })).toHaveCount(0);
+    await page.getByRole('link', { name: /^admin$/i }).click();
+
+    // Bare /admin lands on Photos.
+    await expect(page).toHaveURL(/\/admin\/photos/);
+    await expect(page.getByRole('heading', { name: /photo cleanup/i })).toBeVisible();
+
+    await page.getByRole('link', { name: /^accounts$/i }).click();
+    await expect(page).toHaveURL(/\/admin\/settings/);
+    await expect(page.getByRole('heading', { name: /account settings/i })).toBeVisible();
   });
 
   test('disabling local sign-in is refused while it is the only way in', async ({ page }) => {
