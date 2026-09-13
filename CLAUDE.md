@@ -21,10 +21,18 @@ NuGet lock files.
 
 ## Comment style
 
-**Comment what the code cannot say for itself.** If a reader can answer *"why is this
-here, and why this way?"* from the code alone, a comment adds nothing and starts
-rotting the moment the code moves. If they cannot, the comment is required — not a
-nicety.
+**Write the simplest code you can, then comment the parts that still look complex.**
+A comment earns its place by decoding a line that will make a reader stop — never by
+narrating how the code is organised.
+
+If a reader can answer *"why is this here, and why this way?"* from the code alone, a
+comment adds nothing and starts rotting the moment the code moves. If they cannot, the
+comment is required — not a nicety.
+
+The trap is the plausible-sounding comment that decodes nothing. A class header saying
+*"everything stateful lives in the store and the template reads it directly"* reads well
+and is useless: the injected store and the single effect already say it. Architecture is
+visible in the code; surprises are not.
 
 Belongs in a comment, because the code cannot express it:
 
@@ -40,6 +48,8 @@ Does not, because the code already says it:
 
 - what the next line does
 - a name, type or signature restated in prose
+- **where things live** — which layer owns what, what moved to a store, what a screen
+  keeps. That is the file's shape, and the shape is readable
 - the comment justifying its own existence
 
 Density follows from the rule; it is not the rule. This codebase lands around 25-35%
@@ -139,8 +149,15 @@ then drops privileges via `gosu`.
   project runs 22.1.5. The three stores (`AuthStore`, `CoffeesStore`,
   `PhotoCleanupStore`) ship as native-signals stores with the same surface, so the swap
   is a deliberate refactor, not a required update.
-- **`lucide-angular`** — *still blocked*. 1.0.0 peers on `13.x - 21.x`. The custom
-  `ct-icon` lucide-core wrapper stays until that moves.
+- **`@lucide/angular`** — *adopted*. An earlier note here called `lucide-angular`
+  blocked on `13.x - 21.x`; that package is **deprecated** in favour of the scoped
+  `@lucide/angular`, which peers on `@angular/core: >=17.0.0`. Check the scoped name
+  before repeating a claim about a lucide package. Icons are now per-icon standalone
+  components on an `svg` attribute selector (`<svg lucideSearch [size]="16">`), each
+  imported by the component that uses it — so a missing import is a template error, and
+  there is no central icon map to keep in step. It costs ~26 kB raw (~1.7 kB over the
+  wire) against the old hand-rolled `ct-icon`, which is why the initial bundle warning
+  moved to 600 kB.
 - **`openapi-typescript`** runs via `npx` (it peers on TS 5, the project is on TS 6).
   Fine as-is. The e2e CI job regenerates the client from the running backend and fails
   on drift, so a backend contract change cannot ship a stale typed client.

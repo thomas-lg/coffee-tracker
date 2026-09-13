@@ -1,74 +1,132 @@
-import { Injectable, computed, inject, signal } from '@angular/core';
-import { httpResource } from '@angular/common/http';
-import { firstValueFrom } from 'rxjs';
-import { AdminPhotosApi, type PhotoDeleteResult, type PhotoListItem } from '@coffee-tracker/data';
+import { computed, inject } from '@angular/core';
+import { rxResource } from '@angular/core/rxjs-interop';
+import { patchState, signalStore, withComputed, withMethods, withProps, withState } from '@ngrx/signals';
+import { rxMethod } from '@ngrx/signals/rxjs-interop';
+import { extendResource, withValueOnError } from '@ngrx/signals/resource';
+import { tapResponse } from '@ngrx/operators';
+import { pipe, switchMap, tap } from 'rxjs';
+import {
+  setFulfilled,
+  setPending,
+  setRequestError,
+  withRequestStatus,
+} from '@coffee-tracker/util';
+import { ToastService } from '@coffee-tracker/ui';
+import { AdminPhotosApi, type PhotoListItem } from '@coffee-tracker/data';
 
 export type PhotoFilter = 'all' | 'unused';
 
-/**
- * Page-scoped store (provided by the component, not root) for the admin photo-cleanup
- * screen. The list is an `httpResource`; the filter and the selected-paths set are
- * plain signals composed into the derived `visible`/count signals.
- */
-@Injectable()
-export class PhotoCleanupStore {
-  private readonly api = inject(AdminPhotosApi);
-  private readonly resource = httpResource<PhotoListItem[]>(() => '/api/admin/photos', {
-    defaultValue: [],
-  });
-
-  // httpResource.value throws while the resource is errored — guard reads so the
-  // template's count/visible derivations stay safe on the error path (see CoffeesStore).
-  readonly photos = computed(() => (this.resource.error() ? [] : this.resource.value()));
-  readonly loading = this.resource.isLoading;
-  readonly error = computed(() => (this.resource.error() ? 'Could not load stored photos.' : null));
-
-  readonly filter = signal<PhotoFilter>('all');
+type PhotoCleanupState = {
+  filter: PhotoFilter;
   /** Selected paths. Only unused photos are ever added (used ones aren't selectable). */
-  private readonly _selection = signal<ReadonlySet<string>>(new Set());
-  readonly selection = this._selection.asReadonly();
+  selection: readonly string[];
+  /** Two-step delete: the action button arms a confirm row rather than a modal. */
+  confirming: boolean;
+};
 
-  readonly storedCount = computed(() => this.photos().length);
-  readonly unusedCount = computed(() => this.photos().filter((p) => !p.used).length);
-  readonly selectedCount = computed(() => this._selection().size);
+/**
+ * `selection` is an array rather than a Set: patchState deep-freezes state in dev and
+ * builds deep signals from record-shaped slices, and a Set sits awkwardly in both. The
+ * derived `selectionSet` keeps `isSelected` O(1) inside the template's @for.
+ */
+export const PhotoCleanupStore = signalStore(
+  withState<PhotoCleanupState>({ filter: 'all', selection: [], confirming: false }),
+  withRequestStatus(),
+  withProps(() => {
+    const api = inject(AdminPhotosApi);
+    return {
+      _api: api,
+      _toast: inject(ToastService),
+      // See CoffeesStore: a resource's value() throws while errored, and withValueOnError
+      // answers the empty default instead.
+      _list: extendResource(
+        rxResource({ stream: () => api.list(), defaultValue: [] as PhotoListItem[] }),
+        withValueOnError([]),
+      ),
+    };
+  }),
+  withComputed(({ _list, filter, selection }) => {
+    const photos = computed(() => _list.value());
+    return {
+      photos,
+      selectionSet: computed(() => new Set(selection())),
+      loading: _list.isLoading,
+      error: computed(() => (_list.error() ? 'Could not load stored photos.' : null)),
+      storedCount: computed(() => photos().length),
+      unusedCount: computed(() => photos().filter((p) => !p.used).length),
+      selectedCount: computed(() => selection().length),
+      visible: computed(() =>
+        filter() === 'unused' ? photos().filter((p) => !p.used) : photos(),
+      ),
+    };
+  }),
+  withMethods((store) => ({
+    isSelected(path: string): boolean {
+      return store.selectionSet().has(path);
+    },
 
-  readonly visible = computed(() =>
-    this.filter() === 'unused' ? this.photos().filter((p) => !p.used) : this.photos(),
-  );
+    toggle(path: string): void {
+      const current = store.selection();
+      patchState(store, {
+        selection: current.includes(path)
+          ? current.filter((p) => p !== path)
+          : [...current, path],
+      });
+    },
 
-  isSelected(path: string): boolean {
-    return this._selection().has(path);
-  }
+    selectAllUnused(): void {
+      patchState(store, {
+        selection: store.photos().filter((p) => !p.used).map((p) => p.path),
+      });
+    },
 
-  toggle(path: string): void {
-    this._selection.update((set) => {
-      const next = new Set(set);
-      if (next.has(path)) {
-        next.delete(path);
-      } else {
-        next.add(path);
-      }
-      return next;
-    });
-  }
+    clearSelection(): void {
+      patchState(store, { selection: [] });
+    },
 
-  selectAllUnused(): void {
-    this._selection.set(new Set(this.photos().filter((p) => !p.used).map((p) => p.path)));
-  }
+    setFilter(value: PhotoFilter): void {
+      patchState(store, { filter: value });
+    },
 
-  clearSelection(): void {
-    this._selection.set(new Set());
-  }
+    /** Arming is refused with nothing selected, so the confirm row can never be empty. */
+    arm(): void {
+      if (store.selectedCount() > 0) patchState(store, { confirming: true });
+    },
 
-  setFilter(value: PhotoFilter): void {
-    this.filter.set(value);
-  }
+    cancel(): void {
+      patchState(store, { confirming: false });
+    },
 
-  /** Deletes the current selection, clears it, and refetches the list. */
-  async deleteSelected(): Promise<PhotoDeleteResult> {
-    const result = await firstValueFrom(this.api.delete([...this._selection()]));
-    this.clearSelection();
-    this.resource.reload();
-    return result;
-  }
-}
+    /**
+     * switchMap rather than concatMap: the screen arms a confirmation and disables the
+     * button while `pending()`, so a second delete cannot overlap — and if one somehow
+     * did, abandoning the stale request is the right answer.
+     */
+    deleteSelected: rxMethod<void>(
+      pipe(
+        tap(() => patchState(store, setPending())),
+        switchMap(() =>
+          store._api.delete([...store.selection()]).pipe(
+            tapResponse({
+              next: (result) => {
+                patchState(store, setFulfilled(), { selection: [], confirming: false });
+                store._list.reload();
+                store._toast.show(
+                  `Deleted ${result.deleted}, skipped ${result.skipped}`,
+                  'success',
+                );
+              },
+              error: () => {
+                const message = 'Delete failed — please retry.';
+                patchState(store, setRequestError(message), { confirming: false });
+                store._toast.show(message, 'error');
+              },
+            }),
+          ),
+        ),
+      ),
+    ),
+  })),
+);
+
+export type PhotoCleanupStore = InstanceType<typeof PhotoCleanupStore>;

@@ -66,8 +66,7 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
                 // instead of looping (next(...) here bypasses this interceptor, so
                 // one retry is structurally guaranteed).
                 if (retryErr.status === 401 && isBearerChallenge(retryErr)) {
-                  auth.logout();
-                  void router.navigateByUrl('/login');
+                  auth.logout(); // clears the session and returns to /login
                 }
                 return throwError(() => retryErr);
               }),
@@ -76,9 +75,8 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
         );
       }
 
-      // No refresh token to fall back on — clear and return to login.
+      // No refresh token to fall back on — logout clears and returns to /login.
       auth.logout();
-      void router.navigateByUrl('/login');
       return throwError(() => err);
     }),
   );

@@ -28,13 +28,13 @@ describe('CoffeeGrid', () => {
 
   it('shows a retry block instead of crashing when the catalog fails to load', async () => {
     const fixture = TestBed.createComponent(CoffeeGrid);
-    fixture.detectChanges(); // initial render + run the httpResource effect (issues the GET)
+    fixture.detectChanges(); // initial render + run the resource effect (issues the GET)
     http.expectOne('/api/coffees').flush('boom', { status: 500, statusText: 'Server Error' });
 
     await new Promise((resolve) => setTimeout(resolve, 0)); // let the resource settle into error
 
     // The header reads store.filtered() unconditionally; before the store guarded the
-    // throwing httpResource value this rethrew during change detection and crashed the grid.
+    // throwing resource value this rethrew during change detection and crashed the grid.
     expect(() => fixture.detectChanges()).not.toThrow();
 
     const text = fixture.nativeElement.textContent as string;
