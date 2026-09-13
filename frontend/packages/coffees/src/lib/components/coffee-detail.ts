@@ -151,8 +151,8 @@ export class CoffeeDetail {
   private readonly cancelDeleteBtn = viewChild<ElementRef<HTMLButtonElement>>('cancelDeleteBtn');
 
   constructor() {
-    // Arming the confirm removes the Delete button (focus would drop to <body>);
-    // move it to Cancel once the confirm controls exist in the DOM.
+    // Arming removes the Delete button, so focus would drop to <body>. autofocus is
+    // banned by the template a11y lint, so move it by hand — see photo-cleanup.
     effect(() => {
       if (this.confirmingDelete()) this.cancelDeleteBtn()?.nativeElement.focus();
     });

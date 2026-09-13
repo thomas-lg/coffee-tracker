@@ -26,8 +26,9 @@ export class PhotoCleanup {
   private readonly cancelBtn = viewChild<ElementRef<HTMLButtonElement>>('cancelBtn');
 
   constructor() {
-    // Arming the confirm removes the Delete button (focus would drop to <body>);
-    // move it to Cancel once the confirm controls exist in the DOM.
+    // Arming removes the Delete button, so focus would drop to <body>. autofocus on
+    // the Cancel button does work here — @if inserts it for real, and all three engines
+    // honour that — but the template a11y lint bans the attribute outright.
     effect(() => {
       if (this.store.confirming()) this.cancelBtn()?.nativeElement.focus();
     });
