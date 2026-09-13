@@ -10,14 +10,20 @@
   --ink: #241813;        /* deep roasted espresso */
   --cocoa: #6f4e37;      /* primary brown */
   --crema: #cc8b43;      /* gold accent — the single bold note */
-  --crema-deep: #a8692b;
+  --crema-deep: #8f5419;  /* AA on both grounds — see note below */
   --latte: #f3e9db;      /* page ground */
   --foam: #fffcf6;       /* card surface */
   --line: #e6d6bf;       /* warm hairline */
-  --muted: #8a7561;      /* warm grey text */
+  --muted: #736050;      /* warm grey text */
   --moss: #5c7a52;       /* semantic good (not the accent) */
   color-scheme: light;
 }
+
+/* --muted and --crema-deep carry most of the small text (labels, eyebrows, metadata),
+   so both are set against the WORSE of the two light grounds — the page ground --latte,
+   not the --foam card surface. At 4.5:1 that costs about half a step of lightness:
+   #8a7561 and #a8692b read fine on foam but land at 3.65 and 3.71 on latte.
+   Dark theme already clears comfortably and is unchanged. */
 
 /* Dark roast. */
 [data-theme='dark'] {
@@ -68,6 +74,13 @@
 @layer components {
   .input {
     @apply rounded-xl border border-line bg-foam px-4 py-3 outline-none transition focus:border-crema focus:ring-4 focus:ring-crema/20;
+  }
+  /* One class for every field error. Three screens had drifted to three different reds,
+     and the darkest of them still failed AA. red-700 rather than red-600 because forms
+     are not all inside a card: register's sits on the page ground (--latte), where
+     red-600 is only 4.02:1. */
+  .field-error {
+    @apply text-xs font-medium text-red-700 dark:text-red-400;
   }
 }
 

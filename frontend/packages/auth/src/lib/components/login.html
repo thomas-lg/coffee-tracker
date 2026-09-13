@@ -55,7 +55,7 @@
                 class="input"
               />
               @if (f.email().touched() && f.email().invalid()) {
-                <span class="text-xs font-medium text-red-600 dark:text-red-400">
+                <span class="field-error">
                   Enter a valid email address.
                 </span>
               }
@@ -71,7 +71,7 @@
                 class="input"
               />
               @if (f.password().touched() && f.password().invalid()) {
-                <span class="text-xs font-medium text-red-600 dark:text-red-400">Password is required.</span>
+                <span class="field-error">Password is required.</span>
               }
             </label>
 
