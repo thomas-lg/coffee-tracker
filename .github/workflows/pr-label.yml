@@ -8,6 +8,9 @@ on:
 
 permissions:
   contents: read
+  # Labels are an issues resource: writing one onto a PR needs pull-requests, creating a
+  # missing one needs issues.
+  issues: write
   pull-requests: write
 
 jobs:
@@ -27,9 +30,30 @@ jobs:
             || { echo "::error::.github/conventional-commit-types.json is not valid JSON" && exit 1; }
           echo "types=$(jq -c . .github/conventional-commit-types.json)" >> "$GITHUB_OUTPUT"
 
+      # Blocking on purpose: an unlabelled PR is a defect this workflow exists to prevent,
+      # so it fails loudly rather than leaving a silent gap.
       - name: Apply label from PR title prefix
-        uses: bcoe/conventional-release-labels@886f696738527c7be444262c327c89436dfb95a8 # v1
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          type_labels: ${{ steps.type-config.outputs.types }}
-          ignored_types: "[]"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TITLE: ${{ github.event.pull_request.title }}
+          NUMBER: ${{ github.event.pull_request.number }}
+          TYPES: ${{ steps.type-config.outputs.types }}
+        run: |
+          set -euo pipefail
+          # feat(web)!: subject -> feat
+          type="${TITLE%%[(!:]*}"
+          label=$(jq -r --arg t "$type" '.[$t] // empty' <<< "$TYPES")
+          if [ -z "$label" ]; then
+            echo "::error::No label mapped for type '$type'. Add it to .github/conventional-commit-types.json."
+            exit 1
+          fi
+
+          # The map carries more types than the repo has labels, so create on first use —
+          # otherwise every PR of an unused type would go unlabelled.
+          if ! gh label list --limit 200 --json name --jq '.[].name' | grep -qxF "$label"; then
+            echo "Creating missing label '$label'."
+            gh label create "$label" --color ededed --description "Conventional commit type: $type"
+          fi
+
+          gh pr edit "$NUMBER" --add-label "$label"
+          echo "Applied '$label' (from type '$type')."
