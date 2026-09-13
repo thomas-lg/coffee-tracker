@@ -2,7 +2,7 @@
 # Unraid/LinuxServer-style PUID/PGID handling. The container starts as root so it
 # can re-own the bind-mounted volumes, then drops to the requested user to run the
 # app. Defaults match Unraid's `nobody:users` (99:100).
-set -e
+set -eu
 
 PUID="${PUID:-99}"
 PGID="${PGID:-100}"
@@ -30,6 +30,12 @@ fi
 # requested PUID/PGID so the app (run as that user below) can read/write — but only
 # when the dir's owner doesn't already match, so a large /photos tree isn't
 # recursively re-walked on every start.
+#
+# The check reads the top-level directory only. That is the trade for not walking the
+# tree, and it has a consequence worth knowing: files written under a previously
+# configured PUID keep that owner forever, because once the directory itself matches,
+# the recursive chown never runs again. After changing PUID/PGID on an instance that
+# already holds photos, chown -R the volume once by hand.
 for dir in /config /photos; do
     mkdir -p "$dir"
     if [ "$(stat -c '%u:%g' "$dir")" != "${PUID}:${PGID}" ]; then
