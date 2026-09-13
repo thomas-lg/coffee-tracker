@@ -36,12 +36,10 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : IdentityDbCo
         builder.Entity<Review>()
             .HasIndex(r => new { r.CoffeeId, r.UserId });
 
-        // Optional context label for when the rating was taken.
         builder.Entity<Review>()
             .Property(r => r.Stage)
             .HasMaxLength(40);
 
-        // Deleting a coffee removes its reviews.
         builder.Entity<Review>()
             .HasOne<Coffee>()
             .WithMany()

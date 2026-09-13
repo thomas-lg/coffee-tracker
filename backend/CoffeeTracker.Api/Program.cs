@@ -44,7 +44,7 @@ builder.Host.UseSerilog((context, services, lc) =>
               "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] {SourceContext} {Message:lj}{NewLine}{Exception}");
 });
 
-// Add services to the container. Enums serialise as their names (not ints) via a
+// Enums serialise as their names (not ints) via a
 // [JsonConverter] attribute on the enum type itself — that single annotation drives
 // both the JSON wire format and the generated OpenAPI schema (a global converter would
 // fix the wire format but the OpenAPI generator wouldn't see it). See RoastLevel.
@@ -60,7 +60,6 @@ builder.Services.AddHealthChecks();
 // exceptions all share one body format.
 builder.Services.AddProblemDetails();
 
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
 
 // Composition root: wire the hexagon's ports to their adapters.
@@ -287,7 +286,6 @@ catch (Exception ex)
     throw;
 }
 
-// Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
     // Serves the OpenAPI document at /openapi/v1.json (anonymous so the Swagger UI
