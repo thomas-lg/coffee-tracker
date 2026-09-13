@@ -38,7 +38,7 @@
     }
 
     <div class="ml-auto flex items-center gap-2">
-      <button
+      <button type="button"
         (click)="toggleTheme()"
         class="grid size-9 place-items-center rounded-full border border-line bg-foam text-cocoa transition duration-200 hover:-rotate-12 hover:border-cocoa"
         [attr.aria-label]="'Switch to ' + (theme() === 'dark' ? 'light' : 'dark') + ' mode'"
@@ -56,7 +56,7 @@
           [title]="auth.displayName() ?? 'You'"
           >{{ initials() }}</span
         >
-        <button
+        <button type="button"
           (click)="auth.logout()"
           class="rounded-full border border-line bg-foam px-3 py-1.5 text-sm font-semibold transition hover:border-cocoa"
         >

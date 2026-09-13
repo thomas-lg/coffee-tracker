@@ -32,7 +32,7 @@
     </button>
   </div>
 
-  <button
+  <button type="button"
     (click)="store.selectAllUnused()"
     class="rounded-full px-3 py-1.5 text-sm font-semibold text-muted hover:text-ink"
     [disabled]="store.unusedCount() === 0"
@@ -46,13 +46,15 @@
     <div class="ml-auto flex items-center gap-2" aria-live="polite">
       @if (!store.confirming()) {
         <span class="text-sm text-muted">{{ store.selectedCount() }} selected</span>
-        <button (click)="store.clearSelection()" class="text-sm font-semibold text-muted hover:text-ink">
+        <button type="button" (click)="store.clearSelection()" class="text-sm font-semibold text-muted hover:text-ink">
           Clear
         </button>
-        <ct-button variant="ghost" (click)="store.arm()">Delete {{ store.selectedCount() }}</ct-button>
+        <ct-button #armBtn variant="ghost" (click)="store.arm()"
+          >Delete {{ store.selectedCount() }}</ct-button
+        >
       } @else {
         <span class="text-sm font-semibold text-ink">Delete {{ store.selectedCount() }} photo(s)?</span>
-        <button
+        <button type="button"
           #cancelBtn
           (click)="store.cancel()"
           class="rounded-full px-3 py-1.5 text-sm font-semibold text-muted hover:text-ink"
@@ -96,16 +98,25 @@
         [class]="selected ? 'border-ink ring-2 ring-ink' : 'border-line'"
       >
         <!-- Unused photos are selectable; used ones are locked (the API skips them). -->
+        <!-- aria-pressed carries the selection: the tick below is decorative, and the
+             ring is a colour change. Without it a screen-reader user can select photos
+             but cannot tell what is selected before confirming a bulk delete. -->
         <button
           type="button"
           class="block w-full text-left"
           [class.cursor-default]="p.used"
           [disabled]="p.used"
+          [attr.aria-pressed]="p.used ? null : selected"
+          [attr.aria-label]="
+            p.used
+              ? 'In use by a coffee: ' + fileName(p.path)
+              : 'Select ' + fileName(p.path) + ' for deletion'
+          "
           (click)="store.toggle(p.path)"
         >
           <img
             [src]="p.url"
-            [alt]="fileName(p.path)"
+            alt=""
             loading="lazy"
             class="aspect-square w-full object-cover"
             [class.opacity-60]="p.used"

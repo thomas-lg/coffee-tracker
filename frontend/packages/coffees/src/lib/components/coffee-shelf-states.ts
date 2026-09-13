@@ -23,7 +23,7 @@ import { CoffeeCardSkeleton } from './coffee-card-skeleton';
     } @else if (error(); as message) {
       <div class="rounded-2xl border border-line bg-foam p-8 text-center text-cocoa">
         {{ message }}
-        <button (click)="retry.emit()" class="mt-3 block w-full font-semibold text-crema-deep">
+        <button type="button" (click)="retry.emit()" class="mt-3 block w-full font-semibold text-crema-deep">
           Try again
         </button>
       </div>
