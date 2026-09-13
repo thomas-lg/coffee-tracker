@@ -30,7 +30,7 @@
         <span class="text-sm font-semibold">Name</span>
         <input [formField]="f.name" class="input" />
         @if (f.name().touched() && f.name().invalid()) {
-          <span class="text-xs font-medium text-red-500">A name is required.</span>
+          <span class="field-error">A name is required.</span>
         }
       </label>
 
@@ -44,7 +44,7 @@
             }
           </datalist>
           @if (f.roaster().touched() && f.roaster().invalid()) {
-            <span class="text-xs font-medium text-red-500">A roaster is required.</span>
+            <span class="field-error">A roaster is required.</span>
           }
         </label>
         <label class="flex flex-col gap-1.5">
@@ -56,7 +56,7 @@
             }
           </datalist>
           @if (f.origin().touched() && f.origin().invalid()) {
-            <span class="text-xs font-medium text-red-500">An origin is required.</span>
+            <span class="field-error">An origin is required.</span>
           }
         </label>
       </div>
@@ -71,14 +71,14 @@
             }
           </select>
           @if (f.roastLevel().touched() && f.roastLevel().invalid()) {
-            <span class="text-xs font-medium text-red-500">Pick a roast level.</span>
+            <span class="field-error">Pick a roast level.</span>
           }
         </label>
         <label class="flex flex-col gap-1.5">
           <span class="text-sm font-semibold">Price</span>
           <input type="number" step="0.01" [formField]="f.price" class="input" />
           @if (f.price().touched() && f.price().invalid()) {
-            <span class="text-xs font-medium text-red-500">Price can't be negative.</span>
+            <span class="field-error">Price can't be negative.</span>
           }
         </label>
       </div>
@@ -87,7 +87,7 @@
         <span class="text-sm font-semibold">Date bought</span>
         <input type="date" [formField]="f.dateBought" [max]="today()" class="input" />
         @if (f.dateBought().touched() && f.dateBought().invalid()) {
-          <span class="text-xs font-medium text-red-500">Pick a date that isn't in the future.</span>
+          <span class="field-error">Pick a date that isn't in the future.</span>
         }
       </label>
 
