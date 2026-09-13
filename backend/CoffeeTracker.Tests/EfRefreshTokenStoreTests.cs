@@ -77,6 +77,73 @@ public sealed class EfRefreshTokenStoreTests : IDisposable
         Assert.Equal(2, await check.RefreshTokens.CountAsync());
     }
 
+    [Fact]
+    public async Task ValidateAndRotateAsync_rejects_a_token_that_is_already_expired()
+    {
+        string raw;
+        await using (var db = NewContext())
+        {
+            raw = (await NewStore(db).IssueAsync(UserId)).Token;
+        }
+
+        _clock.Now = _clock.Now.AddDays(15); // past the 14-day life
+
+        await using (var db = NewContext())
+        {
+            var result = await NewStore(db).ValidateAndRotateAsync(raw);
+            Assert.False(result.Succeeded);
+        }
+
+        // Expiry is not reuse: the family stays intact, so other live sessions survive.
+        await using var check = NewContext();
+        Assert.Null((await check.RefreshTokens.SingleAsync()).RevokedAtUtc);
+    }
+
+    // Concurrent rotation of ONE token must mint at most one successor. Before the
+    // guarded UPDATE in EfRefreshTokenStore, both callers could read RevokedAtUtc as null,
+    // both pass the reuse check and both succeed — handing out two live session families
+    // from a single token and silently disarming reuse detection.
+    //
+    // This needs real parallel connections, so it uses its own shared-cache in-memory
+    // database rather than the single-connection fixture above (which would serialise the
+    // calls and hide the race entirely). The assertion is an invariant the fixed code
+    // always satisfies, so it cannot fail on correct code. Verified the way this repo
+    // verifies guards: the pre-fix read-then-write was reinstated and this test went red.
+    [Fact]
+    public async Task ValidateAndRotateAsync_lets_only_one_of_two_concurrent_callers_win()
+    {
+        var dbName = $"rotate-{Guid.NewGuid():N}";
+        var connectionString = $"DataSource=file:{dbName}?mode=memory&cache=shared;Default Timeout=30";
+
+        // Holding one connection open keeps the shared in-memory database alive.
+        await using var keepAlive = new SqliteConnection(connectionString);
+        await keepAlive.OpenAsync();
+
+        var options = new DbContextOptionsBuilder<AppDbContext>().UseSqlite(connectionString).Options;
+        await using (var seed = new AppDbContext(options))
+        {
+            await seed.Database.EnsureCreatedAsync();
+            seed.Users.Add(new AppUser { Id = UserId, UserName = "u", Email = "u@example.com" });
+            await seed.SaveChangesAsync();
+        }
+
+        string raw;
+        await using (var db = new AppDbContext(options))
+        {
+            raw = (await NewStore(db).IssueAsync(UserId)).Token;
+        }
+
+        async Task<bool> Rotate()
+        {
+            await using var db = new AppDbContext(options);
+            return (await NewStore(db).ValidateAndRotateAsync(raw)).Succeeded;
+        }
+
+        var results = await Task.WhenAll(Task.Run(Rotate), Task.Run(Rotate));
+
+        Assert.Equal(1, results.Count(succeeded => succeeded));
+    }
+
     private sealed class MutableClock(DateTimeOffset now) : TimeProvider
     {
         public DateTimeOffset Now { get; set; } = now;
