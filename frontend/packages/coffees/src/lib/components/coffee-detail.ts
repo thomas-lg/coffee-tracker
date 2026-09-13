@@ -50,9 +50,13 @@ export class CoffeeDetail {
   private readonly cancelDeleteBtn = viewChild<ElementRef<HTMLButtonElement>>('cancelDeleteBtn');
   private readonly armDeleteBtn = viewChild<ElementRef<HTMLButtonElement>>('armDeleteBtn');
 
+  /** The route parameter arrives as a string; the store reads by number. */
+  private readonly coffeeId = computed(() => Number(this.id()));
+
   constructor() {
-    // The route parameter arrives as a string; the store reads by number.
-    effect(() => this.store.setCoffeeId(Number(this.id())));
+    // The signal, not its value: the router reuses this component when only the
+    // parameter changes, so the store has to keep hearing about it.
+    this.store.setCoffeeId(this.coffeeId);
 
     // Arming and disarming each remove the element that currently has focus, so without
     // this focus drops to <body> and a keyboard user loses their place mid-flow. Moving

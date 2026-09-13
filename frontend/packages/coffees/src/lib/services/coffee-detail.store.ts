@@ -93,10 +93,16 @@ export const CoffeeDetailStore = signalStore(
       patchState(store, { rating: 0, stage: '', notes: '', selectedTags: new Set<number>() });
 
     return {
-      /** Fed a signal by the screen, so the route id drives the reads. */
-      setCoffeeId(coffeeId: number): void {
-        patchState(store, { coffeeId });
-      },
+      /**
+       * Fed the screen's id signal, not its value. The router reuses this component
+       * when only the parameter changes (/coffees/7 → /coffees/8, one route config),
+       * so anything that reads the id once — a store onInit, an ngOnInit — would leave
+       * the screen showing the previous coffee. rxMethod re-emits when the signal does,
+       * which is the same shape CoffeeFormStore.load already uses.
+       */
+      setCoffeeId: rxMethod<number>(
+        pipe(tap((coffeeId) => patchState(store, { coffeeId }))),
+      ),
 
       setRating: (rating: number) => patchState(store, { rating }),
       setStage: (stage: string) => patchState(store, { stage }),

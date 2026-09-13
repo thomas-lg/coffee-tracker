@@ -1,5 +1,5 @@
 import { describe, expect, it, beforeEach, afterEach } from 'vitest';
-import { ApplicationRef, provideZonelessChangeDetection } from '@angular/core';
+import { ApplicationRef, provideZonelessChangeDetection, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
@@ -163,6 +163,32 @@ describe('CoffeeDetailStore', () => {
     await settle();
 
     expect(store.loading()).toBe(false);
+    expect(store.coffee()?.name).toBe('Yirgacheffe Konga');
+  });
+
+  // The screen hands over its id *signal*, because the router reuses the component when
+  // only the route parameter changes. Reading the id once — in a store onInit, or an
+  // ngOnInit — would leave the screen on the previous coffee forever.
+  it('follows the id signal it was given rather than reading it once', async () => {
+    const routeId = signal(7);
+    const store = TestBed.inject(CoffeeDetailStore);
+    store.setCoffeeId(routeId);
+    appRef.tick();
+
+    http.expectOne('/api/coffees/7').flush(coffee({ id: 7 }));
+    http.expectOne('/api/coffees/7/reviews').flush([]);
+    http.expectOne('/api/flavor-tags').flush([]);
+    http.match('/api/coffees').forEach((r) => r.flush([]));
+    await settle();
+    expect(store.coffee()?.id).toBe(7);
+
+    routeId.set(8);
+    appRef.tick();
+
+    http.expectOne('/api/coffees/8').flush(coffee({ id: 8, name: 'Yirgacheffe Konga' }));
+    http.expectOne('/api/coffees/8/reviews').flush([]);
+    await settle();
+
     expect(store.coffee()?.name).toBe('Yirgacheffe Konga');
   });
 
