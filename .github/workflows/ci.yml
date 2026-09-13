@@ -104,11 +104,12 @@ jobs:
         env:
           ASPNETCORE_ENVIRONMENT: Development
         run: dotnet run --project backend/CoffeeTracker.Api --urls http://localhost:5000 &
-      # Poll the anonymous /api/config until the API answers (don't invent /api/health).
+      # Poll the liveness endpoint the container's HEALTHCHECK also uses. It is mapped
+      # anonymously (outside the global auth fallback policy), so no token is needed.
       - name: Wait for the API
         run: |
           for i in $(seq 1 60); do
-            if curl -fsS http://localhost:5000/api/config >/dev/null 2>&1; then
+            if curl -fsS http://localhost:5000/health >/dev/null 2>&1; then
               echo "API ready"; exit 0
             fi
             sleep 2
@@ -161,6 +162,11 @@ jobs:
           push: false
           load: true
           tags: coffee-tracker:ci
+          # Persist the layer cache between runs. Both restore layers (npm in stage 1,
+          # NuGet in stage 2) are keyed on manifests, so a PR that only touches source
+          # code reuses them instead of re-downloading both dependency graphs.
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
       # Report CRITICAL+HIGH CVEs to the Security tab (SARIF), non-blocking: base-image
       # HIGHs come and go with Trivy's vuln DB and are outside our control, so they must
       # not flake PRs. The hard gate below blocks only on a fixable CRITICAL.
