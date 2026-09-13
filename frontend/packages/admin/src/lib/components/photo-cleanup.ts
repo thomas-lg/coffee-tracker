@@ -26,7 +26,7 @@ export class PhotoCleanup {
   private readonly cancelBtn = viewChild<ElementRef<HTMLButtonElement>>('cancelBtn');
   // ct-button renders the real control inside its host, so the host itself is not
   // focusable — reach through to the button it stamped out.
-  private readonly armBtn = viewChild('armBtn', { read: ElementRef<HTMLElement> });
+  private readonly armBtn = viewChild<ElementRef<HTMLElement>>('armBtn', { read: ElementRef });
 
   constructor() {
     // Arming removes the Delete button and cancelling removes the Cancel button, so
