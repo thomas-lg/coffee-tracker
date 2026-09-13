@@ -6,9 +6,9 @@ A self-hosted web app to catalog the coffees I buy and rate them to taste, with
 multiple users each keeping their own ratings. Built to be shared — anyone can
 self-host it on a NAS via Docker.
 
-This is a **personal, for-fun project** — a deliberately chill, no-pressure space
-to learn modern C#/.NET (and enjoy good coffee) on my own schedule. No roadmap
-commitments, no SLAs, no deadlines.
+This is a personal, for-fun project — a no-pressure space to learn modern C#/.NET
+(and drink good coffee) on my own schedule. There's no roadmap and no promises
+about when anything lands.
 
 ![The shelf: search, filter by origin, roast or flavour, and sort by rating](docs/screenshots/shelf.png)
 
@@ -31,12 +31,12 @@ commitments, no SLAs, no deadlines.
 - **A shared shelf.** Name, roaster, origin, roast level, price, where you bought it
   and a photo. Search it, filter by origin or flavour, sort by newest, name or rating.
 - **Ratings over time**, not one score per person: every review is dated and carries
-  its own tasting notes, brew method, grind, ratio and flavour tags — so a bag can be
+  its own tasting notes, brew method, grind, ratio and flavour tags, so a bag can be
   re-rated as it opens up. Each coffee shows its running average and review count.
 - **Snap-to-fill.** Photograph the bag; OCR reads the label and pre-fills the form.
 - **Multi-user.** Everyone rates the same catalog independently. A coffee can only be
   edited by whoever added it, or an administrator.
-- **Installable PWA** with light and dark theming — it works from a phone home screen.
+- **Installable PWA** with light and dark theming, so it works from a phone home screen.
 - **Two ways to sign in:** app accounts, or your own OpenID Connect provider with
   admin rights mapped from a group claim. See [Signing in](#signing-in).
 - **Admin screens** for account policy (who may register, whether app accounts can
@@ -47,7 +47,7 @@ commitments, no SLAs, no deadlines.
   ASP.NET Core Identity + JWT.
 - **Frontend:** Angular 22 (standalone components, signals, Signal Forms),
   shipped as an installable PWA.
-- **Snap-to-fill:** photograph a coffee bag → open-source OCR (Tesseract first,
+- **Snap-to-fill:** photograph a coffee bag, and open-source OCR (Tesseract first,
   behind a swappable `IOcrService`) pre-fills the Add Coffee form.
 - **Deploy:** GitHub Actions builds a `linux/amd64` image and publishes it to
   GHCR; you install/update it manually from your NAS's Docker GUI.
@@ -58,7 +58,7 @@ and [`openspec/changes/archive/`](./openspec/changes/archive/) for how each piec
 ## Getting started (Dev Container)
 
 Development happens inside a dev container, so the only host prerequisites are
-**Docker** and the **VS Code Dev Containers** extension.
+Docker and the VS Code Dev Containers extension.
 
 1. Clone the repo and open it in VS Code.
 2. Run **Dev Containers: Reopen in Container**. The first build installs the .NET
@@ -68,8 +68,8 @@ Development happens inside a dev container, so the only host prerequisites are
    `http://localhost:4200` (both forwarded automatically). `http://localhost` is a
    secure context, so the PWA service worker and camera work without HTTPS in dev.
 
-Conventions, architecture rules and maintainer notes — including the NuGet lock-file
-trap that bites every backend dependency bump — live in [CLAUDE.md](./CLAUDE.md).
+Conventions, architecture rules and maintainer notes live in [CLAUDE.md](./CLAUDE.md),
+including the NuGet lock-file trap that bites every backend dependency bump.
 
 ## Running the tests
 
@@ -82,13 +82,13 @@ cd frontend && npm run e2e        # frontend: end-to-end (Playwright, Chromium)
 ```
 
 The backend integration tests boot the real API through `WebApplicationFactory<Program>`
-against a throwaway SQLite database — each test gets its own, so they need nothing
+against a throwaway SQLite database. Each test gets its own, so they need nothing
 running.
 
-**The e2e suite does.** Playwright starts only the Angular dev server on `:4200`
+The e2e suite is the exception. Playwright starts only the Angular dev server on `:4200`
 (`proxy.conf.json` forwards `/api` and `/photos`), so the API must already be up on
 `:5000`, against an **empty** database: the suite's global setup claims the instance's
-first account — which makes it the administrator — and reopens registration, so that
+first account, which makes it the administrator, and reopens registration, so that
 parallel tests aren't racing for the one registration a fresh instance allows.
 
 ```bash
@@ -98,16 +98,16 @@ ASPNETCORE_ENVIRONMENT=Development dotnet run --project backend/CoffeeTracker.Ap
 
 `Development` opens registration and sets `Ocr__Engine=none`, so no Tesseract is needed.
 Provider sign-in is exercised against a minimal OpenID Connect provider the suite starts
-in-process — real discovery, JWKS, PKCE and nonce — so no external provider is involved.
+in-process, with real discovery, JWKS, PKCE and nonce, so no external provider is involved.
 
 ## Install on Unraid (or any Docker host)
 
-The published image is **public** at `ghcr.io/thomas-lg/coffee-tracker`. On Unraid,
+The published image is public at `ghcr.io/thomas-lg/coffee-tracker`. On Unraid,
 add the container from [`deploy/unraid/my-coffee-tracker.xml`](./deploy/unraid/my-coffee-tracker.xml)
 (or fill in the values below by hand), map the volumes, set the required env vars,
 and **put it behind a reverse proxy that terminates HTTPS** (NPM, SWAG, Traefik,
-Caddy) — the PWA and camera require a secure context. Don't expose the container
-port directly to the internet.
+Caddy). The PWA and camera require a secure context, and the container port should
+never face the internet directly.
 
 ### Volumes
 
@@ -116,7 +116,7 @@ port directly to the internet.
 | `/config`      | SQLite database (`coffee.db`)    |
 | `/photos`      | Uploaded coffee photos           |
 
-> Back up `/config` and `/photos` **before pulling a new image** — startup runs EF
+> Back up `/config` and `/photos` **before pulling a new image**: startup runs EF
 > migrations automatically and there is no rollback. The database uses WAL mode, so
 > `/config` holds three files (`coffee.db`, `coffee.db-wal`, `coffee.db-shm`); for a
 > consistent single-file backup run `sqlite3 coffee.db ".backup backup.db"`.
@@ -134,7 +134,7 @@ port directly to the internet.
 | `Jwt__Issuer`                     | no       | `coffee-tracker` | JWT issuer claim.                                                           |
 | `Jwt__Audience`                   | no       | `coffee-tracker` | JWT audience claim.                                                         |
 | `Jwt__AccessTokenMinutes`         | no       | `15`             | Access-token lifetime (minutes). Kept short; sessions persist via a rotating refresh token, so a stolen access token expires quickly. |
-| `Jwt__RefreshTokenDays`           | no       | `14`             | Refresh-token lifetime (days) — the effective session length. Refresh tokens rotate on use and are revoked on logout. |
+| `Jwt__RefreshTokenDays`           | no       | `14`             | Refresh-token lifetime (days), which is the effective session length. Refresh tokens rotate on use and are revoked on logout. |
 | `Storage__SignedUrlLifetimeMinutes` | no     | `60`             | How long a signed `/photos/…` URL stays valid (minutes). Photos are served only via short-lived signed URLs, never anonymously. |
 | `Oidc__Authority`                 | no       | —                | Base URL of an OpenID Connect provider (Authelia, Keycloak, Authentik, Google…). Set it with `Oidc__ClientId` to offer sign-in through that provider; leave both unset to run with app accounts only. Endpoints are discovered from `/.well-known/openid-configuration`. |
 | `Oidc__ClientId`                  | no       | —                | The client id registered with that provider. Required whenever `Oidc__Authority` is set — the app refuses to start with only one of the two. |
@@ -142,7 +142,7 @@ port directly to the internet.
 | `Oidc__DisplayName`               | no       | —                | What to call the provider on the sign-in button (e.g. `Authelia`). Unset, the button reads "your identity provider" — the app never hard-codes which product it talks to. |
 | `Oidc__AdminClaim`                | no       | —                | Claim carrying the admin assertion (e.g. `groups`). Set with `Oidc__AdminClaimValue`; both or neither. Unset, the first user to sign in through the provider becomes admin. |
 | `Oidc__AdminClaimValue`           | no       | —                | Value `Oidc__AdminClaim` must carry to grant admin. Re-evaluated on every sign-in, so removing someone from the group revokes their rights at their next sign-in. |
-| `ForwardedHeaders__KnownProxies`  | recommended | —             | Comma-separated **host names or IPs** of your reverse proxy, so the app trusts its `X-Forwarded-For`/`-Proto`. **Set this** behind a proxy — otherwise auth rate-limiting keys off the proxy's single IP and throttles every client together, and HSTS is not emitted. Prefer a name (`swag`, a service name, a DNS record) over an address: an orchestrator assigns the address, so a pinned IP holds only until the proxy restarts onto another one. Names are resolved at startup; one that cannot be resolved is ignored rather than guessed. |
+| `ForwardedHeaders__KnownProxies`  | recommended | —             | Comma-separated host names or IPs of your reverse proxy, so the app trusts its `X-Forwarded-For`/`-Proto`. **Set this** behind a proxy — otherwise auth rate-limiting keys off the proxy's single IP and throttles every client together, and HSTS is not emitted. Prefer a name (`swag`, a service name, a DNS record) over an address, because an orchestrator assigns the address and a pinned IP holds only until the proxy restarts onto another one. Names are resolved at startup; one that cannot be resolved is ignored rather than guessed. |
 | `Ocr__Engine`                     | no       | `tesseract`      | OCR engine for `/api/coffees/scan`: `tesseract` (uses the bundled native libs) or `none` (disables scanning → 503). |
 | `Ocr__TessdataPath`               | no       | system path      | Override the tessdata directory; defaults to the `TESSDATA_PREFIX` system path (the image ships English data). |
 | `Ocr__Language`                   | no       | `eng`            | Tesseract language code. |
@@ -156,7 +156,7 @@ port directly to the internet.
 Two ways in, and an instance can offer either or both.
 
 **App accounts** work out of the box. A brand-new instance accepts registrations until
-its first account exists — that account becomes the administrator — and then closes
+its first account exists (that account becomes the administrator) and then closes
 registration by itself, so an instance left on the internet is never sitting open by
 accident. An administrator reopens it from **Admin → Account settings** to add people,
 and registration reopened deliberately stays open until it is turned off again.
@@ -172,28 +172,28 @@ keeps their coffees. A first sign-in whose email matches an existing app account
 linked to it only when the provider asserts the address is verified; otherwise the
 sign-in is refused rather than quietly creating a second account.
 
-Linking is a **handover, not a sharing**: that account's app password and any sessions it
-had are retired, leaving the provider as its only way in. Registration takes any address
-and confirms none, so an app account bearing your address is not proof anyone owns it —
-without this, someone could open one in advance and keep a password on the account you
-are about to be linked to, including whatever rights the provider then grants it. If you
-are migrating your own app account to the provider, expect to sign in through the
-provider from then on.
+Linking is a handover: that account's app password and any sessions it had are retired,
+leaving the provider as its only way in. Registration takes any address and confirms
+none, so an app account bearing your address is not proof anyone owns it. Without this,
+someone could open one in advance and keep a password on the account you are about to be
+linked to, including whatever rights the provider then grants it. If you are migrating
+your own app account to the provider, expect to sign in through the provider from then
+on.
 
-**The provider is the guest list.** Anyone the provider lets through gets an account on
-first sign-in, so point the app at a provider you control and that gates who may use it
-(Authelia's `access_control`, a Keycloak client role, a Google Workspace domain…). A
-provider that accepts the whole world — plain Google, for instance — makes the app accept
-the whole world with it. Only an email the provider asserts as verified is recorded;
-otherwise the account gets a placeholder address, so nobody can claim someone else's.
+The provider is the guest list. Anyone it lets through gets an account on first sign-in,
+so point the app at a provider you control and that gates who may use it (Authelia's
+`access_control`, a Keycloak client role, a Google Workspace domain…). A provider that
+accepts the whole world, plain Google for instance, makes the app accept the whole world
+with it. Only an email the provider asserts as verified is recorded; otherwise the
+account gets a placeholder address, so nobody can claim someone else's.
 
 Once an administrator has signed in through the provider at least once, you can switch
 app-account sign-in off entirely. Before that the app refuses to — it would be the last
 way in.
 
-**If the provider later disappears** (URL changed, certificate expired, instance gone)
-and app-account sign-in is off, nobody can get in. Turn it back on directly in the
-database, then restart the container:
+If the provider later disappears (URL changed, certificate expired, instance gone) and
+app-account sign-in is off, nobody can get in. Turn it back on directly in the database,
+then restart the container:
 
 ```sh
 sqlite3 /config/coffee.db "UPDATE AppSettings SET LocalLoginEnabled = 1;"
@@ -225,42 +225,44 @@ pre-migration file is the only way to truly undo one.
 
 ## Security notes
 
-This app is designed to be internet-exposed and shared, so: no secrets are baked
-into the image (all injected at runtime), there is no default JWT key, a fresh
-instance closes registration behind its first account, login/register are
-rate-limited — as are the anonymous config endpoint and label scanning, whose cost
-a single caller could otherwise impose at will — and the container runs as a
-non-root user. Auth uses **short-lived access tokens plus rotating, revocable
-refresh tokens** (reuse of a rotated token revokes the whole session family).
-Signing out revokes the refresh token immediately; an access token already issued
-stays valid until it expires, which is why it is kept to 15 minutes. Uploaded
-photos are **re-encoded** on upload (stripping any embedded payload/metadata) and
-served only through **short-lived signed URLs** — never anonymously. Every response
-carries a **content security policy** (no inline script), `X-Frame-Options: DENY`,
-`Referrer-Policy: no-referrer` and `nosniff`, so an injected script — the shortest
-path to the session, which lives in `localStorage` — has no way to run. See the
-Security section in [docs/design-notes.md](./docs/design-notes.md).
+This app is designed to be internet-exposed and shared. No secrets are baked into the
+image; they are all injected at runtime, and there is no default JWT key. A fresh
+instance closes registration behind its first account. Login and register are
+rate-limited, as are the anonymous config endpoint and label scanning, whose cost a
+single caller could otherwise impose at will. The container runs as a non-root user.
+
+Auth uses short-lived access tokens plus rotating, revocable refresh tokens, and
+presenting a rotated token revokes the whole session family. Signing out revokes the
+refresh token immediately; an access token already issued stays valid until it expires,
+which is why it is kept to 15 minutes.
+
+Uploaded photos are re-encoded on upload, which strips any embedded payload or metadata,
+and they are served only through short-lived signed URLs, never anonymously. Every
+response carries a content security policy with no inline script, plus
+`X-Frame-Options: DENY`, `Referrer-Policy: no-referrer` and `nosniff`, so an injected
+script has no way to run. That matters here because the session lives in `localStorage`.
+See the Security section in [docs/design-notes.md](./docs/design-notes.md).
 
 ## Ideas for later
 
-Nothing committed — a parking lot for when the mood strikes:
+Nothing committed, just a parking lot for when the mood strikes:
 
-- **Brew log** — per-cup extraction notes (grind, dose, yield, time) beyond a rating.
+- **Brew log** for per-cup extraction notes (grind, dose, yield, time) beyond a rating.
 - **Wishlist & "finished bag"** states; optional low-stock nudges.
-- **Stats & charts** — rating trends over time, favourite roasters/origins.
+- **Stats & charts**: rating trends over time, favourite roasters/origins.
 - **Export / import** (JSON/CSV) and a one-click backup endpoint.
-- **OCR upgrade** — PaddleOCR/RapidOCR behind `IOcrService` if Tesseract is weak on
-  real bags.
+- **OCR upgrade** to PaddleOCR or RapidOCR behind `IOcrService`, if Tesseract turns out
+  weak on real bags.
 - **Multi-arch image** (add `linux/arm64`) for ARM NAS / Raspberry Pi.
-- **i18n** — the UI is English-only today.
+- **i18n**. The UI is English-only today.
 
 ## Contributing
 
-Bug reports and questions are welcome — see [CONTRIBUTING.md](./CONTRIBUTING.md) for
+Bug reports and questions are welcome. See [CONTRIBUTING.md](./CONTRIBUTING.md) for
 how the repo works, and [CLAUDE.md](./CLAUDE.md) for the architecture rules and the
 gotchas worth knowing before changing anything.
 
-Found a security problem? Please report it privately rather than in an issue —
+Found a security problem? Please report it privately rather than in an issue.
 [SECURITY.md](./SECURITY.md) has the details and says what's already known and
 deliberate.
 
