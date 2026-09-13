@@ -62,7 +62,8 @@ restating rather than explaining, and worth a second look.
 - Feature branch → PR → CI green → **squash-merge**. `main` is protected.
 - PR titles follow **Conventional Commits** — `.github/workflows/pr-title-check.yml`
   enforces it against `.github/conventional-commit-types.json`.
-- Commit as `tom.legougaud@gmail.com` on this repo (not the work address).
+- Commit with your personal (not work) git identity — check `git config user.email`
+  in this clone before the first commit.
 - `GH_TOKEN` in this environment lacks the `workflow` scope, so for any PR touching
   `.github/workflows/`, use `env -u GH_TOKEN gh ...` and let `gh` use its own auth.
 
@@ -138,7 +139,8 @@ squash-merge → a separate PR archiving the change into `openspec/specs/`.
 
 ## Deployment context
 
-Unraid, internet-exposed through SWAG + Authelia. The app keeps **its own** login —
+Self-hosted on a NAS, internet-exposed behind a TLS-terminating reverse proxy with
+forward auth. The app keeps **its own** login —
 every endpoint requires a token; the reverse proxy is not the authentication. The
 production container starts as root, `chown`s `/config` and `/photos` to `PUID:PGID`,
 then drops privileges via `gosu`.
