@@ -1,8 +1,9 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { rxResource } from '@angular/core/rxjs-interop';
-import { Router, RouterLink } from '@angular/router';
+import { RouterLink } from '@angular/router';
 import { FormField, FormRoot, email, form, required } from '@angular/forms/signals';
-import { Button, Icon, ToastService } from '@coffee-tracker/ui';
+import { Button } from '@coffee-tracker/ui';
+import { LucideIdCard } from '@lucide/angular';
 import { ConfigApi } from '@coffee-tracker/data';
 import { AuthStore } from '../auth.store';
 import { ProviderSignIn } from '../provider-sign-in';
@@ -10,13 +11,11 @@ import { ProviderSignIn } from '../provider-sign-in';
 @Component({
   selector: 'ct-login',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormField, FormRoot, RouterLink, Button, Icon],
+  imports: [FormField, FormRoot, RouterLink, Button, LucideIdCard],
   templateUrl: './login.html',
 })
 export class Login {
-  private readonly auth = inject(AuthStore);
-  private readonly router = inject(Router);
-  private readonly toast = inject(ToastService);
+  protected readonly auth = inject(AuthStore);
   private readonly config = inject(ConfigApi);
   private readonly provider = inject(ProviderSignIn);
 
@@ -78,7 +77,6 @@ export class Login {
     email(p.email);
     required(p.password);
   });
-  protected readonly submitting = signal(false);
 
   /** Set on click and never cleared: the page is on its way out to the provider. */
   protected readonly redirecting = signal(false);
@@ -88,28 +86,20 @@ export class Login {
     this.provider.start();
   }
 
-  protected async onSubmit(): Promise<void> {
-    if (this.submitting()) return;
+  constructor() {
+    // AuthStore is root-provided, so Login and Register share one requestStatus. Without
+    // this, a sign-in still in flight renders the sibling screen's button disabled, and a
+    // failed one leaves its error sitting there.
+    this.auth.resetRequestStatus();
+  }
+
+  protected onSubmit(): void {
+    if (this.auth.pending()) return;
     if (this.f().invalid()) {
       // Surface why nothing happened: reveal every field's validation message.
       this.f().markAsTouched();
       return;
     }
-    this.submitting.set(true);
-    try {
-      await this.auth.login(this.model());
-      await this.router.navigateByUrl('/');
-    } catch (err: unknown) {
-      // 403 means the instance no longer accepts app accounts at all — telling the user
-      // their password is wrong would send them round in circles.
-      this.toast.show(
-        (err as { status?: number })?.status === 403
-          ? 'This instance no longer accepts sign-in with an app account. Use the identity provider.'
-          : 'Invalid email or password.',
-        'error',
-      );
-    } finally {
-      this.submitting.set(false);
-    }
+    this.auth.login(this.model());
   }
 }

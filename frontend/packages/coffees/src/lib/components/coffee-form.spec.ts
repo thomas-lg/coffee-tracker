@@ -39,7 +39,7 @@ describe('CoffeeForm', () => {
   });
 
   function create() {
-    // Seed the shared CoffeesStore first (httpResource GET → flush → tick), so the
+    // Seed the shared CoffeesStore first (resource GET → flush → tick), so the
     // shelf data is present before the form reads it.
     TestBed.inject(CoffeesStore);
     appRef.tick();
@@ -64,5 +64,22 @@ describe('CoffeeForm', () => {
     expect(sug).toContain('Colombia');
     expect(sug).toEqual([...sug].sort());
     expect(new Set(sug).size).toBe(sug.length);
+  });
+
+  it('previews the photo already attached to the coffee being edited', async () => {
+    const fixture = create();
+    fixture.componentRef.setInput('id', '7');
+    fixture.detectChanges();
+
+    http
+      .expectOne('/api/coffees/7')
+      .flush(coffee({ id: 7, name: 'Edited', photoUrl: '/photos/a.jpg?exp=1&sig=x' }));
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    fixture.detectChanges();
+
+    // Without this the edit screen shows no thumbnail at all, so nobody can tell which
+    // photo is already attached.
+    const img = fixture.nativeElement.querySelector('img[src*="/photos/a.jpg"]');
+    expect(img).not.toBeNull();
   });
 });

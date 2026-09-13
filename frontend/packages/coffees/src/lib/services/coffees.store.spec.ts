@@ -49,7 +49,7 @@ describe('CoffeesStore', () => {
     http = TestBed.inject(HttpTestingController);
     appRef = TestBed.inject(ApplicationRef);
 
-    // httpResource fetches from a reactive effect — tick to fire it, flush, tick again.
+    // The resource fetches from a reactive effect — tick to fire it, flush, tick again.
     appRef.tick();
     http.expectOne('/api/coffees').flush(SEED);
     appRef.tick();
@@ -66,22 +66,22 @@ describe('CoffeesStore', () => {
   });
 
   it('filters by free-text search across name/roaster/origin', () => {
-    store.search.set('yirga');
+    store.setSearch('yirga');
     expect(store.filtered().map((c) => c.name)).toEqual(['Yirgacheffe']);
-    store.search.set('onyx');
+    store.setSearch('onyx');
     expect(store.filtered().map((c) => c.name).sort()).toEqual(['Cerrado', 'Geisha']);
   });
 
   it('filters by roast bucket', () => {
-    store.roast.set('Light');
+    store.setRoast('Light');
     expect(store.filtered().map((c) => c.name)).toEqual(['Yirgacheffe']);
   });
 
   it('filters by origin and by flavour', () => {
-    store.origin.set('Brazil');
+    store.setOrigin('Brazil');
     expect(store.filtered().map((c) => c.name)).toEqual(['Cerrado']);
-    store.origin.set('all');
-    store.flavor.set('Floral');
+    store.setOrigin('all');
+    store.setFlavor('Floral');
     expect(store.filtered().map((c) => c.name)).toEqual(['Yirgacheffe']);
   });
 
@@ -131,7 +131,7 @@ describe('CoffeesStore (error path)', () => {
   it('surfaces a friendly error, stops loading, and exposes an empty list without throwing', () => {
     expect(store.error()).toBe('Could not load your coffees.');
     expect(store.loading()).toBe(false);
-    // The raw httpResource value rethrows in the error state; the store guards it, so
+    // A resource value() rethrows in the error state; withValueOnError answers [], so
     // these reads (and every template consumer) return the empty default instead of crashing.
     expect(store.coffees()).toEqual([]);
     expect(store.filtered()).toEqual([]);

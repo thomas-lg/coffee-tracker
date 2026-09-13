@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
-import { Icon } from './icon';
+import { LucideChevronDown } from '@lucide/angular';
 
 /**
  * Styled pill `<select>` with a chevron. Options are projected as `<option>` children
@@ -9,7 +9,7 @@ import { Icon } from './icon';
 @Component({
   selector: 'ct-select',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [Icon],
+  imports: [LucideChevronDown],
   template: `
     <div class="relative inline-flex">
       <select
@@ -22,7 +22,7 @@ import { Icon } from './icon';
         <ng-content />
       </select>
       <span class="pointer-events-none absolute inset-y-0 right-3 flex items-center text-muted">
-        <ct-icon name="chevron-down" [size]="14" />
+        <svg lucideChevronDown [size]="14"></svg>
       </span>
     </div>
   `,

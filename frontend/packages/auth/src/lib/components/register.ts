@@ -1,8 +1,8 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { rxResource } from '@angular/core/rxjs-interop';
-import { Router, RouterLink } from '@angular/router';
+import { RouterLink } from '@angular/router';
 import { FormField, FormRoot, email, form, minLength, required } from '@angular/forms/signals';
-import { Button, ToastService } from '@coffee-tracker/ui';
+import { Button } from '@coffee-tracker/ui';
 import { ConfigApi } from '@coffee-tracker/data';
 import { AuthStore } from '../auth.store';
 
@@ -13,9 +13,7 @@ import { AuthStore } from '../auth.store';
   templateUrl: './register.html',
 })
 export class Register {
-  private readonly auth = inject(AuthStore);
-  private readonly router = inject(Router);
-  private readonly toast = inject(ToastService);
+  protected readonly auth = inject(AuthStore);
   private readonly config = inject(ConfigApi);
 
   /** Reactive config read (same rxResource pattern as the data screens). */
@@ -25,7 +23,6 @@ export class Register {
     if (this.configRes.error()) return false;
     return this.configRes.value()?.registrationEnabled ?? null;
   });
-  protected readonly submitting = signal(false);
   protected readonly model = signal({ email: '', password: '', displayName: '' });
   protected readonly f = form(this.model, (p) => {
     required(p.email);
@@ -35,21 +32,20 @@ export class Register {
     minLength(p.password, 8);
   });
 
-  protected async onSubmit(): Promise<void> {
-    if (this.submitting()) return;
+  constructor() {
+    // AuthStore is root-provided, so Login and Register share one requestStatus. Without
+    // this, a sign-in still in flight renders the sibling screen's button disabled, and a
+    // failed one leaves its error sitting there.
+    this.auth.resetRequestStatus();
+  }
+
+  protected onSubmit(): void {
+    if (this.auth.pending()) return;
     if (this.f().invalid()) {
       // Surface why nothing happened: reveal every field's validation message.
       this.f().markAsTouched();
       return;
     }
-    this.submitting.set(true);
-    try {
-      await this.auth.register(this.model());
-      await this.router.navigateByUrl('/');
-    } catch {
-      this.toast.show('Could not create the account — the email may already be in use.', 'error');
-    } finally {
-      this.submitting.set(false);
-    }
+    this.auth.register(this.model());
   }
 }
