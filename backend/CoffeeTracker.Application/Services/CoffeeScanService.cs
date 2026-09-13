@@ -7,6 +7,15 @@ namespace CoffeeTracker.Application.Services;
 /// <summary>
 /// Application service for snap-to-fill: stores the uploaded photo, OCRs it, and
 /// parses the text into best-effort fields. Does not create a coffee.
+///
+/// A successful scan therefore leaves a stored photo that nothing yet references — by
+/// design, so the coffee the user is about to save can reuse it without a second upload.
+/// If the user abandons the form instead, that photo is never claimed. The failure paths
+/// below delete what they stored; the success path cannot know yet whether it should.
+///
+/// This makes the admin photo cleanup load-bearing rather than housekeeping: on an
+/// instance where people scan more bags than they save, it is the only thing bounding
+/// the photos directory.
 /// </summary>
 public class CoffeeScanService(
     IOcrService ocr,

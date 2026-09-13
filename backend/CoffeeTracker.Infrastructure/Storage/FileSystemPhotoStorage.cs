@@ -30,8 +30,6 @@ public class FileSystemPhotoStorage : IPhotoStorage
         };
 
     /// <summary>Request-relative path segment the photos directory is served under.</summary>
-    private const string PublicPrefix = "photos";
-
     private readonly string _directory;
     private readonly long _maxBytes;
     private readonly long _maxPixels;
@@ -133,7 +131,7 @@ public class FileSystemPhotoStorage : IPhotoStorage
                 throw;
             }
 
-            return PhotoStorageResult.Stored($"{PublicPrefix}/{fileName}");
+            return PhotoStorageResult.Stored($"{PhotoRoute.PublicPrefix}/{fileName}");
         }
     }
 
@@ -220,7 +218,7 @@ public class FileSystemPhotoStorage : IPhotoStorage
         }
 
         IReadOnlyList<string> paths = Directory.EnumerateFiles(_directory)
-            .Select(f => $"{PublicPrefix}/{Path.GetFileName(f)}")
+            .Select(f => $"{PhotoRoute.PublicPrefix}/{Path.GetFileName(f)}")
             .ToList();
         return Task.FromResult(paths);
     }

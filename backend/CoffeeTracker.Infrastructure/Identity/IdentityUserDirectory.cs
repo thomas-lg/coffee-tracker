@@ -61,15 +61,9 @@ public sealed class IdentityUserDirectory(
             return CreateUserResult.Fail(CreateUserError.Invalid, messages);
         }
 
-        // Bootstrap the first user as admin, race-free: SQLite serialises writers, so this
-        // conditional UPDATE promotes exactly one user even if two registrations run at once
-        // (each reads-and-writes atomically; the second sees the first's admin row and no-ops).
-        var promoted = await db.Database.ExecuteSqlRawAsync(
-            "UPDATE AspNetUsers SET IsAdmin = 1 " +
-            "WHERE Id = {0} AND NOT EXISTS (SELECT 1 FROM AspNetUsers WHERE IsAdmin = 1 AND Id <> {0})",
-            [user.Id], ct);
+        var promoted = await TryPromoteFirstUserAsync(user.Id, ct);
 
-        return CreateUserResult.Ok(Map(user) with { IsAdmin = promoted == 1 });
+        return CreateUserResult.Ok(Map(user) with { IsAdmin = promoted });
     }
 
     public async Task<bool> IsLockedOutAsync(string userId, CancellationToken ct = default)
@@ -191,13 +185,9 @@ public sealed class IdentityUserDirectory(
                 linked.Errors.Select(e => e.Description).ToList());
         }
 
-        // Same atomic bootstrap as a local registration — see CreateAsync.
-        var promoted = await db.Database.ExecuteSqlRawAsync(
-            "UPDATE AspNetUsers SET IsAdmin = 1 " +
-            "WHERE Id = {0} AND NOT EXISTS (SELECT 1 FROM AspNetUsers WHERE IsAdmin = 1 AND Id <> {0})",
-            [user.Id], ct);
+        var promoted = await TryPromoteFirstUserAsync(user.Id, ct);
 
-        return CreateUserResult.Ok(Map(user) with { IsAdmin = promoted == 1 });
+        return CreateUserResult.Ok(Map(user) with { IsAdmin = promoted });
     }
 
     public async Task SetAdminAsync(string userId, bool isAdmin, CancellationToken ct = default)
@@ -218,4 +208,24 @@ public sealed class IdentityUserDirectory(
     }
 
     private static AuthUser Map(AppUser user) => new(user.Id, user.Email, user.DisplayName, user.IsAdmin);
+
+    /// <summary>
+    /// Bootstraps the very first account as administrator, and no later one.
+    ///
+    /// Race-free by construction: SQLite serialises writers, so this conditional UPDATE
+    /// promotes exactly one user even if two registrations run at once — the second sees
+    /// the first's admin row and no-ops. Both registration paths (local and external)
+    /// call it, and it lives in one place because it decides who administers the
+    /// instance; a fix that landed in only one of two copies would be a silent hole.
+    /// </summary>
+    private async Task<bool> TryPromoteFirstUserAsync(string userId, CancellationToken ct)
+    {
+        var promoted = await db.Database.ExecuteSqlRawAsync(
+            "UPDATE AspNetUsers SET IsAdmin = 1 " +
+            "WHERE Id = {0} AND NOT EXISTS (SELECT 1 FROM AspNetUsers WHERE IsAdmin = 1 AND Id <> {0})",
+            [userId], ct);
+
+        return promoted == 1;
+    }
+
 }
