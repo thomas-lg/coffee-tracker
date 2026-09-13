@@ -9,7 +9,8 @@ import {
 } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { FormField, FormRoot, form, min, required, validate } from '@angular/forms/signals';
-import { Button, Icon, ImageLightbox, Skeleton } from '@coffee-tracker/ui';
+import { Button, ImageLightbox, Skeleton } from '@coffee-tracker/ui';
+import { LucideCamera } from '@lucide/angular';
 import { ROAST_LEVELS } from '@coffee-tracker/data';
 import { CoffeeFormStore, today } from '../services/coffee-form.store';
 import { CoffeesStore } from '../services/coffees.store';
@@ -24,7 +25,7 @@ import { COFFEE_ORIGINS } from '../utils/coffee-origins';
 @Component({
   selector: 'ct-coffee-form',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormField, FormRoot, RouterLink, Button, Icon, Skeleton, ImageLightbox],
+  imports: [FormField, FormRoot, RouterLink, Button, LucideCamera, Skeleton, ImageLightbox],
   providers: [CoffeeFormStore],
   templateUrl: './coffee-form.html',
 })

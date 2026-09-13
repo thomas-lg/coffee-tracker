@@ -2,7 +2,8 @@ import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@a
 import { rxResource } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
 import { FormField, FormRoot, email, form, required } from '@angular/forms/signals';
-import { Button, Icon } from '@coffee-tracker/ui';
+import { Button } from '@coffee-tracker/ui';
+import { LucideIdCard } from '@lucide/angular';
 import { ConfigApi } from '@coffee-tracker/data';
 import { AuthStore } from '../auth.store';
 import { ProviderSignIn } from '../provider-sign-in';
@@ -10,7 +11,7 @@ import { ProviderSignIn } from '../provider-sign-in';
 @Component({
   selector: 'ct-login',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormField, FormRoot, RouterLink, Button, Icon],
+  imports: [FormField, FormRoot, RouterLink, Button, LucideIdCard],
   templateUrl: './login.html',
 })
 export class Login {

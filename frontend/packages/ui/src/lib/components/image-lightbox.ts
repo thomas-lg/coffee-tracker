@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, ElementRef, input, viewChild } from '@angular/core';
-import { Icon } from './icon';
+import { LucideX } from '@lucide/angular';
 
 /**
  * Full-size viewer for a photo that is displayed cropped elsewhere.
@@ -30,7 +30,7 @@ import { Icon } from './icon';
 @Component({
   selector: 'ct-image-lightbox',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [Icon],
+  imports: [LucideX],
   template: `
     <!-- ::backdrop can't be styled from Tailwind classes, so the dim layer is a child
          element rather than the pseudo-element. -->
@@ -62,7 +62,7 @@ import { Icon } from './icon';
           aria-label="Close photo"
           (click)="close()"
         >
-          <ct-icon name="x" [size]="20" />
+          <svg lucideX [size]="20"></svg>
         </button>
       </div>
     </dialog>

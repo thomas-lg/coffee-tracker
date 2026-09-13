@@ -9,7 +9,7 @@
     <label
       class="mt-5 flex cursor-pointer items-center gap-3 rounded-2xl border border-dashed border-crema bg-crema/10 p-4 transition hover:bg-crema/15"
     >
-      <span class="grid size-11 place-items-center rounded-xl bg-crema text-ink"><ct-icon name="camera" [size]="22" /></span>
+      <span class="grid size-11 place-items-center rounded-xl bg-crema text-ink"><svg lucideCamera [size]="22"></svg></span>
       <span class="flex-1">
         <span class="block font-semibold">{{ store.scanning() ? 'Reading the label…' : 'Snap the bag' }}</span>
         <span class="block text-xs text-muted">Photograph the bag and we’ll pre-fill the form.</span>

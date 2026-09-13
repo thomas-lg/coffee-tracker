@@ -1,12 +1,13 @@
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { Button, CountUp, Icon } from '@coffee-tracker/ui';
+import { Button, CountUp } from '@coffee-tracker/ui';
+import { LucideCamera } from '@lucide/angular';
 import { BeanScene, CoffeeCard, CoffeeShelfStates, CoffeesStore } from '@coffee-tracker/coffees';
 
 @Component({
   selector: 'app-home',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, Button, CountUp, Icon, BeanScene, CoffeeCard, CoffeeShelfStates],
+  imports: [RouterLink, Button, CountUp, LucideCamera, BeanScene, CoffeeCard, CoffeeShelfStates],
   templateUrl: './home.html',
 })
 export class Home {

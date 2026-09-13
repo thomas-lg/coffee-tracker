@@ -19,7 +19,7 @@
     </p>
     <div class="mt-7 flex flex-wrap gap-3">
       <ct-button link="/coffees">Browse the shelf →</ct-button>
-      <ct-button variant="crema" link="/coffees/new"><ct-icon name="camera" [size]="16" /> Snap a new bag</ct-button>
+      <ct-button variant="crema" link="/coffees/new"><svg lucideCamera [size]="16"></svg> Snap a new bag</ct-button>
     </div>
 
     @if (store.coffees().length) {
