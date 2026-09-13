@@ -16,11 +16,27 @@ function coffee(p: Partial<Coffee> & Pick<Coffee, 'id' | 'name'>): Coffee {
   };
 }
 
+// CoffeesStore keys its resource on the signed-in user, so it stays idle until there is
+// a session — seed one the way a real browser would before TestBed builds the store.
+function seedSession(): void {
+  localStorage.setItem(
+    'ct.session',
+    JSON.stringify({
+      token: 't',
+      userId: 'u1',
+      displayName: 'Tester',
+      isAdmin: false,
+      expiresAt: new Date(Date.now() + 900_000).toISOString(),
+    }),
+  );
+}
+
 describe('CoffeeForm', () => {
   let http: HttpTestingController;
   let appRef: ApplicationRef;
 
   beforeEach(() => {
+    seedSession();
     TestBed.configureTestingModule({
       providers: [
         provideZonelessChangeDetection(),

@@ -26,11 +26,12 @@
           </span>
         </span>
         <input
+          #localLoginEl
           type="checkbox"
           class="mt-1 h-5 w-5 shrink-0 accent-crema"
           [checked]="s.localLoginEnabled"
           [disabled]="saving()"
-          (change)="toggleLocalLogin($any($event.target).checked)"
+          (change)="toggleLocalLogin(localLoginEl.checked)"
         />
       </label>
 
@@ -43,11 +44,12 @@
           </span>
         </span>
         <input
+          #registrationEl
           type="checkbox"
           class="mt-1 h-5 w-5 shrink-0 accent-crema"
           [checked]="s.localRegistrationEnabled"
           [disabled]="saving()"
-          (change)="toggleRegistration($any($event.target).checked)"
+          (change)="toggleRegistration(registrationEl.checked)"
         />
       </label>
     </div>

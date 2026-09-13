@@ -92,6 +92,19 @@ export const AuthStore = signalStore(
       );
     };
 
+    /**
+     * Where to land after a successful sign-in: back where the user was heading, or
+     * home. Only same-origin relative paths are honoured — `//evil.com` and an absolute
+     * URL are both things a crafted link could put in the query string to bounce a
+     * freshly-authenticated user off-site.
+     */
+    const afterSignIn = (): string => {
+      const target = store._router.parseUrl(store._router.url).queryParams['returnUrl'];
+      return typeof target === 'string' && target.startsWith('/') && !target.startsWith('//')
+        ? target
+        : '/';
+    };
+
     const clearSession = (): void => {
       patchState(store, { session: null });
       localStorage.removeItem(STORAGE_KEY);
@@ -162,7 +175,7 @@ export const AuthStore = signalStore(
                 next: (res) => {
                   persist(res);
                   patchState(store, setFulfilled());
-                  void store._router.navigateByUrl('/');
+                  void store._router.navigateByUrl(afterSignIn());
                 },
                 error: (err: unknown) => {
                   const message = loginMessage(err);
@@ -184,7 +197,7 @@ export const AuthStore = signalStore(
                 next: (res) => {
                   persist(res);
                   patchState(store, setFulfilled());
-                  void store._router.navigateByUrl('/');
+                  void store._router.navigateByUrl(afterSignIn());
                 },
                 error: () => {
                   const message =
