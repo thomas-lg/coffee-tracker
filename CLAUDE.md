@@ -144,8 +144,8 @@ is given with a writable token.
 
 ## OpenSpec
 
-Live specs: `auth`, `coffee-catalog`, `label-scan`, `photo-storage`, `reviews`,
-`web-client`, `deployment`. Workflow: one change per feature → PR → CI green →
+Live specs: `auth`, `backup`, `coffee-catalog`, `label-scan`, `photo-storage`,
+`reviews`, `web-client`, `deployment`. Workflow: one change per feature → PR → CI green →
 squash-merge → a separate PR archiving the change into `openspec/specs/`.
 
 ## Deployment context
