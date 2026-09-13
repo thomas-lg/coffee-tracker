@@ -4,6 +4,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
+using System.Runtime.Versioning;
 using Xunit;
 
 namespace CoffeeTracker.Tests;
@@ -172,14 +173,12 @@ public sealed class FileSystemPhotoStorageTests : IDisposable
         Assert.False(await storage.DeleteAsync("photos/never-existed.png"));
     }
 
-    [Fact]
+    [UnixOnlyFact("the unwritable-directory trick is Unix-only")]
+    // Tells the platform analyzer what UnixOnlyFact already enforces: this body
+    // never executes on Windows, so the SetUnixFileMode calls below are fine.
+    [UnsupportedOSPlatform("windows")]
     public async Task Failed_write_leaves_no_partial_file_behind()
     {
-        if (OperatingSystem.IsWindows())
-        {
-            return; // permission trick below is Unix-only; suite runs on macOS/Linux CI
-        }
-
         var storage = NewStorage();
         var bytes = RealImage("image/png");
 
