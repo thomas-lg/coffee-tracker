@@ -60,7 +60,7 @@
               <button
                 #armDeleteBtn
                 type="button"
-                (click)="store.armDelete()"
+                (click)="armDelete()"
                 class="rounded-full border border-line px-4 py-3 text-sm font-semibold text-muted hover:border-red-300 hover:text-red-700 dark:hover:text-red-400"
               >
                 Delete
@@ -70,7 +70,7 @@
               <button
                 #cancelDeleteBtn
                 type="button"
-                (click)="store.cancelDelete()"
+                (click)="cancelDelete()"
                 [disabled]="store.deleting()"
                 class="rounded-full px-3 py-3 text-sm font-semibold text-muted hover:text-ink"
               >
