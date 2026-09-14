@@ -6,7 +6,7 @@ import type { Coffee } from '@coffee-tracker/data';
 import { roastBucket, roastGradient } from '../utils/coffee-visual';
 
 /**
- * One coffee as a shelf card — the roast-gradient (or photo) label, name, roaster and
+ * One coffee as a shelf card, the roast-gradient (or photo) label, name, roaster and
  * average rating. Shared by the Browse grid and the Home "Fresh on the shelf" section so
  * they render identically. `index` drives the staggered `ct-rise` entrance.
  */

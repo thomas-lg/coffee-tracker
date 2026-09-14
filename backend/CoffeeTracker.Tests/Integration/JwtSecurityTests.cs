@@ -69,7 +69,7 @@ public sealed class JwtSecurityTests : IntegrationTest
     [Fact]
     public async Task Expired_token_is_rejected()
     {
-        // Expired 10 minutes ago — well beyond the 1-minute ClockSkew.
+        // Expired 10 minutes ago, well beyond the 1-minute ClockSkew.
         var now = DateTime.UtcNow;
         var expired = MintToken(ApiFactory.JwtKey, notBefore: now.AddMinutes(-20), expires: now.AddMinutes(-10));
 

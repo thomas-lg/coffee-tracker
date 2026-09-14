@@ -23,13 +23,13 @@ const GATEWAY_RELOAD_AT = 'ct.gatewayReloadAt';
  * Attaches the bearer token to /api requests and recovers from 401s:
  *
  * - An API 401 (JwtBearer challenge) usually just means the short-lived access token
- *   expired — exchange the refresh token for a new pair and retry the request ONCE.
+ *   expired, exchange the refresh token for a new pair and retry the request ONCE.
  *   Only if that fails (refresh token dead, or the retry still 401s) do we clear the
  *   session and return to /login.
- * - A gateway 401 (no Bearer challenge — Authelia & co in front of the app) is handled
+ * - A gateway 401 (no Bearer challenge, Authelia & co in front of the app) is handled
  *   by a throttled full-page reload so the gateway can re-authenticate the browser.
  * - Requests to anonymous endpoints (login/refresh/config, …) opt out via
- *   SKIP_AUTH_REDIRECT so their 401s reach the caller — this also keeps the refresh
+ *   SKIP_AUTH_REDIRECT so their 401s reach the caller, this also keeps the refresh
  *   call itself from ever re-entering the refresh logic.
  */
 export const authInterceptor: HttpInterceptorFn = (req, next) => {
@@ -45,7 +45,7 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
 
       // A 401 minted by an auth gateway in front of the app carries no JwtBearer
       // challenge. A fetch can't follow the gateway's login redirect, but a full
-      // document request can — reload so the gateway re-authenticates the browser.
+      // document request can, reload so the gateway re-authenticates the browser.
       if (!isBearerChallenge(err)) {
         reloadForGateway(reload);
         return throwError(() => err);
@@ -62,7 +62,7 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
             }
             return next(withToken(req, auth.token())).pipe(
               catchError((retryErr: HttpErrorResponse) => {
-                // A fresh token that still 401s isn't recoverable — give up cleanly
+                // A fresh token that still 401s isn't recoverable, give up cleanly
                 // instead of looping (next(...) here bypasses this interceptor, so
                 // one retry is structurally guaranteed).
                 if (retryErr.status === 401 && isBearerChallenge(retryErr)) {
@@ -75,7 +75,7 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
         );
       }
 
-      // No refresh token to fall back on — logout clears and returns to /login.
+      // No refresh token to fall back on, logout clears and returns to /login.
       auth.logout();
       return throwError(() => err);
     }),

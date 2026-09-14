@@ -4,7 +4,7 @@
   // lets the type-aware lint rules resolve them.
   //
   // Node types rather than DOM-only: the suite reads fixture files and resolves paths from
-  // __dirname. It must be __dirname and not import.meta.url — Playwright transpiles this
+  // __dirname. It must be __dirname and not import.meta.url, Playwright transpiles this
   // suite to CommonJS, where import.meta is a load-time syntax error.
   "extends": "../tsconfig.json",
   "compilerOptions": {

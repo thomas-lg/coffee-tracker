@@ -6,7 +6,7 @@ import { injectSession, sessionFor, suiteAdmin } from './support/session';
  *
  * The export runs against the real API: it reads, so it costs the suite nothing. The
  * restore does not, because it *replaces* the catalog of the instance under test and
- * the suite is fullyParallel — a real restore would delete the coffees another spec is
+ * the suite is fullyParallel, a real restore would delete the coffees another spec is
  * halfway through asserting on. So the POST is stubbed and what is asserted is the
  * screen's own contract: what it sends, and that it sends nothing before the user has
  * confirmed a destructive action.

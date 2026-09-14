@@ -3,7 +3,7 @@ name: Release
 # Builds and pushes the production image to GHCR. Publishing from a branch is gated
 # on CI: this runs via workflow_run when the CI workflow succeeds on `main`
 # (=> :latest + :sha-<short>) or on `beta` (=> :beta + :sha-<short>). Version tags v*
-# still trigger directly (=> semver tags) — they're cut from main commits that already
+# still trigger directly (=> semver tags), they're cut from main commits that already
 # passed CI, and the Trivy gate below scans the image again before it's pushed.
 #
 # The `beta` channel exists so a change can be run on real hardware without ever being
@@ -39,13 +39,13 @@ jobs:
     runs-on: ubuntu-latest
     # Branches: only publish when the gating CI run succeeded. On main, additionally
     # require that its commit is still the tip (a superseding push gets its own CI run
-    # and release, so a stale run publishing an old sha would only churn :latest) —
+    # and release, so a stale run publishing an old sha would only churn :latest).
     # github.sha is the default branch's head on a workflow_run event, which is exactly
     # what that comparison needs and why it cannot be applied to beta. Tags: publish.
     #
     # The event/repository pair is load-bearing, not belt-and-braces: ci.yml runs on
     # pull_request, so it runs for fork PRs too, and `head_branch` is then the branch name
-    # *inside the fork* — anyone naming theirs `beta` would otherwise have their unmerged
+    # *inside the fork*, anyone naming theirs `beta` would otherwise have their unmerged
     # head published. `event == 'push'` is the strong half.
     if: >-
       (github.event_name == 'workflow_run'
@@ -58,7 +58,7 @@ jobs:
     steps:
       # On a workflow_run event GITHUB_SHA and GITHUB_REF point at the DEFAULT branch,
       # not at the branch whose CI just passed. Checking out the default would build
-      # main's code and publish it under :beta — so take the head sha explicitly.
+      # main's code and publish it under :beta, so take the head sha explicitly.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ github.event.workflow_run.head_sha || github.ref }}
@@ -69,7 +69,7 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
       # docker/metadata-action derives type=sha from the git context, which on a
-      # workflow_run event is the DEFAULT branch — so it cannot be trusted to describe
+      # workflow_run event is the DEFAULT branch, so it cannot be trusted to describe
       # what was actually checked out. Resolve the commit once here and build the tag
       # from it.
       - id: ctx
@@ -87,7 +87,7 @@ jobs:
           #
           # The sha tag is raw, not type=sha: type=sha has no `value` attribute, so
           # passing one is silently ignored and the tag is computed from the git
-          # context — which would label a beta image with the default branch's sha and
+          # context, which would label a beta image with the default branch's sha and
           # overwrite the identically-named tag main had already published. priority
           # keeps it below the channel tags so outputs.version stays the channel, which
           # is what the Trivy step scans.

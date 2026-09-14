@@ -39,8 +39,8 @@ public static class DependencyInjection
 
     /// <summary>
     /// Registers the OCR adapter selected by <c>Ocr:Engine</c>: <c>tesseract</c>
-    /// (default — shells out to the system <c>tesseract</c> CLI) or <c>none</c>
-    /// (disabled — for hosts without it).
+    /// (default, shells out to the system <c>tesseract</c> CLI) or <c>none</c>
+    /// (disabled, for hosts without it).
     /// </summary>
     private static void AddOcr(IServiceCollection services, IConfiguration configuration)
     {
@@ -58,7 +58,7 @@ public static class DependencyInjection
     }
 
     /// <summary>
-    /// Registers ASP.NET Identity (UserManager only — this API authenticates with
+    /// Registers ASP.NET Identity (UserManager only, this API authenticates with
     /// JWTs, not cookies) and the auth driven-port adapters. JWT bearer *validation*
     /// is wired in the Api project (it owns the HTTP pipeline); the auth use case lives
     /// in the Application layer and drives these adapters (user store, token issuer,
@@ -79,7 +79,7 @@ public static class DependencyInjection
                 options.Password.RequireDigit = false;
 
                 // Lockout: throttle brute force at the account level (rate limiting
-                // throttles it at the endpoint level — see the Api project).
+                // throttles it at the endpoint level, see the Api project).
                 options.Lockout.MaxFailedAccessAttempts = 5;
                 options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(15);
                 options.Lockout.AllowedForNewUsers = true;

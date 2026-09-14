@@ -1,5 +1,5 @@
 # Keeps a draft GitHub Release up to date from merged PRs (categorised by their
-# conventional-commit labels — see release-drafter.yml). Pushing to main updates
+# conventional-commit labels, see release-drafter.yml). Pushing to main updates
 # the draft; a manual run publishes it, which creates the `v*` tag that
 # release.yml watches to build + push the versioned GHCR image.
 name: Draft Release
@@ -22,7 +22,7 @@ permissions:
   contents: write
   pull-requests: read
 
-# Rapid pushes to main both rewrite the same draft release — queue them instead
+# Rapid pushes to main both rewrite the same draft release, queue them instead
 # of letting two drafter runs race (no cancel: a publish run must never be killed
 # mid-flight).
 concurrency:

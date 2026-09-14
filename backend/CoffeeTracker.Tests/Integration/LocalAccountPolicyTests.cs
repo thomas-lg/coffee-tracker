@@ -49,7 +49,7 @@ public sealed class LocalAccountPolicyTests
         await client.RegisterAsync("admin@example.com", "Admin");
 
         // Registration open, sign-in closed: an odd combination, but a representable and
-        // harmless one — the account is created and simply cannot sign in yet.
+        // harmless one, the account is created and simply cannot sign in yet.
         factory.SetPolicy(new AccountPolicy(LocalLoginEnabled: false, LocalRegistrationEnabled: true));
 
         var registered = await client.Post(

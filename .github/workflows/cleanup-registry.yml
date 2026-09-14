@@ -3,12 +3,12 @@
 # in GHCR. Prune weekly with an attestation-aware action: keep the 10 most recent
 # sha-* (delete the rest older than 30d), never touch `latest` or `beta` (both are
 # channels someone's container may be pinned to), and delete untagged
-# layers — while preserving the build-provenance/cosign referrers of images we keep
+# layers, while preserving the build-provenance/cosign referrers of images we keep
 # (dataaxiom only removes a referrer when its parent image is deleted).
 name: Cleanup Container Registry
 
 # RETENTION CONTRACT: sha-* tags are ephemeral (10 newest kept, rest pruned after
-# 30 days). Anything that must keep pulling — the NAS, compose files, docs — must
+# 30 days). Anything that must keep pulling (the NAS, compose files, docs) must
 # pin :latest, a semver tag, or an image digest, never an old sha-* tag.
 on:
   schedule:

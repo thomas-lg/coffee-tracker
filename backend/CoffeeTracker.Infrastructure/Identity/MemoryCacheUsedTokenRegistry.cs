@@ -8,7 +8,7 @@ namespace CoffeeTracker.Infrastructure.Identity;
 ///
 /// Memory rather than the database on purpose: an entry is worthless once the token it
 /// refers to has expired, which is minutes away, and the only cost of losing the set on
-/// restart is a window in which a token could be replayed — narrower than the restart
+/// restart is a window in which a token could be replayed, narrower than the restart
 /// itself. Persisting them would buy little and leave rows to sweep.
 /// </summary>
 public sealed class MemoryCacheUsedTokenRegistry(IMemoryCache cache, TimeProvider timeProvider) : IUsedTokenRegistry

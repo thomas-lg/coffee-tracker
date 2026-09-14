@@ -7,7 +7,7 @@ namespace CoffeeTracker.Infrastructure.Persistence;
 /// <summary>Driven adapter: EF Core implementation of the review repository port.</summary>
 public class EfReviewRepository(AppDbContext db) : IReviewRepository
 {
-    // Newest-first: a user's ratings of a coffee form a timeline. Order by Id desc —
+    // Newest-first: a user's ratings of a coffee form a timeline. Order by Id desc:
     // Id is monotonic with insertion, so it tracks creation order, and (unlike
     // DateTimeOffset, which SQLite stores as TEXT) it is orderable in SQL.
     public async Task<IReadOnlyList<Review>> GetByCoffeeAsync(int coffeeId, CancellationToken ct = default) =>

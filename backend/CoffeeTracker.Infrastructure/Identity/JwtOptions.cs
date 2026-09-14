@@ -5,7 +5,7 @@ public class JwtOptions
 {
     public const string SectionName = "Jwt";
 
-    /// <summary>HS256 signing key. Required and validated at startup — never defaulted.</summary>
+    /// <summary>HS256 signing key. Required and validated at startup, never defaulted.</summary>
     public string Key { get; set; } = "";
 
     public string Issuer { get; set; } = "coffee-tracker";
@@ -13,7 +13,7 @@ public class JwtOptions
     public string Audience { get; set; } = "coffee-tracker";
 
     /// <summary>
-    /// Access-token lifetime in minutes. Kept short — a stolen token expires quickly;
+    /// Access-token lifetime in minutes. Kept short, a stolen token expires quickly;
     /// sessions stay alive via the rotating refresh token, not a long-lived access token.
     /// </summary>
     public int AccessTokenMinutes { get; set; } = 15;

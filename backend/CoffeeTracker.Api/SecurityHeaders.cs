@@ -11,7 +11,7 @@ namespace CoffeeTracker.Api;
 public static class SecurityHeaders
 {
     /// <summary>
-    /// Applies the headers to every response, static files and the SPA shell included —
+    /// Applies the headers to every response, static files and the SPA shell included,
     /// so it must be registered before the static-file middleware short-circuits.
     /// </summary>
     public static IApplicationBuilder UseSecurityHeaders(this WebApplication app, string? oidcAuthority)
@@ -24,7 +24,7 @@ public static class SecurityHeaders
             // Stop a stored photo (or any response) being MIME-sniffed into active content.
             headers["X-Content-Type-Options"] = "nosniff";
             // Nothing about a URL here is useful to a third party, and photo URLs carry
-            // a signature — never send them in a Referer.
+            // a signature, never send them in a Referer.
             headers["Referrer-Policy"] = "no-referrer";
             // frame-ancestors below is the modern spelling; this one is for browsers and
             // embedded webviews that still only read the legacy header.
@@ -40,7 +40,7 @@ public static class SecurityHeaders
     /// <c>style-src</c> keeps <c>'unsafe-inline'</c> because Angular injects component
     /// styles as inline &lt;style&gt; elements at runtime; scripts need no such
     /// exception, which is the half that matters. In Development the Swagger UI served
-    /// at the root does run inline script, so the exception is widened there — and only
+    /// at the root does run inline script, so the exception is widened there, and only
     /// there, where the app is not exposed.
     /// </summary>
     internal static string BuildContentSecurityPolicy(bool isDevelopment, string? oidcAuthority)
@@ -74,7 +74,7 @@ public static class SecurityHeaders
 
     /// <summary>
     /// The scheme-host-port of a configured authority, or null when none is configured
-    /// or the value is not an absolute URL — options validation already refuses the
+    /// or the value is not an absolute URL, options validation already refuses the
     /// latter at startup, so this only has to avoid throwing before it gets there.
     /// </summary>
     private static string? OriginOf(string? authority) =>

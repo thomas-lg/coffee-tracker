@@ -57,8 +57,8 @@ public sealed class OidcTokenValidator(
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
-            // Every validation failure means the same thing to the caller — do not
-            // believe this token — and saying which check failed would tell whoever
+            // Every validation failure means the same thing to the caller, do not
+            // believe this token, and saying which check failed would tell whoever
             // posted it how to get closer.
             logger.LogWarning(ex, "Rejected a provider ID token.");
             return null;
@@ -72,7 +72,7 @@ public sealed class OidcTokenValidator(
         }
 
         return new ExternalIdentity(
-            // The authority, matching what the guard looks logins up by — see
+            // The authority, matching what the guard looks logins up by, see
             // OidcIdentityProvider.ConfiguredIssuer. The token's own issuer was just
             // validated against the discovery document above.
             Issuer: provider.ConfiguredIssuer!,
@@ -94,7 +94,7 @@ public sealed class OidcTokenValidator(
         Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(value)));
 
     /// <summary>
-    /// The configured claim mapping's verdict, or null when no mapping is configured —
+    /// The configured claim mapping's verdict, or null when no mapping is configured,
     /// which is what tells the use case to fall back to its own bootstrap rule rather
     /// than read "not an admin" into the silence.
     /// </summary>

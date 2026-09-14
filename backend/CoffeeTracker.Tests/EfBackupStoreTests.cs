@@ -12,7 +12,7 @@ namespace CoffeeTracker.Tests;
 // appends, and that the tag join survives the trip.
 public sealed class EfBackupStoreTests : IDisposable
 {
-    /// <summary>How many tags the model seeds — the closed set the UI renders as chips.</summary>
+    /// <summary>How many tags the model seeds, the closed set the UI renders as chips.</summary>
     private const int SeededTags = 10;
 
     private readonly SqliteConnection _connection;
@@ -26,7 +26,7 @@ public sealed class EfBackupStoreTests : IDisposable
 
         using var db = NewContext();
         // EnsureCreated applies the model's HasData, so the ten flavour tags are already
-        // there — they are seeded reference data, and a backup names them.
+        // there, they are seeded reference data, and a backup names them.
         db.Database.EnsureCreated();
     }
 
@@ -123,7 +123,7 @@ public sealed class EfBackupStoreTests : IDisposable
 
         Assert.Equal(2, exported.Count);
         // Ids are assigned on insert, so a review pointing at the wrong coffee is the
-        // realistic failure here — not a missing row.
+        // realistic failure here, not a missing row.
         Assert.Single(exported.First(c => c.Coffee.Name == "One").Reviews);
         Assert.Equal(2, exported.First(c => c.Coffee.Name == "Two").Reviews.Count);
     }

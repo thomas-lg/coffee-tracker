@@ -31,7 +31,7 @@ A clear and concise description of what you expected to happen.
 
 ## Logs
 
-<!-- Paste relevant container/app logs. REDACT secrets — never include Jwt__Key,
+<!-- Paste relevant container/app logs. REDACT secrets, never include Jwt__Key,
      tokens, or connection strings. -->
 
 ```text

@@ -3,7 +3,7 @@ namespace CoffeeTracker.Domain;
 /// <summary>
 /// One dated rating of a coffee by a user: a rating plus optional stage, tasting
 /// notes, brew details, and flavor tags. A user MAY rate the same coffee multiple
-/// times over its life (fresh bag, mid-week, last cup) — each is a separate entry,
+/// times over its life (fresh bag, mid-week, last cup); each is a separate entry,
 /// ordered by <see cref="CreatedAt"/>.
 /// </summary>
 public class Review
@@ -15,7 +15,7 @@ public class Review
     /// <summary>Id of the user who wrote the review (from the auth token).</summary>
     public required string UserId { get; set; }
 
-    /// <summary>1–5; validated at the API boundary.</summary>
+    /// <summary>1-5; validated at the API boundary.</summary>
     public int Rating { get; set; }
 
     /// <summary>

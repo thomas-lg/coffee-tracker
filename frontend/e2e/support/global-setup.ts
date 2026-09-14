@@ -8,7 +8,7 @@ import { E2E_PASSWORD, uniqueEmail, ADMIN_STATE_FILE, type ProvisionedUser } fro
  *
  * A fresh instance accepts registrations only until its first account exists, then
  * closes them by itself. Without this, exactly one test could register and every
- * other would get a 403 — and with tests running in parallel, *which* one won the
+ * other would get a 403, and with tests running in parallel, *which* one won the
  * race would decide it. Doing it once, before anything else runs, makes the suite
  * independent of ordering.
  *
@@ -36,7 +36,7 @@ export default async function globalSetup(): Promise<void> {
     // existed: the database is not fresh. CI always starts from an empty one; locally
     // this means a previous run's data is still there.
     throw new Error(
-      'e2e expects an empty database — the account it just created is not the administrator, ' +
+      'e2e expects an empty database. The account it just created is not the administrator, ' +
         'so one already existed. Delete the API\'s database file and start it again.',
     );
   }

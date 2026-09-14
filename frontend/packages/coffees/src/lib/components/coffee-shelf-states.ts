@@ -30,7 +30,7 @@ import { CoffeeCardSkeleton } from './coffee-card-skeleton';
     } @else if (empty()) {
       <div class="rounded-2xl border border-dashed border-line bg-foam/60 p-10 text-center">
         <p class="font-display text-xl">Nothing on the shelf yet.</p>
-        <p class="mt-1 text-sm text-muted">Add your first bag — or snap a photo of one.</p>
+        <p class="mt-1 text-sm text-muted">Add your first bag, or snap a photo of one.</p>
         <ct-button variant="crema" link="/coffees/new" class="mt-4 inline-flex">Add a coffee</ct-button>
       </div>
     } @else {

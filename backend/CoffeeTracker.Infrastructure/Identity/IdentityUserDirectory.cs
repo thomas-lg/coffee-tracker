@@ -47,7 +47,7 @@ public sealed class IdentityUserDirectory(
         if (!result.Succeeded)
         {
             var messages = result.Errors.Select(e => e.Description).ToList();
-            // Classify by Identity's error codes so the caller maps to the right status —
+            // Classify by Identity's error codes so the caller maps to the right status:
             // a duplicate email, a weak password, or some other invalid input are distinct
             // outcomes and must not all masquerade as "weak password".
             if (result.Errors.Any(e => e.Code.Contains("Duplicate", StringComparison.OrdinalIgnoreCase)))
@@ -200,7 +200,7 @@ public sealed class IdentityUserDirectory(
         if (!result.Succeeded)
         {
             // Swallowing this would mint an access token whose admin claim contradicts
-            // the database — granting rights the store never recorded.
+            // the database, granting rights the store never recorded.
             throw new InvalidOperationException(
                 $"Failed to set administrator status on {userId}: " +
                 string.Join("; ", result.Errors.Select(e => e.Description)));
@@ -213,7 +213,7 @@ public sealed class IdentityUserDirectory(
     /// Bootstraps the very first account as administrator, and no later one.
     ///
     /// Race-free by construction: SQLite serialises writers, so this conditional UPDATE
-    /// promotes exactly one user even if two registrations run at once — the second sees
+    /// promotes exactly one user even if two registrations run at once, the second sees
     /// the first's admin row and no-ops. Both registration paths (local and external)
     /// call it, and it lives in one place because it decides who administers the
     /// instance; a fix that landed in only one of two copies would be a silent hole.

@@ -4,7 +4,7 @@ import { Observable } from 'rxjs';
 import type { ClientConfig } from '../models/models';
 import { SKIP_AUTH_REDIRECT } from '../http-context';
 
-/** Public client config (anonymous) — e.g. whether registration is open. */
+/** Public client config (anonymous), e.g. whether registration is open. */
 @Injectable({ providedIn: 'root' })
 export class ConfigApi {
   private readonly http = inject(HttpClient);

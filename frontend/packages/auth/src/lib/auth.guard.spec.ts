@@ -12,7 +12,7 @@ import { authGuard } from './auth.guard';
 
 /**
  * The guard decides who stays signed in. Until now it was reached only by two e2e tests,
- * both asserting "goes to /login" — so the branch that actually keeps a returning user
+ * both asserting "goes to /login", so the branch that actually keeps a returning user
  * in, `canRefresh() && await refresh()`, had no cover at all.
  */
 describe('authGuard', () => {

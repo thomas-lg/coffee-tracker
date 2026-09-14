@@ -7,7 +7,7 @@ using Xunit;
 
 namespace CoffeeTracker.Tests;
 
-// Exercises the review service against fakes — allows multiple dated entries per
+// Exercises the review service against fakes, allows multiple dated entries per
 // user and ownership (owner-only edit; owner-or-admin delete) with no database involved.
 public class ReviewServiceTests
 {
@@ -156,7 +156,7 @@ public class ReviewServiceTests
 
         Assert.Equal(ReviewStatus.Success, result.Status);
         Assert.Equal("Last cups", result.Review!.Stage);
-        Assert.Equal(2, repo.Count); // the prior entry is kept — two dated ratings now
+        Assert.Equal(2, repo.Count); // the prior entry is kept, two dated ratings now
     }
 
     [Fact]

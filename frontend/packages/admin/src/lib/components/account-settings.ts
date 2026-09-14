@@ -17,7 +17,7 @@ export class AccountSettingsScreen {
 
   /**
    * Reading value() on an errored resource throws, and this one is read straight from
-   * the template — so a failed GET would throw during change detection and take the
+   * the template, so a failed GET would throw during change detection and take the
    * screen down instead of reaching its own "could not load" branch.
    */
   protected readonly settings = computed(() =>

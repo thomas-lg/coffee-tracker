@@ -4,8 +4,8 @@ namespace CoffeeTracker.Application.Ports.Driven;
 /// Remembers provider tokens that have already been exchanged for a session, so each
 /// one buys at most one.
 ///
-/// Without this, a token captured anywhere it passes — a log, a proxy, a browser
-/// extension — can be exchanged again for as long as it remains valid. The OIDC nonce
+/// Without this, a token captured anywhere it passes (a log, a proxy, a browser
+/// extension) can be exchanged again for as long as it remains valid. The OIDC nonce
 /// would bind a token to one authorization request, but the client library owns nonce
 /// generation and offers no way to impose one from the server; a nonce the client both
 /// creates and presents proves nothing. Single use is what is actually enforceable

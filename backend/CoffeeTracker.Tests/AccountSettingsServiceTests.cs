@@ -132,7 +132,7 @@ public sealed class AccountSettingsServiceTests
 
         var result = await service.UpdateAsync(new AccountSettings(LocalLoginEnabled: true, LocalRegistrationEnabled: false));
 
-        // Closing registration cannot lock anyone out — only sign-in can.
+        // Closing registration cannot lock anyone out, only sign-in can.
         Assert.Equal(AccountSettingsStatus.Applied, result.Status);
         Assert.False(policy.Current.LocalRegistrationEnabled);
     }

@@ -7,7 +7,7 @@ import { RELOAD } from '@coffee-tracker/util';
 /**
  * How often to poll for a freshly deployed version while the app stays open.
  * The service worker also checks on navigation, but a PWA tab can sit open for
- * days — without a poll, a NAS container redeploy wouldn't be noticed until the
+ * days, without a poll, a NAS container redeploy wouldn't be noticed until the
  * user navigates. Six hours is frequent enough to pick up a deploy by the next
  * session without hammering the server.
  */
@@ -15,7 +15,7 @@ const UPDATE_POLL_MS = 6 * 60 * 60 * 1000;
 
 /**
  * Wire service-worker update handling. Extracted from the provider so it can be
- * unit-tested with fakes — see app-updates.spec.ts.
+ * unit-tested with fakes, see app-updates.spec.ts.
  *
  * When a new version is ready we don't reload on the spot: that would wipe an
  * in-progress form (the coffee form holds an unsaved model, a chosen photo, and
@@ -43,7 +43,7 @@ export function setupAppUpdates(updates: SwUpdate, router: Router, reload: () =>
         .subscribe(() => reload());
     });
 
-  // A broken cache state can't render the app at all — reload now to re-fetch
+  // A broken cache state can't render the app at all, reload now to re-fetch
   // everything from the (updated) server rather than the dead cache.
   updates.unrecoverable.subscribe(() => reload());
 
@@ -59,7 +59,7 @@ export function setupAppUpdates(updates: SwUpdate, router: Router, reload: () =>
  *
  * Without this, the Angular service worker downloads a new build in the
  * background but keeps serving the OLD version to the open page until every tab
- * is closed — a plain refresh won't swap it. That's why a redeploy can look like
+ * is closed, a plain refresh won't swap it. That's why a redeploy can look like
  * "I'm still on the old version".
  */
 export function provideAppUpdates(): EnvironmentProviders {

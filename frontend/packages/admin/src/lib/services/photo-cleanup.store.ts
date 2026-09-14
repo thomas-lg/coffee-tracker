@@ -99,7 +99,7 @@ export const PhotoCleanupStore = signalStore(
 
     /**
      * switchMap rather than concatMap: the screen arms a confirmation and disables the
-     * button while `pending()`, so a second delete cannot overlap — and if one somehow
+     * button while `pending()`, so a second delete cannot overlap, and if one somehow
      * did, abandoning the stale request is the right answer.
      */
     deleteSelected: rxMethod<void>(
@@ -117,7 +117,7 @@ export const PhotoCleanupStore = signalStore(
                 );
               },
               error: () => {
-                const message = 'Delete failed — please retry.';
+                const message = 'Delete failed. Please retry.';
                 patchState(store, setRequestError(message), { confirming: false });
                 store._toast.show(message, 'error');
               },

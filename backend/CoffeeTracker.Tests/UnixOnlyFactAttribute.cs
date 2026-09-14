@@ -3,7 +3,7 @@ using Xunit;
 namespace CoffeeTracker.Tests;
 
 /// <summary>
-/// A <see cref="FactAttribute"/> for tests that can only run on Unix — the ones driving
+/// A <see cref="FactAttribute"/> for tests that can only run on Unix, the ones driving
 /// a /bin/sh stub executable or Unix file permissions.
 ///
 /// These used to open with <c>if (OperatingSystem.IsWindows()) { return; }</c>, which

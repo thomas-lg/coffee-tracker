@@ -16,11 +16,11 @@
 **/.angular
 **/node_modules
 
-# Secrets — compose reads JWT_KEY from a .env file; never ship it in the context
+# Secrets, compose reads JWT_KEY from a .env file; never ship it in the context
 .env
 **/.env
 
-# Runtime data — never bake the dev SQLite DB or uploaded photos into the image
+# Runtime data, never bake the dev SQLite DB or uploaded photos into the image
 *.db
 *.db-shm
 *.db-wal

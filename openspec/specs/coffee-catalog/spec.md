@@ -170,7 +170,7 @@ The system SHALL expose `POST /api/coffees/{id}/photo` accepting a multipart ima
 
 ### Requirement: All catalog endpoints require authentication
 
-An account is mandatory to use the app, so the system SHALL require a valid bearer token for every catalog endpoint — reads (`GET /api/coffees`, `GET /api/coffees/{id}`) as well as writes (`POST`/`PUT`/`DELETE /api/coffees`, `POST /api/coffees/{id}/photo`). Requests without a valid token SHALL be rejected with `401`. Only the authentication endpoints (`register`/`login`) are anonymous.
+An account is mandatory to use the app, so the system SHALL require a valid bearer token for every catalog endpoint, reads (`GET /api/coffees`, `GET /api/coffees/{id}`) as well as writes (`POST`/`PUT`/`DELETE /api/coffees`, `POST /api/coffees/{id}/photo`). Requests without a valid token SHALL be rejected with `401`. Only the authentication endpoints (`register`/`login`) are anonymous.
 
 #### Scenario: Unauthenticated request is rejected
 
@@ -194,7 +194,7 @@ When a coffee is created by an authenticated user, the system SHALL record that 
 
 ### Requirement: Catalog writes are restricted to the creator or an admin
 
-Modifying a coffee — update (`PUT`), delete (`DELETE`), and photo attach (`POST /{id}/photo`) — SHALL be permitted only for the user who created it or for an administrator. A non-owner, non-admin caller SHALL receive HTTP 403 and the coffee SHALL be left unchanged. A coffee with no recorded creator (rows created before owner-stamping, `CreatedByUserId` is null) SHALL be modifiable by administrators only — never by an arbitrary authenticated user.
+Modifying a coffee, update (`PUT`), delete (`DELETE`), and photo attach (`POST /{id}/photo`), SHALL be permitted only for the user who created it or for an administrator. A non-owner, non-admin caller SHALL receive HTTP 403 and the coffee SHALL be left unchanged. A coffee with no recorded creator (rows created before owner-stamping, `CreatedByUserId` is null) SHALL be modifiable by administrators only, never by an arbitrary authenticated user.
 
 #### Scenario: Owner modifies their own coffee
 

@@ -45,12 +45,12 @@ export class ProviderSignIn {
    */
   async complete(): Promise<boolean> {
     // Only act on an actual return from the provider. checkAuth() keeps its own session
-    // and will happily hand back the same ID token on every later page load — posting
+    // and will happily hand back the same ID token on every later page load, posting
     // that again asks the API to spend a token it has already spent, which it refuses,
     // and the refusal then reads as a failed sign-in on a page that was working fine.
     const callback = new URLSearchParams(window.location.search);
 
-    // The provider can come back refusing instead of granting — a cancelled consent, a
+    // The provider can come back refusing instead of granting, a cancelled consent, a
     // user the provider's own policy turns away, a misregistered client. Without this
     // the user lands on the login screen with nothing said and no idea whether to try
     // again or call the administrator.
@@ -87,7 +87,7 @@ export class ProviderSignIn {
     // sign-in.
     //
     // Explicitly '/', not window.location.pathname: checkAuth() restores the route the
-    // user left from, which is /login — reading the pathname back here would park the
+    // user left from, which is /login, reading the pathname back here would park the
     // router on the login screen with a perfectly valid session behind it.
     history.replaceState(null, '', '/');
 
@@ -96,7 +96,7 @@ export class ProviderSignIn {
       this.justSignedIn.set(true);
       return true;
     } catch (err: unknown) {
-      // The API refused the token — a conflicting unverified email, most likely. Its
+      // The API refused the token, a conflicting unverified email, most likely. Its
       // explanation is the useful one; the library's state is not.
       this.error.set(messageFor(err));
       // Drop the library's session too: keeping it would make the next page load

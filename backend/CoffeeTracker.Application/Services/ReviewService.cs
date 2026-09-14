@@ -52,7 +52,7 @@ public class ReviewService(
             return new ReviewResult(ReviewStatus.InvalidTags, null);
         }
 
-        // A user may rate the same coffee repeatedly over its life — each POST is a
+        // A user may rate the same coffee repeatedly over its life, each POST is a
         // new dated entry, no duplicate check.
         var review = new Review
         {
@@ -103,7 +103,7 @@ public class ReviewService(
         review.UpdatedAt = timeProvider.GetUtcNow();
 
         // Full replace (PUT semantics, consistent with the coffee update): the tag set
-        // becomes exactly dto.TagIds — null/empty clears all tags.
+        // becomes exactly dto.TagIds, null/empty clears all tags.
         review.Tags.Clear();
         foreach (var tag in resolved)
         {

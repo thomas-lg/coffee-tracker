@@ -7,7 +7,7 @@ import { injectSession, provisionUser, sessionFor, suiteAdmin } from './support/
  * screens are shut to non-admins, that the lock-out guard actually refuses, and that
  * the sign-in screen offers only what the instance accepts.
  *
- * The first four run against the real API — the account policy and its guard went
+ * The first four run against the real API, the account policy and its guard went
  * into production the day they were written, which is the worst moment to be leaning
  * on unit tests alone. The last two stub /api/config on purpose: the setting is
  * instance-wide, and flipping it mid-run would break whichever other spec happened to
@@ -35,7 +35,7 @@ test.describe('ownership', () => {
     expect(created.ok()).toBeTruthy();
     const coffee = (await created.json()) as { id: number };
 
-    // The API is the authority here — the UI hiding a button would not be a guarantee.
+    // The API is the authority here, the UI hiding a button would not be a guarantee.
     const rejected = await request.put(`/api/coffees/${coffee.id}`, {
       headers: { authorization: `Bearer ${stranger.token}` },
       data: {
@@ -64,7 +64,7 @@ test.describe('session lifetime', () => {
 
     // A real refresh token, and an access token dated into the past: exactly the
     // state a user comes back to after leaving a tab open. Fabricating the refresh
-    // token would prove nothing — the server has to recognise it.
+    // token would prove nothing, the server has to recognise it.
     await injectSession(
       page,
       sessionFor(user, { expiresAt: new Date(Date.now() - 60_000).toISOString() }),
@@ -133,7 +133,7 @@ test.describe('admin screens', () => {
     await signIn.uncheck();
 
     // No identity provider is configured in the suite, so turning this off would
-    // leave nobody able to get in. The refusal has to be explained on screen — an
+    // leave nobody able to get in. The refusal has to be explained on screen, an
     // administrator who cannot see why a switch refused to move reaches for SQL.
     //
     // Matched on the API's own wording, not just "identity provider": that phrase

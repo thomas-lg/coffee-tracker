@@ -12,7 +12,7 @@ public interface IBackupService
 
     /// <summary>
     /// Replaces the catalog with the contents of <paramref name="backup"/>. Destructive
-    /// by design — the caller is expected to have confirmed.
+    /// by design, the caller is expected to have confirmed.
     /// </summary>
     Task<ImportOutcome> ImportAsync(BackupDto? backup, CancellationToken ct = default);
 }

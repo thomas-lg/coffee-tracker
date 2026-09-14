@@ -11,12 +11,12 @@ public interface IPhotoAdminService
 {
     /// <summary>
     /// Lists every stored photo, each flagged used (referenced by a coffee) or unused
-    /// (orphaned — e.g. a scan whose coffee was never saved).
+    /// (orphaned, e.g. a scan whose coffee was never saved).
     /// </summary>
     Task<IReadOnlyList<PhotoListItemDto>> ListAsync(CancellationToken ct = default);
 
     /// <summary>
-    /// Deletes the requested photo paths, but only those still unused at delete time —
+    /// Deletes the requested photo paths, but only those still unused at delete time;
     /// any a coffee currently references are skipped, so cleanup can't strip a live
     /// coffee of its photo. Best-effort and idempotent.
     /// </summary>

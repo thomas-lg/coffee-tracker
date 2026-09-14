@@ -2,9 +2,9 @@ import { test, expect } from '@playwright/test';
 import { uniqueEmail, E2E_PASSWORD, SESSION_KEY } from './support/session';
 
 /**
- * The golden path — the journey a real user takes on their first visit:
+ * The golden path, the journey a real user takes on their first visit:
  * create an account, add a coffee, see it on the shelf, then rate it. One
- * end-to-end flow through the actual UI (no API shortcuts, no data-testid —
+ * end-to-end flow through the actual UI (no API shortcuts, no data-testid;
  * semantic locators only). Makes a single auth call (one register) to stay
  * clear of the /api/auth 10/min rate limit.
  */
@@ -29,7 +29,7 @@ test('golden path: register, add a coffee, see it on the shelf, and rate it', as
 
   await test.step('add a coffee from the catalog', async () => {
     await page.goto('/coffees');
-    // Two of these exist on an empty shelf — the page header always offers it, and so
+    // Two of these exist on an empty shelf, the page header always offers it, and so
     // does the empty state. The test used to win that race by clicking before the
     // empty state rendered; take the first deliberately rather than depend on timing.
     await page.getByRole('link', { name: /add a coffee/i }).first().click();

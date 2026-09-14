@@ -32,11 +32,11 @@ interface Session {
   userId: string;
   displayName: string | null;
   isAdmin: boolean;
-  /** ISO date-time — access-token expiry. */
+  /** ISO date-time, access-token expiry. */
   expiresAt: string;
   /** Opaque rotated refresh token (absent only in pre-refresh stored sessions). */
   refreshToken?: string;
-  /** ISO date-time — refresh-token expiry. */
+  /** ISO date-time, refresh-token expiry. */
   refreshExpiresAt?: string;
 }
 
@@ -94,7 +94,7 @@ export const AuthStore = signalStore(
 
     /**
      * Where to land after a successful sign-in: back where the user was heading, or
-     * home. Only same-origin relative paths are honoured — `//evil.com` and an absolute
+     * home. Only same-origin relative paths are honoured, `//evil.com` and an absolute
      * URL are both things a crafted link could put in the query string to bounce a
      * freshly-authenticated user off-site.
      */
@@ -129,7 +129,7 @@ export const AuthStore = signalStore(
     const doRefresh = async (): Promise<boolean> => {
       // Adopt the latest persisted session first: another tab may have rotated the
       // refresh token (possibly while we waited for the cross-tab lock), so use that
-      // token rather than our stale one — presenting a rotated token is treated as reuse
+      // token rather than our stale one, presenting a rotated token is treated as reuse
       // and would revoke the whole session family.
       patchState(store, { session: readStoredSession() });
 
@@ -203,7 +203,7 @@ export const AuthStore = signalStore(
                 },
                 error: () => {
                   const message =
-                    'Could not create the account — the email may already be in use.';
+                    'Could not create the account. The email may already be in use.';
                   patchState(store, setRequestError(message));
                   store._toast.show(message, 'error');
                 },
@@ -215,7 +215,7 @@ export const AuthStore = signalStore(
 
       /**
        * Exchanges a provider ID token for an app session. From here on the session is
-       * indistinguishable from a local one — same token, same refresh, same guards.
+       * indistinguishable from a local one, same token, same refresh, same guards.
        */
       async signInWithProviderToken(idToken: string): Promise<void> {
         persist(await firstValueFrom(store._api.oidcSignIn(idToken)));
@@ -234,7 +234,7 @@ export const AuthStore = signalStore(
       /**
        * Revokes the refresh token server-side (fire-and-forget), clears local state and
        * returns to the sign-in screen. Signing out is one action, so it lands in one
-       * place — the header and the interceptor both just call this.
+       * place, the header and the interceptor both just call this.
        */
       logout(): void {
         const refreshToken = store.session()?.refreshToken;
@@ -250,7 +250,7 @@ export const AuthStore = signalStore(
     onInit(store) {
       // Keep tabs in sync: another tab logging in/out or rotating the refresh token
       // updates localStorage, and this adopts it so we never present a stale (rotated)
-      // token — which the server would treat as reuse and revoke the whole session.
+      // token, which the server would treat as reuse and revoke the whole session.
       if (typeof window === 'undefined') return;
       fromEvent<StorageEvent>(window, 'storage')
         .pipe(takeUntilDestroyed(inject(DestroyRef)))
@@ -266,7 +266,7 @@ export const AuthStore = signalStore(
 export type AuthStore = InstanceType<typeof AuthStore>;
 
 /**
- * 403 means the instance no longer accepts app accounts at all — telling the user their
+ * 403 means the instance no longer accepts app accounts at all, telling the user their
  * password is wrong would send them round in circles. Lives here rather than in the
  * screen because the screen no longer sees the error.
  */

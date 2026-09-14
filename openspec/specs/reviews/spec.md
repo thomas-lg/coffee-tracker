@@ -5,7 +5,7 @@ TBD - created by archiving change m4-reviews-ratings-tags. Update Purpose after 
 ## Requirements
 ### Requirement: A user can review a coffee
 
-The system SHALL let an authenticated user create a review for a coffee via `POST /api/coffees/{coffeeId}/reviews`, capturing a rating (1–5), an optional stage/context label (e.g. "Fresh bag", "Last cups"), optional tasting notes, optional brew details (method, grind, ratio), and zero or more flavor tags. A user MAY create **multiple** reviews for the same coffee over time; each `POST` records a new, independently dated entry.
+The system SHALL let an authenticated user create a review for a coffee via `POST /api/coffees/{coffeeId}/reviews`, capturing a rating (1-5), an optional stage/context label (e.g. "Fresh bag", "Last cups"), optional tasting notes, optional brew details (method, grind, ratio), and zero or more flavor tags. A user MAY create **multiple** reviews for the same coffee over time; each `POST` records a new, independently dated entry.
 
 #### Scenario: Creating a review
 
@@ -58,7 +58,7 @@ The system SHALL return all reviews for a coffee via `GET /api/coffees/{coffeeId
 
 ### Requirement: A user can edit only their own review; owners and admins can delete
 
-The system SHALL allow updating (`PUT /api/coffees/{coffeeId}/reviews/{id}`) a review only by the user who owns it. Deleting (`DELETE /api/coffees/{coffeeId}/reviews/{id}`) SHALL be allowed for the owner OR an administrator (moderation). An attempt to edit another user's review — or to delete one as a non-owner, non-admin — SHALL be rejected with `403` and SHALL NOT change any data.
+The system SHALL allow updating (`PUT /api/coffees/{coffeeId}/reviews/{id}`) a review only by the user who owns it. Deleting (`DELETE /api/coffees/{coffeeId}/reviews/{id}`) SHALL be allowed for the owner OR an administrator (moderation). An attempt to edit another user's review, or to delete one as a non-owner, non-admin, SHALL be rejected with `403` and SHALL NOT change any data.
 
 #### Scenario: Updating your own review
 

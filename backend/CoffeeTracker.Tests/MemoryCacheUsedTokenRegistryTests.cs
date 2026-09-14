@@ -64,7 +64,7 @@ public sealed class MemoryCacheUsedTokenRegistryTests : IDisposable
 
     // The reason TryConsumeAsync holds a lock at all. TryGetValue-then-Set is two
     // operations, so without it two requests arriving together with the same stolen
-    // token can both read "not spent" and both be let in — which is precisely the
+    // token can both read "not spent" and both be let in, which is precisely the
     // replay the registry exists to stop. Removing the lock makes this fail.
     [Fact]
     public async Task Only_one_of_many_simultaneous_uses_of_one_token_is_allowed()

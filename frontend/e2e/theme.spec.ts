@@ -7,7 +7,7 @@ import { injectSession, sessionFor, suiteAdmin } from './support/session';
  * without a choice the OS preference decides.
  *
  * The assertions read `data-theme` on <html> rather than a computed colour, because that
- * attribute is what every CSS token in styles.css keys off — checking a rendered colour
+ * attribute is what every CSS token in styles.css keys off, checking a rendered colour
  * would restate the palette in the test and break on any repaint.
  */
 
@@ -41,7 +41,7 @@ test.describe('theming', () => {
 
     await page.reload();
 
-    // Persisted, and applied before the user sees the page — otherwise the app flashes
+    // Persisted, and applied before the user sees the page, otherwise the app flashes
     // the wrong theme on every load.
     await expect(page.locator('html')).toHaveAttribute('data-theme', chosen!);
     expect(await page.evaluate((k) => localStorage.getItem(k), THEME_KEY)).toBe(chosen);

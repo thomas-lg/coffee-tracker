@@ -2,7 +2,7 @@ namespace CoffeeTracker.Domain;
 
 /// <summary>
 /// A coffee a user has bought and wants to catalog. The domain entity is the
-/// hexagon core — it carries no persistence or framework concerns.
+/// hexagon core, it carries no persistence or framework concerns.
 /// </summary>
 public class Coffee
 {
@@ -14,7 +14,7 @@ public class Coffee
 
     public required string Origin { get; set; }
 
-    /// <summary>Roast band — a closed set (Light/Medium/Dark).</summary>
+    /// <summary>Roast band, a closed set (Light/Medium/Dark).</summary>
     public required RoastLevel RoastLevel { get; set; }
 
     public decimal Price { get; set; }
@@ -40,7 +40,7 @@ public class Coffee
     /// <summary>
     /// Whether the given user may modify (edit/delete/replace photo) this coffee.
     /// Restricted to the creator or an admin; rows created before owner-stamping (null
-    /// <see cref="CreatedByUserId"/>) are admin-only — never world-writable.
+    /// <see cref="CreatedByUserId"/>) are admin-only, never world-writable.
     /// </summary>
     public bool IsModifiableBy(string? userId, bool isAdmin) =>
         isAdmin || (CreatedByUserId is not null && CreatedByUserId == userId);

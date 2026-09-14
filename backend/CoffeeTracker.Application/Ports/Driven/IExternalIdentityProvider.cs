@@ -18,12 +18,12 @@ public interface IExternalIdentityProvider
 
     /// <summary>
     /// What a browser client needs to run the authorization flow itself, or null when
-    /// there is no usable provider — either none is configured, or its discovery
+    /// there is no usable provider, either none is configured, or its discovery
     /// document has not resolved yet, so a provider that is slow or down degrades to
     /// "no provider" rather than offering a sign-in that cannot complete.
     ///
-    /// Served to the client so an operator configures the provider in one place — the
-    /// container — rather than in the app and its build. None of it is secret: a public
+    /// Served to the client so an operator configures the provider in one place, the
+    /// container, rather than in the app and its build. None of it is secret: a public
     /// client's id is published by construction.
     /// </summary>
     Task<OidcClientConfigDto?> GetClientInfoAsync(CancellationToken ct = default);

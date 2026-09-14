@@ -8,7 +8,7 @@ import { injectSession, sessionFor, suiteAdmin } from './support/session';
  * What is exercised here is the wiring: the file the user picks reaches /api/coffees/scan,
  * what comes back lands in the right fields, and the two failure modes say so on screen.
  * The scan response is stubbed because what the OCR actually reads is a backend concern
- * and is tested there — TesseractCliOcrServiceTests drives a real engine process, and
+ * and is tested there, TesseractCliOcrServiceTests drives a real engine process, and
  * CoffeeLabelParserTests covers the text-to-fields mapping against real label text. The
  * e2e run also sets Ocr__Engine=none, so a live scan here would only ever answer 503.
  */
@@ -22,7 +22,7 @@ const PNG = Buffer.from(
 /**
  * Adopts the administrator global setup already claimed, rather than registering a user
  * per test: /api/auth is rate-limited to 10/min, and four registrations here plus the
- * other specs' trip it — which is exactly why the suite seeds sessions instead of
+ * other specs' trip it, which is exactly why the suite seeds sessions instead of
  * signing in. Scanning needs an authenticated caller, nothing more.
  */
 async function signIn(page: Page): Promise<void> {

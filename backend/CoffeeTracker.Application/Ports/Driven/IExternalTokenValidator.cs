@@ -2,7 +2,7 @@ namespace CoffeeTracker.Application.Ports.Driven;
 
 /// <summary>
 /// Validates an ID token issued by the configured provider. Everything a token must
-/// satisfy to be believed — signature, issuer, audience, lifetime — is the adapter's
+/// satisfy to be believed (signature, issuer, audience, lifetime) is the adapter's
 /// business; the use case only ever sees an identity it may trust, or nothing.
 /// </summary>
 public interface IExternalTokenValidator
@@ -19,8 +19,8 @@ public interface IExternalTokenValidator
 /// <summary>
 /// An identity as asserted by the provider.
 /// </summary>
-/// <param name="Issuer">Who asserted it — half of the identity's stable key.</param>
-/// <param name="Subject">The provider's stable identifier for the person — the other half.</param>
+/// <param name="Issuer">Who asserted it, half of the identity's stable key.</param>
+/// <param name="Subject">The provider's stable identifier for the person, the other half.</param>
 /// <param name="TokenId">A stable identifier for this exact token, so it can be spent once.</param>
 /// <param name="ExpiresAt">When the token stops being valid, bounding how long it must be remembered.</param>
 /// <param name="Email">The asserted email, if any.</param>
@@ -28,7 +28,7 @@ public interface IExternalTokenValidator
 /// <param name="DisplayName">A human-readable name, if the provider supplies one.</param>
 /// <param name="AdminAssertion">
 /// The configured claim mapping's verdict on administrator status, or null when no
-/// mapping is configured — in which case the caller falls back to its own bootstrap
+/// mapping is configured, in which case the caller falls back to its own bootstrap
 /// rule. Keeping the verdict here and the decision in the use case leaves claim names
 /// in configuration and policy in the application.
 /// </param>

@@ -26,7 +26,7 @@ public enum AccountSettingsStatus
 }
 
 /// <summary>
-/// Outcome of an update. <see cref="Settings"/> is what is now stored — unchanged
+/// Outcome of an update. <see cref="Settings"/> is what is now stored, unchanged
 /// when the update was refused, so a client can re-render from it either way.
 /// </summary>
 public sealed record AccountSettingsUpdate(

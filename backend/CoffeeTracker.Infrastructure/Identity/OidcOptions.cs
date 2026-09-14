@@ -23,7 +23,7 @@ public class OidcOptions
     public string Scopes { get; set; } = "openid profile email";
 
     /// <summary>
-    /// What to call the provider on the sign-in button — "Authelia", "Keycloak", the
+    /// What to call the provider on the sign-in button ("Authelia", "Keycloak"), the
     /// name of a company. Optional: unset, the client falls back to a generic label, so
     /// the app never has to know which product it is talking to.
     /// </summary>
@@ -41,7 +41,7 @@ public class OidcOptions
     /// <summary>
     /// Whether the authority is one the signing keys can be fetched from safely. Over
     /// plain http anyone on the path can serve their own JWKS and mint ID tokens the
-    /// app would accept, so https is required — except on loopback, where there is no
+    /// app would accept, so https is required, except on loopback, where there is no
     /// path to be on and a provider is routinely run without a certificate in
     /// development.
     /// </summary>

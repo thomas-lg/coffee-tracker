@@ -17,7 +17,7 @@ export class App {
   /** Restored from the user's persisted choice, falling back to the OS preference. */
   protected readonly theme = signal<ThemeMode>(initialTheme());
 
-  /** 1–2 letter initials for the header avatar. */
+  /** 1-2 letter initials for the header avatar. */
   protected readonly initials = computed(() => {
     const name = this.auth.displayName()?.trim();
     if (!name) return '?';

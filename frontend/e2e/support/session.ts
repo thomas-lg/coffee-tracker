@@ -3,7 +3,7 @@ import { readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 
 /** Helpers shared across e2e specs. The suite deliberately makes very few auth
- *  calls — the API rate-limits /api/auth to 10/min — so most setup is done by
+ *  calls, the API rate-limits /api/auth to 10/min, so most setup is done by
  *  seeding a session directly rather than logging in repeatedly. */
 
 /** localStorage key the AuthStore persists the session under (auth.store.ts). */
@@ -23,11 +23,11 @@ export interface StoredSession {
   userId: string;
   displayName: string | null;
   isAdmin: boolean;
-  /** ISO date-time — access-token expiry (short-lived, ~15 min). */
+  /** ISO date-time, access-token expiry (short-lived, ~15 min). */
   expiresAt: string;
   /** Opaque refresh token; omit to simulate a session that cannot be refreshed. */
   refreshToken?: string;
-  /** ISO date-time — refresh-token expiry. */
+  /** ISO date-time, refresh-token expiry. */
   refreshExpiresAt?: string;
 }
 
@@ -45,7 +45,7 @@ export async function injectSession(page: Page, session: StoredSession): Promise
 
 /**
  * Where global setup leaves the suite's administrator, for tests that need one.
- * Resolved from this file rather than the process cwd, so the suite runs from anywhere —
+ * Resolved from this file rather than the process cwd, so the suite runs from anywhere:
  * `npx playwright test` in a repo root, or an IDE with its own cwd. __dirname rather than
  * import.meta: Playwright transpiles these to CommonJS (no "type": "module" here), so
  * import.meta.url is a syntax error at load time.
@@ -73,7 +73,7 @@ export async function suiteAdmin(): Promise<ProvisionedUser & { email: string }>
  * Registers a fresh account through the API and returns its real tokens.
  *
  * Real rather than fabricated because the refresh flow has to be exercised against
- * a token the server actually issued — a made-up one proves nothing about it.
+ * a token the server actually issued, a made-up one proves nothing about it.
  */
 export async function provisionUser(api: APIRequestContext, prefix: string): Promise<ProvisionedUser> {
   const res = await api.post('/api/auth/register', {

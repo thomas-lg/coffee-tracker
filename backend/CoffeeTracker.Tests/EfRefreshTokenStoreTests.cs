@@ -101,7 +101,7 @@ public sealed class EfRefreshTokenStoreTests : IDisposable
 
     // Concurrent rotation of ONE token must mint at most one successor. Before the
     // guarded UPDATE in EfRefreshTokenStore, both callers could read RevokedAtUtc as null,
-    // both pass the reuse check and both succeed — handing out two live session families
+    // both pass the reuse check and both succeed, handing out two live session families
     // from a single token and silently disarming reuse detection.
     //
     // This needs real parallel connections, so it uses its own shared-cache in-memory

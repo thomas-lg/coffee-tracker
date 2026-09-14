@@ -43,7 +43,7 @@ public sealed class AuthService(
             logger.LogWarning("Admin bootstrap: user {UserId} was granted admin as the first account.", created.User.Id);
 
             // If the instance opened registration only so this first account could exist,
-            // close it again now that there is something to protect — a fresh install
+            // close it again now that there is something to protect, a fresh install
             // should never sit on the internet accepting sign-ups nobody meant to allow.
             // Registration an admin turned on deliberately is left alone.
             if (policy.RegistrationOpenedForBootstrap)
@@ -71,13 +71,13 @@ public sealed class AuthService(
 
         var user = await users.FindByEmailAsync(dto.Email, ct);
 
-        // Same response — and comparable latency — whether the user is unknown or the
+        // Same response, and comparable latency, whether the user is unknown or the
         // password is wrong, so we don't reveal which emails are registered.
         if (user is null)
         {
             users.SpendDecoyVerification(dto.Password);
             // Don't log the attacker-supplied email itself (log-forging vector, and an
-            // unknown value has little forensic worth) — just that an attempt happened.
+            // unknown value has little forensic worth), just that an attempt happened.
             logger.LogWarning("Failed login attempt for an unknown email.");
             return AuthResult.Fail(AuthStatus.InvalidCredentials);
         }

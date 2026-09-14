@@ -5,18 +5,18 @@ import { LucideX } from '@lucide/angular';
  * Full-size viewer for a photo that is displayed cropped elsewhere.
  *
  * Both places we show a bag photo use `object-cover`, which fills the frame by
- * cutting the edges off — fine as a thumbnail, useless when you actually want to
+ * cutting the edges off, fine as a thumbnail, useless when you actually want to
  * read the label. This shows the whole thing, scaled to fit the viewport
  * (`object-contain`), over a dimmed backdrop.
  *
  * Rendered as a native `<dialog>` so the browser supplies the modal semantics for
- * free — focus containment, inertness of the page behind, and top-layer stacking
+ * free, focus containment, inertness of the page behind, and top-layer stacking
  * that can't be broken by an ancestor's `overflow` or `z-index`.
  *
  * Driven by method call rather than by a bound `open` flag, because `<dialog>` is
  * an imperative API (`showModal()` throws if it is already open) and the element
  * already tracks whether it is showing. A bound flag would mean shadowing that
- * state in a signal and running an effect to keep the two in step — two sources of
+ * state in a signal and running an effect to keep the two in step, two sources of
  * truth for one boolean. Callers use a template reference instead:
  *
  * ```html

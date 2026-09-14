@@ -70,7 +70,7 @@ public sealed class AuthFlowTests : IntegrationTest
         // The 5th failed attempt trips the account lockout (423 Locked, not 401).
         Assert.Equal(HttpStatusCode.Locked, last!.StatusCode);
 
-        // While locked, even the *correct* password is refused — proving the
+        // While locked, even the *correct* password is refused, proving the
         // IsLockedOutAsync short-circuit runs before the password check.
         var afterLock = await Client.Post("/api/auth/login", new LoginDto("lockme@example.com", ApiClient.DefaultPassword));
         Assert.Equal(HttpStatusCode.Locked, afterLock.StatusCode);
@@ -125,7 +125,7 @@ public sealed class AuthFlowTests : IntegrationTest
     [Fact]
     public async Task Registration_is_refused_when_disabled()
     {
-        // A dedicated app instance with the gate off — the default Client (gate on)
+        // A dedicated app instance with the gate off, the default Client (gate on)
         // is never booted thanks to IntegrationTest's lazy client.
         using var closed = new ApiFactory(registrationEnabled: false);
         var client = closed.CreateClient();

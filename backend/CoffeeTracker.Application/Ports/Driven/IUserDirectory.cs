@@ -34,7 +34,7 @@ public interface IUserDirectory
 
     /// <summary>
     /// Whether any administrator has an external identity recorded for
-    /// <paramref name="issuer"/> — i.e. has actually signed in through the provider.
+    /// <paramref name="issuer"/>, i.e. has actually signed in through the provider.
     /// The lock-out guard turns on this: it is the proof that disabling local sign-in
     /// leaves a door open.
     /// </summary>
@@ -54,7 +54,7 @@ public interface IUserDirectory
 
     /// <summary>
     /// Drops the account's local password, if it has one, leaving the external identity
-    /// as its only credential — the same shape <see cref="CreateFromExternalAsync"/>
+    /// as its only credential, the same shape <see cref="CreateFromExternalAsync"/>
     /// produces. Idempotent: an account with no password is already in the target state.
     /// </summary>
     Task RemoveLocalPasswordAsync(string userId, CancellationToken ct = default);

@@ -9,7 +9,7 @@ import { AddressInfo } from 'node:net';
  * pointing at the issuer before any browser opens, CI cannot reach a private
  * provider, and a shared account would make these tests fail whenever someone
  * else's infrastructure hiccups. None of the bugs this guards against were
- * provider-specific — they were all in our own callback handling — so a compliant
+ * provider-specific, they were all in our own callback handling, so a compliant
  * stand-in exercises exactly the same paths, deterministically.
  *
  * It implements only what the flow touches: discovery, JWKS, the authorization
@@ -29,7 +29,7 @@ export interface FakeProvider {
   clientId: string;
   /** Who the next authorization will sign in. Change it between tests. */
   setUser(user: FakeProviderUser): void;
-  /** The ID token minted for the last exchange — lets a test replay it. */
+  /** The ID token minted for the last exchange, lets a test replay it. */
   lastIdToken(): string | null;
   close(): Promise<void>;
 }
@@ -158,7 +158,7 @@ function json(res: import('node:http').ServerResponse, body: unknown, status = 2
     'content-type': 'application/json',
     'content-length': Buffer.byteLength(payload),
     // The SPA exchanges the code from the browser, so the token endpoint has to
-    // answer cross-origin — the very thing that was missing on the real provider.
+    // answer cross-origin, the very thing that was missing on the real provider.
     'access-control-allow-origin': '*',
   });
   res.end(payload);

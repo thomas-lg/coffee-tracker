@@ -30,7 +30,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : IdentityDbCo
             .HasConversion<string>()
             .HasMaxLength(10);
 
-        // A user may rate a coffee many times over its life — multiple entries per
+        // A user may rate a coffee many times over its life, multiple entries per
         // (CoffeeId, UserId) are allowed. Keep a non-unique index so listing a
         // coffee's reviews and a user's entries for it stay fast.
         builder.Entity<Review>()

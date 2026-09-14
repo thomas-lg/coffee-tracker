@@ -72,7 +72,7 @@ internal static class ApiClient
 
     /// <summary>
     /// A real, decodable 1x1 PNG. The storage adapter now decodes and re-encodes
-    /// uploads through ImageSharp, so accept-path tests must send a genuine image —
+    /// uploads through ImageSharp, so accept-path tests must send a genuine image;
     /// a header-only fake would be rejected as InvalidContentType.
     /// </summary>
     public static byte[] RealPng()

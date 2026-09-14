@@ -25,7 +25,7 @@ export class AuthApi {
 
   /**
    * Exchanges a refresh token for a fresh, rotated access/refresh pair. Anonymous
-   * (no Authorization header) — a 401 here means the refresh token is dead and must
+   * (no Authorization header), a 401 here means the refresh token is dead and must
    * reach the caller, not trigger the global redirect.
    */
   refresh(refreshToken: string): Observable<AuthResponse> {

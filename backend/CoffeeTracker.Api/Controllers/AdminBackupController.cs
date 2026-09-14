@@ -38,7 +38,7 @@ public class AdminBackupController(IBackupService backup) : ControllerBase
         {
             ImportStatus.Restored => Ok(outcome.Result),
             // Both refusals are the client's file being wrong, and the reason is the
-            // useful part — an administrator can act on "that is version 2", not on 400.
+            // useful part: an administrator can act on "that is version 2", not on 400.
             ImportStatus.UnsupportedFormat or ImportStatus.Invalid =>
                 Problem(statusCode: StatusCodes.Status400BadRequest, detail: outcome.Reason),
             _ => throw new InvalidOperationException($"Unexpected import status: {outcome.Status}"),

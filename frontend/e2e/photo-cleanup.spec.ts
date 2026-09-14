@@ -8,7 +8,7 @@ import { injectSession, sessionFor, suiteAdmin } from './support/session';
  * scan endpoint stopped keeping files there is no supported way to *make* an orphan:
  * deleting a coffee removes its photo, replacing one removes the previous file, and a
  * failed replace removes the new one. Orphans now only come from a crash between the
- * write and the commit, or from a restored backup — neither of which a browser can
+ * write and the commit, or from a restored backup, neither of which a browser can
  * arrange. So the destructive path is driven against a stubbed listing, and what is
  * asserted is the screen's own behaviour: what it sends, and that it does not send
  * anything until the user confirms.

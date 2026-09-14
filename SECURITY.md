@@ -17,7 +17,7 @@ Useful things to include, in rough order of value:
 - what an attacker gets (read another user's data, forge a token, run code in the
   container, escape to the host)
 - the smallest sequence of requests that shows it
-- the version — the image tag, or the commit `main` was on
+- the version, the image tag, or the commit `main` was on
 - whether it needs an account, an admin account, or nothing at all
 
 ## What to expect
@@ -25,7 +25,7 @@ Useful things to include, in rough order of value:
 One person maintains this, around a job and a life. So:
 
 - an acknowledgement within about a week
-- an assessment — including "this is working as intended, and here's why" — once I've
+- an assessment, including "this is working as intended, and here's why", once I've
   reproduced it
 - a fix on `main` and a new image for anything that lets someone read or write data
   they shouldn't, or escape the container
@@ -40,7 +40,7 @@ branches, so "upgrade to the current image" is the fix for everything.
 
 ## Things that are already known, and deliberate
 
-Not vulnerabilities — please don't report these:
+Not vulnerabilities, please don't report these:
 
 - The first account to register becomes an administrator. A fresh instance accepts
   exactly one registration and then closes itself. That window is the documented

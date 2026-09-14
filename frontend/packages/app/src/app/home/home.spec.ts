@@ -7,7 +7,7 @@ import { provideRouter } from '@angular/router';
 import { Home } from './home';
 
 // CoffeesStore keys its resource on the signed-in user, so it stays idle until there is
-// a session — seed one the way a real browser would before TestBed builds the store.
+// a session, seed one the way a real browser would before TestBed builds the store.
 function seedSession(): void {
   localStorage.setItem(
     'ct.session',
@@ -50,7 +50,7 @@ describe('Home', () => {
     // The resource settles into its error state on a microtask/macrotask after flush.
     await new Promise((resolve) => setTimeout(resolve, 0));
 
-    // Re-rendering with the resource in its error state must not throw — the guarded
+    // Re-rendering with the resource in its error state must not throw, the guarded
     // coffees() returns [] rather than letting the resource value rethrow.
     expect(() => fixture.detectChanges()).not.toThrow();
 

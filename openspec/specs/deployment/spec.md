@@ -56,7 +56,7 @@ SHALL emit HSTS while leaving TLS termination to the reverse proxy.
 - **THEN** the app SHALL treat them as HTTPS for redirect/security decisions
 ### Requirement: OIDC is configured by environment and optional
 
-The container SHALL accept an optional OIDC configuration — at minimum a provider authority and a client id, plus optional scopes and an administrator claim mapping — and SHALL run unchanged when it is absent. A partial configuration SHALL prevent startup with a clear message rather than presenting a sign-in option that cannot work, matching the stance already taken on a missing signing key. The configuration SHALL name no specific identity product.
+The container SHALL accept an optional OIDC configuration, at minimum a provider authority and a client id, plus optional scopes and an administrator claim mapping, and SHALL run unchanged when it is absent. A partial configuration SHALL prevent startup with a clear message rather than presenting a sign-in option that cannot work, matching the stance already taken on a missing signing key. The configuration SHALL name no specific identity product.
 
 #### Scenario: No OIDC configuration runs as before
 

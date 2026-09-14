@@ -6,7 +6,7 @@ import { ImageLightbox } from './image-lightbox';
 beforeAll(() => {
   // jsdom renders <dialog> but doesn't implement its modal methods (jsdom#3294).
   // Browsers have shipped them since 2022, so this is a gap in the test environment,
-  // not in the component — polyfill the minimum needed to drive the real component
+  // not in the component, polyfill the minimum needed to drive the real component
   // rather than weakening it with a fallback that production would never take.
   const proto = HTMLDialogElement.prototype as unknown as {
     showModal?: () => void;
@@ -24,7 +24,7 @@ beforeAll(() => {
   };
 });
 
-/** Host wrapper driving the lightbox the way callers do — by template reference. */
+/** Host wrapper driving the lightbox the way callers do, by template reference. */
 @Component({
   imports: [ImageLightbox],
   template: `<ct-image-lightbox #lightbox [src]="src()" alt="Selected coffee" />`,

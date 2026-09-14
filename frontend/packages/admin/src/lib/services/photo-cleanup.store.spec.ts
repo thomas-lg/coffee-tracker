@@ -32,7 +32,7 @@ describe('PhotoCleanupStore', () => {
     http = TestBed.inject(HttpTestingController);
     appRef = TestBed.inject(ApplicationRef);
 
-    // The resource issues its GET from a reactive effect — tick() runs it, then we
+    // The resource issues its GET from a reactive effect, tick() runs it, then we
     // flush the seed and tick() again so the value lands in the resource signal.
     appRef.tick();
     http.expectOne('/api/admin/photos').flush(SEED);
@@ -101,8 +101,8 @@ describe('PhotoCleanupStore', () => {
       .expectOne('/api/admin/photos')
       .flush('boom', { status: 500, statusText: 'Server Error' });
 
-    expect(toast.show).toHaveBeenCalledWith('Delete failed — please retry.', 'error');
-    expect(store.requestError()).toBe('Delete failed — please retry.');
+    expect(toast.show).toHaveBeenCalledWith('Delete failed. Please retry.', 'error');
+    expect(store.requestError()).toBe('Delete failed. Please retry.');
     expect(store.pending()).toBe(false);
     // The selection survives, so the operator can retry without re-picking.
     expect(store.selectedCount()).toBe(2);

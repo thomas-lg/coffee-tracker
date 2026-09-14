@@ -32,7 +32,7 @@ export class CoffeeDetail {
   protected readonly formatPrice = formatPrice;
   protected readonly formatDate = formatDate;
 
-  /** The spec table's rows, in display order — presentation, so it stays here. */
+  /** The spec table's rows, in display order, presentation, so it stays here. */
   protected readonly specs = computed<[string, string][]>(() => {
     const c = this.store.coffee();
     if (!c) return [];

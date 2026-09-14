@@ -14,7 +14,7 @@ export class AdminSettingsApi {
 
   /**
    * Saves the policy. Responds 409 when disabling local sign-in would leave no way
-   * into the instance — the caller is expected to surface that, not swallow it.
+   * into the instance, the caller is expected to surface that, not swallow it.
    */
   update(settings: AccountSettings): Observable<AccountSettings> {
     return this.http.put<AccountSettings>('/api/admin/settings', settings);
