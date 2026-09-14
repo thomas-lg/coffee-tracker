@@ -387,4 +387,65 @@ public class CoffeeLabelParserTests
         Assert.Equal("Light", parsed.RoastLevel);
         Assert.Equal("250g", parsed.Weight);
     }
+
+    // Multilingual labels. The corpus that drove these is nine photographs of French and
+    // Italian bags, where every list in this parser had been English-only.
+
+    [Theory]
+    [InlineData("Origine : Brésil", "Brazil")]
+    [InlineData("BRESIL, NICARAGUA", "Brazil")]      // accents are the first thing OCR drops
+    [InlineData("Café du Pérou", "Peru")]
+    [InlineData("100% Perù", "Peru")]           // Italian spelling, grave accent
+    [InlineData("Éthiopie, Sidama", "Ethiopia")]
+    [InlineData("Colombie Huila", "Colombia")]
+    [InlineData("Cultivo en México", "Mexico")]
+    public void Parse_MapsAnOriginToTheSpellingTheAppStores(string text, string expected) =>
+        Assert.Equal(expected, Parser.Parse(text).Origin);
+
+    [Fact]
+    public void Parse_StoresOneSpellingPerCountry()
+    {
+        // The point of the mapping: the shelf filter matches on an exact string, so two
+        // spellings of one country would split the filter in two.
+        Assert.Equal(Parser.Parse("Brazil").Origin, Parser.Parse("Brésil").Origin);
+        Assert.Equal(Parser.Parse("Peru").Origin, Parser.Parse("Pérou").Origin);
+    }
+
+    [Theory]
+    [InlineData("Torréfacteur Mokxa", "Torréfacteur Mokxa")]
+    [InlineData("CAFFE MAURO TORREFAZIONE", "CAFFE MAURO TORREFAZIONE")]
+    [InlineData("Kaffeerösterei Elbgold", "Kaffeerösterei Elbgold")]
+    [InlineData("Tostaduría Nomad", "Tostaduría Nomad")]
+    public void Parse_RecognisesARoasterInOtherLanguages(string roasterLine, string expected)
+    {
+        var parsed = Parser.Parse($"Kirinyaga AA\n{roasterLine}");
+
+        Assert.Equal(expected, parsed.Roaster);
+        Assert.Equal("Kirinyaga AA", parsed.Name);
+    }
+
+    [Fact]
+    public void Parse_DoesNotReadTheRoastingProcessAsARoaster()
+    {
+        // "Torréfaction" is what was done to the beans; "torréfacteur" is who did it. Every
+        // French bag in the corpus prints the first on its roast line, so confusing the
+        // two would put "TORRÉFACTION MEDIUM" in the roaster field on all of them.
+        var parsed = Parser.Parse("La Libertad\nTORRÉFACTION MEDIUM");
+
+        Assert.Null(parsed.Roaster);
+        Assert.Equal("Medium", parsed.RoastLevel);
+    }
+
+    [Fact]
+    public void Parse_IgnoresAShortScrapOfAGlyphAsAName()
+    {
+        // Three-letter debris with a tall bounding box used to outrank the real name:
+        // this is "lam" beating "LA LIBERTAD" on a real photograph.
+        var read = OcrResult.Read("…", [
+            Line("lam", 70, 300),
+            Line("LA LIBERTAD", 40, 900),
+        ]);
+
+        Assert.Equal("LA LIBERTAD", Parser.Parse(read).Name);
+    }
 }

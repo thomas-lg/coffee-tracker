@@ -20,15 +20,54 @@ public partial class CoffeeLabelParser : ICoffeeLabelParser
         "Espresso", "Blonde", "Light", "Medium", "Dark",
     ];
 
-    // A pragmatic set of common coffee origins (countries + a few well-known regions).
-    private static readonly string[] Origins =
+    /// <summary>
+    /// Origins the parser recognises, keyed by the spelling a bag prints and valued by
+    /// the one the app stores.
+    ///
+    /// A bag says "BRÉSIL" or "PERÙ" as readily as "Brazil", and the shelf filter matches
+    /// on an exact string, so two spellings of one country split the filter in two. The
+    /// alias is what gets searched for and the canonical name is what comes back, the same
+    /// way a roast level printed "Medium Dark" is stored as "Medium-Dark".
+    ///
+    /// Accented and plain spellings are both listed, because OCR drops accents about as
+    /// often as it keeps them and the match is a case-insensitive scan, not a collation.
+    /// </summary>
+    private static readonly (string Printed, string Canonical)[] Origins =
     [
-        "Ethiopia", "Kenya", "Colombia", "Brazil", "Guatemala", "Costa Rica", "Panama",
-        "Honduras", "El Salvador", "Nicaragua", "Mexico", "Peru", "Bolivia", "Ecuador",
-        "Rwanda", "Burundi", "Tanzania", "Uganda", "Yemen", "India", "Indonesia",
-        "Sumatra", "Java", "Sulawesi", "Vietnam", "China", "Myanmar", "Papua New Guinea",
-        "Jamaica", "Yirgacheffe", "Sidamo", "Guji", "Huila", "Nariño",
+        ("Ethiopia", "Ethiopia"), ("Éthiopie", "Ethiopia"), ("Ethiopie", "Ethiopia"),
+        ("Etiopia", "Ethiopia"), ("Etiopía", "Ethiopia"),
+        ("Kenya", "Kenya"), ("Kénya", "Kenya"), ("Kenia", "Kenya"),
+        ("Colombia", "Colombia"), ("Colombie", "Colombia"),
+        ("Brazil", "Brazil"), ("Brésil", "Brazil"), ("Bresil", "Brazil"),
+        ("Brasil", "Brazil"), ("Brasile", "Brazil"),
+        ("Guatemala", "Guatemala"), ("Guatémala", "Guatemala"),
+        ("Costa Rica", "Costa Rica"),
+        ("Panama", "Panama"), ("Panamá", "Panama"),
+        ("Honduras", "Honduras"),
+        ("El Salvador", "El Salvador"), ("Salvador", "El Salvador"),
+        ("Nicaragua", "Nicaragua"),
+        ("Mexico", "Mexico"), ("México", "Mexico"), ("Mexique", "Mexico"),
+        ("Peru", "Peru"), ("Pérou", "Peru"), ("Perou", "Peru"),
+        ("Perù", "Peru"), ("Perú", "Peru"),
+        ("Bolivia", "Bolivia"), ("Bolivie", "Bolivia"),
+        ("Ecuador", "Ecuador"), ("Équateur", "Ecuador"), ("Equateur", "Ecuador"),
+        ("Rwanda", "Rwanda"), ("Burundi", "Burundi"),
+        ("Tanzania", "Tanzania"), ("Tanzanie", "Tanzania"),
+        ("Uganda", "Uganda"), ("Ouganda", "Uganda"),
+        ("Yemen", "Yemen"), ("Yémen", "Yemen"),
+        ("India", "India"), ("Inde", "India"),
+        ("Indonesia", "Indonesia"), ("Indonésie", "Indonesia"),
+        ("Sumatra", "Sumatra"), ("Java", "Java"), ("Sulawesi", "Sulawesi"),
+        ("Vietnam", "Vietnam"),
+        ("China", "China"), ("Chine", "China"),
+        ("Myanmar", "Myanmar"), ("Papua New Guinea", "Papua New Guinea"),
+        ("Jamaica", "Jamaica"), ("Jamaïque", "Jamaica"),
+        ("Yirgacheffe", "Yirgacheffe"), ("Sidamo", "Sidamo"), ("Guji", "Guji"),
+        ("Huila", "Huila"), ("Nariño", "Nariño"),
     ];
+
+    /// <summary>The spellings searched for, in the order the table lists them.</summary>
+    private static readonly string[] OriginSpellings = [.. Origins.Select(o => o.Printed)];
 
     /// <summary>
     /// Lines scoring below this mean word confidence (0-100) are treated as noise and
@@ -68,7 +107,7 @@ public partial class CoffeeLabelParser : ICoffeeLabelParser
         return new ScannedCoffeeDto(
             Name: name,
             Roaster: roaster,
-            Origin: FindKeyword(lines, Origins),
+            Origin: CanonicalOrigin(FindKeyword(lines, OriginSpellings)),
             // Normalize "Medium Dark" → "Medium-Dark" so the value is canonical
             // regardless of which spelling the label used.
             RoastLevel: FindKeyword(lines, RoastLevels)?.Replace(' ', '-'),
@@ -111,6 +150,13 @@ public partial class CoffeeLabelParser : ICoffeeLabelParser
         }
         return best;
     }
+
+    /// <summary>Turns the spelling found on the bag into the one the app stores.</summary>
+    private static string? CanonicalOrigin(string? printed) =>
+        printed is null
+            ? null
+            : Origins.First(o => string.Equals(o.Printed, printed, StringComparison.OrdinalIgnoreCase))
+                .Canonical;
 
     private static int WordCount(string line) =>
         line.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries).Length;
@@ -368,7 +414,20 @@ public partial class CoffeeLabelParser : ICoffeeLabelParser
     // A candidate still has to carry some letters. Deliberately loose: OCR mangles real
     // labels (the bag above came out as "ACIFIC BLEND", missing its P), so strictness
     // here would reject good text. RankLines is what excludes junk now.
-    private static bool IsProminent(string line) => line.Count(char.IsLetter) >= 3;
+    /// <summary>
+    /// Letters a line needs before it can be a name or a roaster.
+    /// </summary>
+    /// <remarks>
+    /// It was 3, which let through exactly the debris a photograph produces: "lam" beat
+    /// "LA LIBERTAD" on the Lugat bag, "INA" beat "L'Original", "ry." led the Caffe Mauro
+    /// one. Each is a scrap of a larger glyph with a tall bounding box, so the height
+    /// ranking crowned it. Swept over the corpus, 4 takes the name field from 55% to 58%
+    /// and handheld photographs from 52% to 56%; 5 and 6 score the same, so 4 is the
+    /// loosest value that wins and the least likely to throw away a genuinely short name.
+    /// </remarks>
+    private const int MinNameLetters = 4;
+
+    private static bool IsProminent(string line) => line.Count(char.IsLetter) >= MinNameLetters;
 
     [GeneratedRegex(@"(?<amount>\d+(?:[.,]\d+)?)\s*(?<unit>kg|g|gr|grams|oz|lbs|lb)\b", RegexOptions.IgnoreCase)]
     private static partial Regex WeightRegex();
@@ -376,6 +435,14 @@ public partial class CoffeeLabelParser : ICoffeeLabelParser
     // Roaster-indicating phrases. Deliberately NOT bare "coffee", because that
     // over-triggers
     // on ordinary product lines like "Ethiopia Coffee" and inverts name/roaster.
-    [GeneratedRegex(@"\b(roasters?|roastery|coffee\s*co\.?|coffee\s*roasters?|roasting\s*co\.?)\b", RegexOptions.IgnoreCase)]
+    // Beyond English, the words a bag actually prints for "we roast this": French
+    // torréfacteur (NOT torréfaction, which is the process and sits on the roast line),
+    // Italian torrefazione, German Rösterei, Spanish tostaduría. Accented and plain
+    // spellings both, because OCR drops accents as often as it keeps them.
+    [GeneratedRegex(
+        @"\b(roasters?|roastery|coffee\s*co\.?|coffee\s*roasters?|roasting\s*co\.?"
+        + @"|torr[eé]facteurs?|torrefazione|br[uû]lerie|r[oö]sterei|kaffeer[oö]sterei"
+        + @"|tostadur[ií]a|tostadores)\b",
+        RegexOptions.IgnoreCase)]
     private static partial Regex RoasterKeywordRegex();
 }
