@@ -15,12 +15,41 @@ export function sentenceCaseScan(value: string): string {
 }
 
 /**
- * A word is shouting when it has letters and none of them are lowercase. "PACIFIC" is;
- * "IX" is too, which is the acceptable cost of not keeping a list of exceptions.
- * "250g" and "-" are not, so they pass through untouched.
+ * Grades and certifications that are capitals on purpose, so recasing them is wrong:
+ * "Kirinyaga AA" is a Kenyan screen size, and "Kirinyaga Aa" is nothing.
+ *
+ * A list rather than a rule, for the same reason the parser keeps one for origins: no
+ * general test separates these from ordinary shouted words. "AA" is a grade and "LA" is
+ * an article, and both are two capital letters.
+ */
+const PRESERVED = new Set([
+  // Screen sizes and bean grades
+  'AA',
+  'AAA',
+  'AB',
+  'PB',
+  'TT',
+  // Hardness and altitude grades
+  'SHB',
+  'SHG',
+  'HB',
+  'HG',
+  'EP',
+  'MG',
+  // Certification marks
+  'COE',
+  'FTO',
+  'RFA',
+  'UTZ',
+]);
+
+/**
+ * A word is shouting when it has letters, none of them lowercase, and it is not one of
+ * the marks above. "PACIFIC" is; "250g" and "-" have nothing to change and pass through.
  */
 function isShouting(word: string): boolean {
-  return word !== word.toLowerCase() && word === word.toUpperCase();
+  if (word === word.toLowerCase() || word !== word.toUpperCase()) return false;
+  return !PRESERVED.has(word.replace(/[^\p{L}]/gu, ''));
 }
 
 /**

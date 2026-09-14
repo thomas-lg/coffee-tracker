@@ -36,6 +36,16 @@ describe('sentenceCaseScan', () => {
     expect(sentenceCaseScan('')).toBe('');
   });
 
+  it('leaves a bean grade alone, because it is capitals on purpose', () => {
+    // Caught by the e2e before this list existed: "Kirinyaga AA" is a Kenyan screen
+    // size and "Kirinyaga Aa" is nothing at all.
+    expect(sentenceCaseScan('KIRINYAGA AA')).toBe('Kirinyaga AA');
+    expect(sentenceCaseScan('Kirinyaga AA')).toBe('Kirinyaga AA');
+    expect(sentenceCaseScan('HUEHUETENANGO SHB')).toBe('Huehuetenango SHB');
+    // Still recased, because it is a word rather than a grade.
+    expect(sentenceCaseScan('LA LIBERTAD')).toBe('La Libertad');
+  });
+
   it('preserves the spacing it was given', () => {
     // The form shows this verbatim, so collapsing runs would silently edit the value.
     expect(sentenceCaseScan('  LEADING AND  DOUBLE ')).toBe('  Leading And  Double ');

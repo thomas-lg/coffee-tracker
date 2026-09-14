@@ -50,6 +50,11 @@ describe('BackupScreen', () => {
   }
 
   beforeEach(() => {
+    // BackupStore injects the root CoffeesStore so a restore can reload the shelf, and
+    // that store fetches the catalog whenever a session is present. Another spec file
+    // may have left one behind, and file order is not fixed, so clear it here rather
+    // than depend on who ran first.
+    localStorage.clear();
     toast = { show: vi.fn() };
     TestBed.configureTestingModule({
       imports: [BackupScreen],
@@ -66,8 +71,18 @@ describe('BackupScreen', () => {
   });
 
   afterEach(() => {
-    http.verify();
-    TestBed.resetTestingModule();
+    try {
+      // The catalog reload belongs to the root store, not to this screen; draining it
+      // keeps verify() meaningful for the requests this screen does make.
+      http.match({ url: '/api/coffees' }).forEach((req) => req.flush([]));
+      http.verify();
+    } finally {
+      // In a finally so a failed verify cannot leave the module instantiated: the next
+      // spec file in the same worker would then fail to configure its own TestBed, and
+      // the real failure would be buried under someone else's.
+      TestBed.resetTestingModule();
+      localStorage.clear();
+    }
   });
 
   it('sends nothing when a file is chosen, only arms the confirmation', async () => {

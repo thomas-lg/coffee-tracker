@@ -43,8 +43,14 @@ describe('ScanSettingsScreen', () => {
   });
 
   afterEach(() => {
-    http.verify();
-    TestBed.resetTestingModule();
+    try {
+      http.verify();
+    } finally {
+      // In a finally so a failed verify cannot leave the module instantiated: the next
+      // spec file in the same worker would then fail to configure its own TestBed and
+      // bury the real failure.
+      TestBed.resetTestingModule();
+    }
   });
 
   /**
