@@ -51,9 +51,9 @@ public static class DependencyInjection
         // policy rather than here. Each adapter stays a singleton because it caps its own
         // concurrency with a semaphore, which a per-request copy would not do; the
         // wrapper is scoped because reading the policy needs the request's DbContext.
-        services.AddSingleton<RapidOcrService>();
-        services.AddSingleton<TesseractCliOcrService>();
-        services.AddSingleton<DisabledOcrService>();
+        services.AddKeyedSingleton<IOcrService, RapidOcrService>(OcrEngine.RapidOcr);
+        services.AddKeyedSingleton<IOcrService, TesseractCliOcrService>(OcrEngine.Tesseract);
+        services.AddKeyedSingleton<IOcrService, DisabledOcrService>(OcrEngine.Disabled);
         services.AddScoped<IOcrEnginePolicy, EfOcrEnginePolicy>();
         services.AddSingleton<IOcrEngineCatalogue, OcrEngineCatalogue>();
         services.AddScoped<IOcrService, SwitchingOcrService>();

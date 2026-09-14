@@ -89,7 +89,7 @@ test.describe('admin screens', () => {
     await injectSession(page, sessionFor(user, { isAdmin: false }));
 
     // Both sections, since the guard now sits on the shell rather than on each one.
-    await page.goto('/admin/settings');
+    await page.goto('/admin/accounts');
     await expect(page).not.toHaveURL(/\/admin/);
     await page.goto('/admin/photos');
     await expect(page).not.toHaveURL(/\/admin/);
@@ -107,28 +107,40 @@ test.describe('admin screens', () => {
     await expect(page.getByRole('link', { name: /^accounts$/i })).toHaveCount(0);
     await page.getByRole('link', { name: /^admin$/i }).click();
 
-    // Bare /admin lands on Photos.
-    await expect(page).toHaveURL(/\/admin\/photos/);
-    await expect(page.getByRole('heading', { name: /photo cleanup/i })).toBeVisible();
-
-    await page.getByRole('link', { name: /^accounts$/i }).click();
-    await expect(page).toHaveURL(/\/admin\/settings/);
+    // Bare /admin lands on the first tab.
+    await expect(page).toHaveURL(/\/admin\/accounts/);
     await expect(page.getByRole('heading', { name: /account settings/i })).toBeVisible();
 
-    await page.getByRole('link', { name: /^scanning$/i }).click();
-    await expect(page).toHaveURL(/\/admin\/scanning/);
-    await expect(page.getByRole('heading', { name: /^scanning$/i })).toBeVisible();
+    // In nav order: settings first, then maintenance. Each path matches its label, so
+    // a URL someone pastes says what it opens.
+    for (const [label, path, heading] of [
+      ['scanning', 'scanning', /^scanning$/i],
+      ['photos', 'photos', /photo cleanup/i],
+      ['backup', 'backup', /^backup$/i],
+    ] as const) {
+      await page.getByRole('link', { name: new RegExp(`^${label}$`, 'i') }).click();
+      await expect(page).toHaveURL(new RegExp(`/admin/${path}`));
+      await expect(page.getByRole('heading', { name: heading })).toBeVisible();
+    }
+  });
 
-    await page.getByRole('link', { name: /^backup$/i }).click();
-    await expect(page).toHaveURL(/\/admin\/backup/);
-    await expect(page.getByRole('heading', { name: /^backup$/i })).toBeVisible();
+  test('the admin tabs are in the order the shell declares', async ({ page }) => {
+    const admin = await suiteAdmin();
+    await injectSession(page, sessionFor(admin, { isAdmin: true }));
+
+    await page.goto('/admin');
+
+    // The order is a deliberate grouping, not an accident of when each tab was added,
+    // so it is asserted rather than left to whoever edits the template next.
+    const tabs = page.getByRole('navigation', { name: /admin sections/i }).getByRole('link');
+    await expect(tabs).toHaveText([/accounts/i, /scanning/i, /photos/i, /backup/i]);
   });
 
   test('disabling local sign-in is refused while it is the only way in', async ({ page }) => {
     const admin = await suiteAdmin();
     await injectSession(page, sessionFor(admin, { isAdmin: true }));
 
-    await page.goto('/admin/settings');
+    await page.goto('/admin/accounts');
     // By name, not position: both switches are checkboxes, and swapping them in the
     // template would leave .first() silently asserting against the wrong one.
     const signIn = page.getByRole('checkbox', { name: /sign in with an app account/i });

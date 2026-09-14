@@ -17,7 +17,7 @@ public class ScanSettingsService(IOcrEnginePolicy policy, IOcrEngineCatalogue ca
     : IScanSettingsService
 {
     public async Task<ScanSettingsDto> GetAsync(CancellationToken ct = default) =>
-        new(await policy.GetAsync(ct), catalogue.Options());
+        new(await policy.GetAsync(ct), await catalogue.OptionsAsync(ct));
 
     public async Task<ScanSettingsDto> UpdateAsync(OcrEngine engine, CancellationToken ct = default)
     {

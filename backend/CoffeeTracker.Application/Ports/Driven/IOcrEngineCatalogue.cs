@@ -11,5 +11,5 @@ namespace CoffeeTracker.Application.Ports.Driven;
 /// </summary>
 public interface IOcrEngineCatalogue
 {
-    IReadOnlyList<ScanEngineOptionDto> Options();
+    Task<IReadOnlyList<ScanEngineOptionDto>> OptionsAsync(CancellationToken ct = default);
 }

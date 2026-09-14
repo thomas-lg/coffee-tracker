@@ -1,17 +1,21 @@
 namespace CoffeeTracker.Application.Ports.Driven;
 
 /// <summary>
-/// Driven (output) port for optical character recognition. Implemented by a
-/// swappable adapter (Tesseract today; PaddleOCR/RapidOCR later) selected via
-/// configuration, or a disabled adapter when the native engine isn't present.
+/// Driven (output) port for optical character recognition. Implemented by a swappable
+/// adapter, or by the wrapper that picks between adapters from the stored setting.
 /// </summary>
 public interface IOcrService
 {
     /// <summary>
-    /// Whether OCR is usable in this environment. Lets callers short-circuit (and
-    /// the scan endpoint return 503) without doing any work when OCR is disabled.
+    /// Whether OCR is usable here. Lets callers short-circuit (and the scan endpoint
+    /// return 503) without doing any work when scanning is off or the engine is absent.
     /// </summary>
-    bool IsAvailable { get; }
+    /// <remarks>
+    /// Asynchronous because the engine in force is a stored setting: a synchronous
+    /// property would force whoever wraps the adapters to answer the weaker question
+    /// "could some engine run", and a scan would then reach an engine that cannot.
+    /// </remarks>
+    Task<bool> IsAvailableAsync(CancellationToken ct = default);
 
     /// <summary>
     /// Extracts text from an image. Returns <see cref="OcrResult.Unavailable"/>

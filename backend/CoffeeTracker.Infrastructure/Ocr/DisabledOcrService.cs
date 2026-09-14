@@ -9,7 +9,7 @@ namespace CoffeeTracker.Infrastructure.Ocr;
 /// </summary>
 public class DisabledOcrService : IOcrService
 {
-    public bool IsAvailable => false;
+    public Task<bool> IsAvailableAsync(CancellationToken ct = default) => Task.FromResult(false);
 
     public Task<OcrResult> ReadAsync(Stream image, CancellationToken ct = default) =>
         Task.FromResult(OcrResult.Unavailable);

@@ -1,4 +1,5 @@
 using CoffeeTracker.Application.Ports.Driven;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace CoffeeTracker.Infrastructure.Ocr;
 
@@ -12,19 +13,13 @@ namespace CoffeeTracker.Infrastructure.Ocr;
 /// </summary>
 public sealed class SwitchingOcrService(
     IOcrEnginePolicy policy,
-    RapidOcrService rapid,
-    TesseractCliOcrService tesseract,
-    DisabledOcrService disabled) : IOcrService
+    [FromKeyedServices(OcrEngine.RapidOcr)] IOcrService rapid,
+    [FromKeyedServices(OcrEngine.Tesseract)] IOcrService tesseract,
+    [FromKeyedServices(OcrEngine.Disabled)] IOcrService disabled) : IOcrService
 {
-    /// <summary>
-    /// Whether *some* engine could run here, which is deliberately weaker than "the
-    /// chosen one can". The port's check is synchronous and the choice lives in the
-    /// database, so answering precisely would mean blocking on a query in a property.
-    /// Nothing is lost: <see cref="ReadAsync"/> returns
-    /// <see cref="OcrResult.Unavailable"/> when the chosen engine cannot run, and the
-    /// scan endpoint maps both that and this to the same 503.
-    /// </summary>
-    public bool IsAvailable => rapid.IsAvailable || tesseract.IsAvailable;
+    /// <summary>Whether the engine actually in force can run here.</summary>
+    public async Task<bool> IsAvailableAsync(CancellationToken ct = default) =>
+        await Selected(await policy.GetAsync(ct)).IsAvailableAsync(ct);
 
     public async Task<OcrResult> ReadAsync(Stream image, CancellationToken ct = default)
     {

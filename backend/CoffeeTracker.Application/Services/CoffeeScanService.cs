@@ -24,9 +24,9 @@ public class CoffeeScanService(
 {
     public async Task<ScanResult> ScanAsync(Stream image, string? contentType, long length, CancellationToken ct = default)
     {
-        // Short-circuit before any work when OCR can't run here (e.g. the host with
-        // no native Tesseract libs), endpoint maps this to 503.
-        if (!ocr.IsAvailable)
+        // Short-circuit before any work when OCR can't run here (scanning switched off,
+        // or the chosen engine absent from this host); the endpoint maps this to 503.
+        if (!await ocr.IsAvailableAsync(ct))
         {
             return new ScanResult(ScanStatus.OcrUnavailable, null);
         }

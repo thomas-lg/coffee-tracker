@@ -48,6 +48,8 @@ public class RapidOcrService(IOptions<OcrOptions> options, ILogger<RapidOcrServi
     /// </summary>
     public bool IsAvailable => File.Exists(_script);
 
+    public Task<bool> IsAvailableAsync(CancellationToken ct = default) => Task.FromResult(IsAvailable);
+
     public void Dispose()
     {
         _gate.Dispose();

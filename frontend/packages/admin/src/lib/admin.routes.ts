@@ -8,13 +8,11 @@ export const ADMIN_ROUTES: Routes = [
     // forgetting to repeat canActivate on its route.
     canActivate: [adminGuard],
     loadComponent: () => import('./components/admin-shell').then((m) => m.AdminShell),
+    // Same order as the tabs in AdminShell: settings first, then maintenance. A path
+    // matches its tab's label, so a URL someone pastes says what it opens.
     children: [
       {
-        path: 'photos',
-        loadComponent: () => import('./components/photo-cleanup').then((m) => m.PhotoCleanup),
-      },
-      {
-        path: 'settings',
+        path: 'accounts',
         loadComponent: () =>
           import('./components/account-settings').then((m) => m.AccountSettingsScreen),
       },
@@ -24,10 +22,14 @@ export const ADMIN_ROUTES: Routes = [
           import('./components/scan-settings').then((m) => m.ScanSettingsScreen),
       },
       {
+        path: 'photos',
+        loadComponent: () => import('./components/photo-cleanup').then((m) => m.PhotoCleanup),
+      },
+      {
         path: 'backup',
         loadComponent: () => import('./components/backup').then((m) => m.BackupScreen),
       },
-      { path: '', pathMatch: 'full', redirectTo: 'photos' },
+      { path: '', pathMatch: 'full', redirectTo: 'accounts' },
     ],
   },
 ];

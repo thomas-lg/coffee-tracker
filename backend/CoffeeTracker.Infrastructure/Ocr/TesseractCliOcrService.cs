@@ -45,6 +45,8 @@ public class TesseractCliOcrService(IOptions<OcrOptions> options, ILogger<Tesser
     // pure file check, no process spawn just to test availability.
     public bool IsAvailable => File.Exists(Path.Combine(_tessdataPath, $"{_language}.traineddata"));
 
+    public Task<bool> IsAvailableAsync(CancellationToken ct = default) => Task.FromResult(IsAvailable);
+
     // The concurrency gate is the only owned disposable. As a DI singleton this is
     // released when the container is disposed at shutdown.
     public void Dispose()
