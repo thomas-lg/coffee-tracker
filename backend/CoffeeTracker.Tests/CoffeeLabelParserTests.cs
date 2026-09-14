@@ -4,9 +4,10 @@ using Xunit;
 
 namespace CoffeeTracker.Tests;
 
-// The parser is pure (no native deps), so it carries the automated coverage for
-// the scan feature — CI has no Tesseract. Assertions are strict on the robust
-// extractors (roast / weight / origin) and lenient on the fuzzy name/roaster.
+// The parser is pure (no native deps), so these run everywhere and pin the field
+// heuristics exactly. The end-to-end score against real images is OcrBenchmarkTests'
+// job, and it needs Tesseract. Assertions are strict on the robust extractors
+// (roast / weight / origin) and lenient on the fuzzy name/roaster.
 public class CoffeeLabelParserTests
 {
     private static readonly CoffeeLabelParser Parser = new();
@@ -295,5 +296,95 @@ public class CoffeeLabelParserTests
 
         Assert.Equal("Hair Bender", result.Name);
         Assert.Equal("Stumptown Coffee Roasters", result.Roaster);
+    }
+
+    // Line merging, driven with geometry rather than through the engine, so the rule is
+    // pinned exactly and runs on a host with no Tesseract. The numbers are lifted from a
+    // real TSV dump of `antigua-flat.jpg` — a bag whose name and roaster both wrap.
+    private static OcrLine Line(string text, int height, int top, double confidence = 95) =>
+        new(text, confidence, height, top);
+
+    [Fact]
+    public void A_name_the_bag_printed_across_two_lines_is_read_as_one()
+    {
+        var read = OcrResult.Read("…", [
+            Line("Finca El", 53, 310),
+            Line("Injerto", 66, 392),
+            Line("Guatemala", 28, 501),
+        ]);
+
+        // Not "Injerto": the descender on the j makes it the taller box of the two, so
+        // ranking by height alone used to hand back the second half of the name.
+        Assert.Equal("Finca El Injerto", Parser.Parse(read).Name);
+    }
+
+    [Fact]
+    public void A_speck_between_the_two_halves_does_not_break_the_name()
+    {
+        var read = OcrResult.Read("…", [
+            Line("Finca El", 53, 310),
+            Line("e", 12, 375, confidence: 71), // a mark on the bag, read as a letter
+            Line("Injerto", 66, 392),
+        ]);
+
+        Assert.Equal("Finca El Injerto", Parser.Parse(read).Name);
+    }
+
+    [Fact]
+    public void A_wrapped_roaster_keeps_the_half_without_the_keyword()
+    {
+        var read = OcrResult.Read("…", [
+            Line("LA CABRA COFFEE", 18, 208),
+            Line("ROASTERS", 18, 239),
+            Line("Kirinyaga AA", 69, 310),
+        ]);
+
+        var parsed = Parser.Parse(read);
+        // "ROASTERS" alone is the line carrying the keyword, and it is not the roaster.
+        Assert.Equal("LA CABRA COFFEE ROASTERS", parsed.Roaster);
+        Assert.Equal("Kirinyaga AA", parsed.Name);
+    }
+
+    [Fact]
+    public void Two_lines_the_same_size_at_opposite_ends_of_the_bag_stay_apart()
+    {
+        var read = OcrResult.Read("…", [
+            Line("LA CABRA COFFEE", 18, 208),
+            Line("ROASTERS", 18, 239),
+            Line("Kirinyaga AA", 69, 310),
+            // Same size of type as the roaster, 300px down the bag. Height alone would
+            // merge the two into "…ROASTERS LIGHT ROAST".
+            Line("LIGHT ROAST", 20, 578),
+        ]);
+
+        var parsed = Parser.Parse(read);
+        Assert.Equal("LA CABRA COFFEE ROASTERS", parsed.Roaster);
+        Assert.Equal("Light", parsed.RoastLevel);
+    }
+
+    [Fact]
+    public void A_name_is_not_merged_into_the_smaller_line_beneath_it()
+    {
+        var read = OcrResult.Read("…", [
+            Line("Kirinyaga AA", 69, 310),
+            Line("Kenya", 35, 422), // adjacent, but half the size
+        ]);
+
+        var parsed = Parser.Parse(read);
+        Assert.Equal("Kirinyaga AA", parsed.Name);
+        Assert.Equal("Kenya", parsed.Origin);
+    }
+
+    [Fact]
+    public void An_engine_that_reports_no_geometry_still_parses()
+    {
+        // OcrResult.Read(string) builds lines with no height and no top. There is nothing
+        // to group on, so the previous reading-order behaviour has to survive intact.
+        var parsed = Parser.Parse("Kirinyaga AA\nKenya\nLight Roast\n250g");
+
+        Assert.Equal("Kirinyaga AA", parsed.Name);
+        Assert.Equal("Kenya", parsed.Origin);
+        Assert.Equal("Light", parsed.RoastLevel);
+        Assert.Equal("250g", parsed.Weight);
     }
 }

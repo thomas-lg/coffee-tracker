@@ -26,18 +26,15 @@ namespace CoffeeTracker.Tests.Ocr;
 public sealed class OcrBenchmarkTests(ITestOutputHelper output)
 {
     /// <summary>
-    /// Minimum overall score, measured at 65.7% on tesseract 5.3.4. The floor sits below
-    /// that so a patch release of the engine scoring a point differently does not fail
-    /// the build, while a real regression does.
-    ///
-    /// The orientation fix in this change does not move it, and that is expected: every
-    /// rendered fixture is already upright and none carries EXIF, so the corpus cannot
-    /// see the bug at all. `TesseractOrientationTests` is where that fix is covered.
+    /// Minimum overall score, measured at 76.7% on tesseract 5.3.4, up from 65.7% before
+    /// the parser stopped truncating values the bag printed across two lines. The floor
+    /// sits below that so a patch release of the engine scoring a point differently does
+    /// not fail the build, while a real regression does.
     ///
     /// Raise it when a change earns it (that is the point of having it), but never to
     /// paper over a corpus that got easier.
     /// </summary>
-    private const double Floor = 0.60;
+    private const double Floor = 0.72;
 
     /// <summary>
     /// How close two free-text values have to be to count as a half credit. OCR drops a

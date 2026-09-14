@@ -36,8 +36,19 @@ public interface IOcrService
 /// Glyph height in pixels, or null when unknown. A proxy for how physically
 /// prominent the text is on the bag, which is how the brand/product name is told
 /// apart from the small print around it.
+///
+/// It is a bounding box, so it is not font size: a line carrying a descender
+/// measures taller than the same type without one. "Injerto" comes back 25% taller
+/// than "Finca El" set in the identical face, which is why height is used to group
+/// lines rather than to order them one against the next.
 /// </param>
-public sealed record OcrLine(string Text, double? Confidence, int? Height);
+/// <param name="Top">
+/// Distance in pixels from the top of the image to the line's bounding box, or null
+/// when the engine reports no geometry. Only meaningful next to <paramref name="Height"/>:
+/// the two together are what say whether a line is the continuation of the one above
+/// it or a different piece of the label entirely.
+/// </param>
+public sealed record OcrLine(string Text, double? Confidence, int? Height, int? Top = null);
 
 public sealed record OcrResult(bool Available, string RawText, IReadOnlyList<OcrLine> Lines)
 {
