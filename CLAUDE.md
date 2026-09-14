@@ -156,11 +156,18 @@ it set:
   anything. It stays at 55, and holding it against rendered-only evidence turned out to be
   right for a better reason than the one available at the time.
 
-One more finding sets no constant and is now most of the remaining gap:
-**the real photographs are French and Italian, and every list in the parser is English.**
-`RoasterKeywordRegex` knows "Roasters" and "Roastery", not "Torréfacteur" or
-"Torrefazione"; `Origins` knows "Brazil", not "Brésil". Closing it is parser work, which
-is worth saying because an OCR complaint reads like an engine problem.
+The photographs are French and Italian, and every list in this parser used to be
+English. `Origins` now maps the spelling a bag prints onto the one the app stores, so
+"Brésil" and "Brazil" land in the same filter bucket rather than splitting it; that took
+origin from 87% to 95%. `RoasterKeywordRegex` gained torréfacteur, torrefazione,
+Rösterei and tostadería, which moved nothing measurable, because OCR mangles exactly
+those words ("TORRÉFACTEUR" comes back "TORREFACTEY"). They are kept as correct domain
+knowledge that this corpus cannot show a gain for.
+
+What remains on the photographs is almost entirely the name field, and it splits in two:
+the brand outranking the product ("MOKXA" where the bag means "Kekchi") and the engine
+returning nothing usable ("ry. SPEC COFFEE" off distressed type). The second is an engine
+question, not a parser one, and it is the measured argument for trying another engine.
 
 What preprocessing *is* there is EXIF auto-orientation, and it earns its place on a
 different argument: Leptonica ignores the orientation tag, so a bag photographed in

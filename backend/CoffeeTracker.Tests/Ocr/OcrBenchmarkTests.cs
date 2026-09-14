@@ -26,20 +26,20 @@ namespace CoffeeTracker.Tests.Ocr;
 public sealed class OcrBenchmarkTests(ITestOutputHelper output)
 {
     /// <summary>
-    /// Minimum overall score, currently 72.3% on tesseract 5.3.4. The floor sits below
+    /// Minimum overall score, currently 74.4% on tesseract 5.3.4. The floor sits below
     /// that so a patch release of the engine scoring a point differently does not fail
     /// the build, while a real regression does.
     ///
     /// It is a property of *this corpus*, not a constant of the pipeline: it read 82.0%
     /// over the rendered fixtures alone and dropped when nine photographs joined them,
-    /// because the photographs score around 50% and the rendered ones around 85%. So
+    /// because the photographs score around 60% and the rendered ones around 85%. So
     /// adding fixtures means re-measuring this number, and a change in it is only
     /// meaningful against an unchanged corpus.
     ///
     /// Raise it when a change earns it (that is the point of having it), but never to
     /// paper over a corpus that got easier.
     /// </summary>
-    private const double Floor = 0.68;
+    private const double Floor = 0.70;
 
     /// <summary>
     /// How close two free-text values have to be to count as a half credit. OCR drops a
