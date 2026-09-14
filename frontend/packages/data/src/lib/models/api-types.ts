@@ -132,6 +132,70 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/admin/scan-settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ScanSettingsDto"];
+                        "application/json": components["schemas"]["ScanSettingsDto"];
+                        "text/json": components["schemas"]["ScanSettingsDto"];
+                    };
+                };
+            };
+        };
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["UpdateScanSettingsDto"];
+                    "text/json": components["schemas"]["UpdateScanSettingsDto"];
+                    "application/*+json": components["schemas"]["UpdateScanSettingsDto"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ScanSettingsDto"];
+                        "application/json": components["schemas"]["ScanSettingsDto"];
+                        "text/json": components["schemas"]["ScanSettingsDto"];
+                    };
+                };
+            };
+        };
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/admin/settings": {
         parameters: {
             query?: never;
@@ -1002,6 +1066,8 @@ export interface components {
             email: string;
             password: string;
         };
+        /** @enum {unknown} */
+        OcrEngine: "RapidOcr" | "Tesseract" | "Disabled";
         OidcClientConfigDto: {
             authority: string;
             clientId: string;
@@ -1074,6 +1140,10 @@ export interface components {
         };
         /** @enum {unknown} */
         RoastLevel: "Light" | "Medium" | "Dark";
+        ScanEngineOptionDto: {
+            engine: components["schemas"]["OcrEngine"];
+            available: boolean;
+        };
         ScannedCoffeeDto: {
             name: null | string;
             roaster: null | string;
@@ -1085,9 +1155,16 @@ export interface components {
             rawText: string;
             parsed: components["schemas"]["ScannedCoffeeDto"];
         };
+        ScanSettingsDto: {
+            engine: components["schemas"]["OcrEngine"];
+            options: components["schemas"]["ScanEngineOptionDto"][];
+        };
         UpdateAccountSettingsDto: {
             localLoginEnabled: null | boolean;
             localRegistrationEnabled: null | boolean;
+        };
+        UpdateScanSettingsDto: {
+            engine: null | components["schemas"]["OcrEngine"];
         };
     };
     responses: never;

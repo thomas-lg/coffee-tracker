@@ -36,10 +36,16 @@ public class RapidOcrService(IOptions<OcrOptions> options, ILogger<RapidOcrServi
     private readonly TimeSpan _timeout =
         TimeSpan.FromSeconds(options.Value.TimeoutSeconds > 0 ? options.Value.TimeoutSeconds : 30);
 
-    // Same bargain as the Tesseract adapter: this is a DI singleton, so one semaphore
-    // caps how many model-loading processes exist at once across every request.
+    // Same bargain as the Tesseract adapter, a much lower default. Each process here
+    // imports numpy and onnxruntime and loads the detection and recognition models, so
+    // it costs hundreds of megabytes where a tesseract process costs tens. The shared
+    // Ocr:MaxConcurrency cannot be set per engine, and ProcessorCount * 2 on the eight
+    // cores of a NAS would admit sixteen of them: enough simultaneous scans to get the
+    // container OOM-killed, which takes the whole app down instead of degrading to 503.
+    private const int DefaultConcurrency = 2;
+
     private readonly SemaphoreSlim _gate =
-        new(options.Value.MaxConcurrency > 0 ? options.Value.MaxConcurrency : Environment.ProcessorCount * 2);
+        new(options.Value.MaxConcurrency > 0 ? options.Value.MaxConcurrency : DefaultConcurrency);
 
     /// <summary>
     /// The reader script has to be there. Whether the Python packages behind it are is
@@ -47,6 +53,8 @@ public class RapidOcrService(IOptions<OcrOptions> options, ILogger<RapidOcrServi
     /// failed run and is logged, exactly as a missing tesseract binary is.
     /// </summary>
     public bool IsAvailable => File.Exists(_script);
+
+    public Task<bool> IsAvailableAsync(CancellationToken ct = default) => Task.FromResult(IsAvailable);
 
     public void Dispose()
     {
@@ -184,8 +192,21 @@ public class RapidOcrService(IOptions<OcrOptions> options, ILogger<RapidOcrServi
         // RawText is what the scan response shows the user, so it carries every line the
         // engine read. Filtering is the parser's job; hiding text here would make a bad
         // scan impossible to diagnose from the response.
-        return OcrResult.Read(string.Join('\n', lines.Select(l => l.Text)), lines);
+        return OcrResult.Read(string.Join('\n', lines.Select(l => l.Text)), lines, NoiseFloor);
     }
+
+    /// <summary>
+    /// Confidence below which this engine's output is noise. Swept over the benchmark:
+    /// 55 and 70 both score 82.8%, 80 scores 81.8%, and 90 upward falls away as genuine
+    /// lines start being dropped. 70 sits in the middle of that plateau.
+    ///
+    /// Note that it does not separate clutter from text the way Tesseract's 55 does:
+    /// this engine reads a bag's small print confidently, so a barcode caption came back
+    /// at 81 and would clear any gate that keeps the real lines. What actually keeps that
+    /// out of the fields is the rest of the parser, the four-letter minimum and the
+    /// height ranking. The gate here is a floor against garbage, not the main defence.
+    /// </summary>
+    private const double NoiseFloor = 70;
 
     private static readonly JsonSerializerOptions ReaderJson = new() { PropertyNameCaseInsensitive = true };
 

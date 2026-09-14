@@ -2,7 +2,8 @@ import {
   ChangeDetectionStrategy,
   Component,
   ElementRef,
-  effect,
+  Injector,
+  afterNextRender,
   inject,
   viewChild,
 } from '@angular/core';
@@ -23,29 +24,32 @@ import { PhotoCleanupStore } from '../services/photo-cleanup.store';
 })
 export class PhotoCleanup {
   protected readonly store = inject(PhotoCleanupStore);
+  private readonly injector = inject(Injector);
   private readonly cancelBtn = viewChild<ElementRef<HTMLButtonElement>>('cancelBtn');
   private readonly armBtn = viewChild<Button>('armBtn');
 
-  constructor() {
-    // Arming removes the Delete button and cancelling removes the Cancel button, so
-    // either way the focused element disappears and focus drops to <body>. autofocus on
-    // the Cancel button does work here, @if inserts it for real, and all three engines
-    // honour that, but the template a11y lint bans the attribute outright.
-    //
-    // Only on a transition: this effect also runs on first render, and focusing a
-    // toolbar button merely because the screen loaded would yank focus from the reader.
-    let wasConfirming: boolean | undefined;
-    effect(() => {
-      const confirming = this.store.confirming();
-      if (wasConfirming !== undefined && wasConfirming !== confirming) {
-        if (confirming) {
-          this.cancelBtn()?.nativeElement.focus();
-        } else {
-          this.armBtn()?.focus();
-        }
-      }
-      wasConfirming = confirming;
-    });
+  /**
+   * Arming and cancelling each destroy the button that had focus, so it would otherwise
+   * drop to <body>. autofocus would do this too, and does work here because @if inserts
+   * the button for real, but the template a11y lint bans the attribute outright.
+   *
+   * afterNextRender, not an effect on `confirming`: an effect runs before the template
+   * that creates the button it wants to focus, so the viewChild is still empty when it
+   * reads it and the focus silently never happens. Waiting for the render is the whole
+   * point, and it is what the backup screen's confirm step already does.
+   */
+  protected arm(): void {
+    this.store.arm();
+    this.focusAfterRender(() => this.cancelBtn()?.nativeElement.focus());
+  }
+
+  protected cancel(): void {
+    this.store.cancel();
+    this.focusAfterRender(() => this.armBtn()?.focus());
+  }
+
+  private focusAfterRender(focus: () => void): void {
+    afterNextRender(focus, { injector: this.injector });
   }
 
   /** Display name = the filename without the `photos/` prefix. */

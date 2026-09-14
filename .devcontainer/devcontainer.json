@@ -27,11 +27,15 @@
   "mounts": [
     "source=${localEnv:HOME}${localEnv:USERPROFILE}/.claude,target=/home/vscode/.claude,type=bind"
   ],
-  // This container ships the tesseract CLI (see .devcontainer/Dockerfile), so turn the
-  // real OCR engine on here. Overrides appsettings.Development.json's Ocr:Engine=none;
-  // that exists only so the bare macOS host (no tesseract) doesn't 503 on /scan.
+  // This container ships both OCR engines (see .devcontainer/Dockerfile), so turn the
+  // real one on here. Overrides appsettings.Development.json's Ocr:Engine=none; that
+  // exists only so the bare macOS host (no engine at all) doesn't 503 on /scan.
+  //
+  // rapidocr, matching what production starts with, so what gets exercised here is what
+  // users actually scan through. It is only the starting default either way: an
+  // administrator's choice in Admin -> Scanning is stored and wins over this.
   "containerEnv": {
-    "Ocr__Engine": "tesseract"
+    "Ocr__Engine": "rapidocr"
   },
   // GitHub auth for `gh` and `git push` over HTTPS. The value is read from the
   // HOST environment at attach time (${localEnv:...}) and is NEVER stored in this

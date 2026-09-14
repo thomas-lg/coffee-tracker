@@ -13,7 +13,7 @@ public class CoffeeScanServiceTests
 {
     private sealed class FakeOcr(bool available, string text = "") : IOcrService
     {
-        public bool IsAvailable { get; } = available;
+        public Task<bool> IsAvailableAsync(CancellationToken ct = default) => Task.FromResult(available);
         public bool AvailableButFailsRead { get; init; }
 
         public Task<OcrResult> ReadAsync(Stream image, CancellationToken ct = default) =>

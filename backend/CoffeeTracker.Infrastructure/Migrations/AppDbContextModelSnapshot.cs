@@ -15,7 +15,7 @@ namespace CoffeeTracker.Infrastructure.Migrations
         protected override void BuildModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
-            modelBuilder.HasAnnotation("ProductVersion", "10.0.9");
+            modelBuilder.HasAnnotation("ProductVersion", "10.0.12");
 
             modelBuilder.Entity("CoffeeTracker.Domain.Coffee", b =>
                 {
@@ -261,6 +261,9 @@ namespace CoffeeTracker.Infrastructure.Migrations
 
                     b.Property<bool>("LocalRegistrationEnabled")
                         .HasColumnType("INTEGER");
+
+                    b.Property<string>("OcrEngine")
+                        .HasColumnType("TEXT");
 
                     b.Property<bool>("RegistrationOpenedForBootstrap")
                         .HasColumnType("INTEGER");

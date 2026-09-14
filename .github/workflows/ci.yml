@@ -46,9 +46,14 @@ jobs:
           sudo apt-get install -y --no-install-recommends \
             tesseract-ocr tesseract-ocr-eng libtesseract-dev libleptonica-dev \
             libgl1 libglib2.0-0
-          pip install --no-cache-dir rapidocr onnxruntime
-          pip uninstall -y opencv-python
-          pip install --no-cache-dir opencv-python-headless
+          # The same pinned file the image installs, so CI scores the engine that ships.
+          pip install --no-cache-dir -r deploy/rapidocr/requirements.txt
+          # Both go, then only the headless wheel comes back: the two share the `cv2`
+          # directory, so removing one takes it away and pip skips reinstalling the
+          # other as already present. Re-running the whole file would also let pip
+          # satisfy rapidocr's dependency and bring the GUI build back.
+          pip uninstall -y opencv-python opencv-python-headless
+          pip install --no-cache-dir "$(grep '^opencv-python-headless' deploy/rapidocr/requirements.txt)"
           # Fetch the models now, so the benchmark's first fixture is not also a download.
           python3 -c "from rapidocr import RapidOCR; RapidOCR()"
       # --locked-mode fails the restore if packages.lock.json is out of date, so a
@@ -68,11 +73,17 @@ jobs:
       - name: OCR benchmark scorecard
         if: ${{ !cancelled() }}
         run: |
-          card=backend/CoffeeTracker.Tests/bin/Release/net10.0/ocr-benchmark.md
-          if [ -f "$card" ]; then
-            cat "$card" >> "$GITHUB_STEP_SUMMARY"
-          else
+          shopt -s nullglob
+          cards=(backend/CoffeeTracker.Tests/bin/Release/net10.0/ocr-benchmark-*.md)
+          if [ ${#cards[@]} -eq 0 ]; then
             echo "OCR benchmark did not run (no scorecard produced)." >> "$GITHUB_STEP_SUMMARY"
+          else
+            # One per engine. Both are published because every parser constant is shared
+            # between them, so a change that helps one can cost the other.
+            for card in "${cards[@]}"; do
+              cat "$card" >> "$GITHUB_STEP_SUMMARY"
+              echo >> "$GITHUB_STEP_SUMMARY"
+            done
           fi
 
   frontend:
@@ -166,6 +177,28 @@ jobs:
           path: frontend/playwright-report/
           retention-days: 7
 
+  # The image ships for arm64 too, so a PR that breaks that build has to fail here rather
+  # than at release. Its own job on a native arm64 runner, not a second step on the amd64
+  # one: built under QEMU it took 366 seconds against 116 for amd64, three quarters of the
+  # whole job, and emulating a pip install of onnxruntime and numpy is most of that. Free
+  # for public repositories. It is also not scanned, because both images install the same
+  # packages from the same base and scanning one covers the CVEs of both.
+  docker-build-arm64:
+    runs-on: ubuntu-24.04-arm
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: docker/setup-buildx-action@37fe631027851001ddb9b187196cc803df7f5f0e # v4.3.0
+      - name: Verify the arm64 image builds
+        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7
+        with:
+          context: .
+          platforms: linux/arm64
+          push: false
+          # A separate cache scope: sharing one with the amd64 job would have each
+          # eviction take the other's layers with it.
+          cache-from: type=gha,scope=arm64
+          cache-to: type=gha,mode=max,scope=arm64
+
   docker-build:
     runs-on: ubuntu-latest
     # Job-level permissions REPLACE the top-level set, so re-state contents: read
@@ -210,18 +243,6 @@ jobs:
           category: trivy-image
       # Hard gate: fail only on a FIXABLE CRITICAL vulnerability (vuln scanner only, so a
       # false-positive secret match can't block). Reuses the Trivy DB cached above.
-      # The image ships for arm64 too, so a PR that breaks that build has to fail here
-      # rather than at release. Not loaded and not scanned: the two images install the
-      # same packages from the same base, so scanning one covers the CVEs of both.
-      - name: Verify the arm64 image builds
-        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7
-        with:
-          context: .
-          platforms: linux/arm64
-          push: false
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
       - name: Fail on fixable CRITICAL vulnerabilities (Trivy, gate)
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:

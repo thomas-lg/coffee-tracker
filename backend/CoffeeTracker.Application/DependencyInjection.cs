@@ -19,12 +19,10 @@ public static class DependencyInjection
         services.AddScoped<ICoffeeScanService, CoffeeScanService>();
         services.AddScoped<IPhotoAdminService, PhotoAdminService>();
         services.AddScoped<IBackupService, BackupService>();
-        // The confidence gate belongs to whichever engine is registered, so Infrastructure
-        // supplies it; absent that, the parser's own default applies.
-        services.AddSingleton<ICoffeeLabelParser>(sp =>
-            sp.GetService<LabelParserConfidence>() is { Gate: var gate }
-                ? new CoffeeLabelParser(gate)
-                : new CoffeeLabelParser());
+        // No gate here: the engine reports its own with every read, because the number is
+        // a property of how it scores rather than of the bag.
+        services.AddSingleton<ICoffeeLabelParser, CoffeeLabelParser>();
+        services.AddScoped<IScanSettingsService, ScanSettingsService>();
         return services;
     }
 }

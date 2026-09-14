@@ -159,6 +159,23 @@ export interface AccountSettings {
   localRegistrationEnabled: boolean;
 }
 
+/**
+ * Which OCR engine snap-to-fill uses. The names are the wire format, pinned server-side
+ * by a string-enum converter, so this union cannot drift into ordinals.
+ */
+export type OcrEngine = 'RapidOcr' | 'Tesseract' | 'Disabled';
+
+export interface ScanEngineOption {
+  engine: OcrEngine;
+  /** Whether the engine is installed on this host; a build may ship without one. */
+  available: boolean;
+}
+
+export interface ScanSettings {
+  engine: OcrEngine;
+  options: ScanEngineOption[];
+}
+
 // --- Admin photo cleanup ---
 export interface PhotoListItem {
   /** Raw relative path, what the delete endpoint expects back. */
@@ -251,6 +268,8 @@ type _GClientConfig = Assert<SameKeys<ClientConfig, Schemas['ConfigDto']>>;
 type _GOidcClientConfig = Assert<SameKeys<OidcClientConfig, Schemas['OidcClientConfigDto']>>;
 type _GOidcSignIn = Assert<SameKeys<OidcSignIn, Schemas['OidcSignInDto']>>;
 type _GAccountSettings = Assert<SameKeys<AccountSettings, Schemas['AccountSettingsDto']>>;
+type _GScanSettings = Assert<SameKeys<ScanSettings, Schemas['ScanSettingsDto']>>;
+type _GScanEngineOption = Assert<SameKeys<ScanEngineOption, Schemas['ScanEngineOptionDto']>>;
 type _GPhotoListItem = Assert<SameKeys<PhotoListItem, Schemas['PhotoListItemDto']>>;
 type _GPhotoDeleteResult = Assert<SameKeys<PhotoDeleteResult, Schemas['PhotoDeleteResultDto']>>;
 type _GBackup = Assert<SameKeys<Backup, Schemas['BackupDto']>>;

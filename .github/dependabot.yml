@@ -109,6 +109,21 @@ updates:
     commit-message:
       prefix: deps
 
+  - package-ecosystem: pip
+    directory: "/deploy/rapidocr" # the RapidOCR reader's pinned requirements
+    schedule:
+      interval: weekly
+    # Pinned so a rebuild cannot silently change what every scan reads, which only works
+    # if something watches for updates: the first cut of this shipped
+    # rapidocr-onnxruntime, frozen for twenty months, because nothing was looking. The
+    # benchmark is the review here -- a bump that moves the score says so in CI.
+    groups:
+      rapidocr:
+        patterns: ["*"]
+    labels: [dependencies, ocr]
+    commit-message:
+      prefix: deps
+
   - package-ecosystem: github-actions
     directory: "/"
     schedule:

@@ -2,8 +2,9 @@ import {
   ChangeDetectionStrategy,
   Component,
   ElementRef,
+  Injector,
+  afterNextRender,
   computed,
-  effect,
   inject,
   input,
   viewChild,
@@ -53,27 +54,35 @@ export class CoffeeDetail {
   /** The route parameter arrives as a string; the store reads by number. */
   private readonly coffeeId = computed(() => Number(this.id()));
 
+  private readonly injector = inject(Injector);
+
   constructor() {
     // The signal, not its value: the router reuses this component when only the
     // parameter changes, so the store has to keep hearing about it.
     this.store.setCoffeeId(this.coffeeId);
+  }
 
-    // Arming and disarming each remove the element that currently has focus, so without
-    // this focus drops to <body> and a keyboard user loses their place mid-flow. Moving
-    // it in both directions is what makes the confirm dismissable as well as reachable.
-    // autofocus is banned by the template a11y lint, so it is moved by hand.
-    //
-    // Only on a transition: this effect also runs on first render, and focusing the
-    // Delete button merely because the page loaded would yank focus out of wherever the
-    // reader actually is.
-    let wasConfirming: boolean | undefined;
-    effect(() => {
-      const confirming = this.store.confirmingDelete();
-      if (wasConfirming !== undefined && wasConfirming !== confirming) {
-        const button = confirming ? this.cancelDeleteBtn() : this.armDeleteBtn();
-        button?.nativeElement.focus();
-      }
-      wasConfirming = confirming;
+  /**
+   * Arming and disarming each remove the element that currently has focus, so without
+   * this it drops to <body> and a keyboard user loses their place mid-flow. Moving it
+   * both ways is what makes the confirm dismissable as well as reachable. autofocus is
+   * banned by the template a11y lint, so it is moved by hand.
+   *
+   * afterNextRender, not an effect on `confirmingDelete`: an effect runs before the
+   * template that creates the button it wants to focus, so the viewChild is still empty
+   * when it reads it and nothing moves at all.
+   */
+  protected armDelete(): void {
+    this.store.armDelete();
+    afterNextRender(() => this.cancelDeleteBtn()?.nativeElement.focus(), {
+      injector: this.injector,
+    });
+  }
+
+  protected cancelDelete(): void {
+    this.store.cancelDelete();
+    afterNextRender(() => this.armDeleteBtn()?.nativeElement.focus(), {
+      injector: this.injector,
     });
   }
 }

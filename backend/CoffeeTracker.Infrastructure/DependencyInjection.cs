@@ -39,36 +39,26 @@ public static class DependencyInjection
     }
 
     /// <summary>
-    /// Registers the OCR adapter selected by <c>Ocr:Engine</c>: <c>rapidocr</c> (default),
-    /// <c>tesseract</c>, or <c>none</c> for a host carrying neither.
+    /// Registers every OCR adapter plus the wrapper that picks between them per scan.
+    /// <c>Ocr:Engine</c> is now only the default an instance starts from; an administrator
+    /// changes it from the admin view and that choice is persisted.
     /// </summary>
     private static void AddOcr(IServiceCollection services, IConfiguration configuration)
     {
         services.Configure<OcrOptions>(configuration.GetSection(OcrOptions.SectionName));
 
-        var engine = configuration.GetValue<string>($"{OcrOptions.SectionName}:{nameof(OcrOptions.Engine)}");
-        var configured = configuration.GetValue<double?>(
-            $"{OcrOptions.SectionName}:{nameof(OcrOptions.MinConfidence)}");
-
-        switch (engine?.ToLowerInvariant())
-        {
-            case "none":
-                services.AddSingleton<IOcrService, DisabledOcrService>();
-                break;
-            case "tesseract":
-                services.AddSingleton<IOcrService, TesseractCliOcrService>();
-                services.AddSingleton(new LabelParserConfidence(configured ?? TesseractConfidence));
-                break;
-            default:
-                services.AddSingleton<IOcrService, RapidOcrService>();
-                services.AddSingleton(new LabelParserConfidence(configured ?? RapidOcrConfidence));
-                break;
-        }
+        // Every engine is registered, and the choice is made per scan from the stored
+        // policy rather than here. Each adapter stays a singleton because it caps its own
+        // concurrency with a semaphore, which a per-request copy would not do; the
+        // wrapper is scoped because reading the policy needs the request's DbContext.
+        services.AddKeyedSingleton<IOcrService, RapidOcrService>(OcrEngine.RapidOcr);
+        services.AddKeyedSingleton<IOcrService, TesseractCliOcrService>(OcrEngine.Tesseract);
+        services.AddKeyedSingleton<IOcrService, DisabledOcrService>(OcrEngine.Disabled);
+        services.AddScoped<IOcrEnginePolicy, EfOcrEnginePolicy>();
+        services.AddSingleton<IOcrEngineCatalogue, OcrEngineCatalogue>();
+        services.AddScoped<IOcrService, SwitchingOcrService>();
     }
 
-    /// <summary>See <see cref="OcrOptions.MinConfidence"/>; both were measured, not picked.</summary>
-    private const double TesseractConfidence = 55;
-    private const double RapidOcrConfidence = 70;
 
     /// <summary>
     /// Registers ASP.NET Identity (UserManager only, this API authenticates with

@@ -1,17 +1,21 @@
 namespace CoffeeTracker.Application.Ports.Driven;
 
 /// <summary>
-/// Driven (output) port for optical character recognition. Implemented by a
-/// swappable adapter (Tesseract today; PaddleOCR/RapidOCR later) selected via
-/// configuration, or a disabled adapter when the native engine isn't present.
+/// Driven (output) port for optical character recognition. Implemented by a swappable
+/// adapter, or by the wrapper that picks between adapters from the stored setting.
 /// </summary>
 public interface IOcrService
 {
     /// <summary>
-    /// Whether OCR is usable in this environment. Lets callers short-circuit (and
-    /// the scan endpoint return 503) without doing any work when OCR is disabled.
+    /// Whether OCR is usable here. Lets callers short-circuit (and the scan endpoint
+    /// return 503) without doing any work when scanning is off or the engine is absent.
     /// </summary>
-    bool IsAvailable { get; }
+    /// <remarks>
+    /// Asynchronous because the engine in force is a stored setting: a synchronous
+    /// property would force whoever wraps the adapters to answer the weaker question
+    /// "could some engine run", and a scan would then reach an engine that cannot.
+    /// </remarks>
+    Task<bool> IsAvailableAsync(CancellationToken ct = default);
 
     /// <summary>
     /// Extracts text from an image. Returns <see cref="OcrResult.Unavailable"/>
@@ -50,7 +54,19 @@ public interface IOcrService
 /// </param>
 public sealed record OcrLine(string Text, double? Confidence, int? Height, int? Top = null);
 
-public sealed record OcrResult(bool Available, string RawText, IReadOnlyList<OcrLine> Lines)
+/// <param name="MinConfidence">
+/// The confidence below which *this engine* calls a line noise, or null when it has no
+/// opinion. It travels with the read because it is a property of how the engine scores
+/// rather than of the bag: Tesseract puts background clutter under 50 and printed text
+/// above 58, while RapidOCR reads even small print confidently and puts almost everything
+/// it finds above 80. One gate cannot serve both, and the parser has no business knowing
+/// which engine produced the lines it is reading.
+/// </param>
+public sealed record OcrResult(
+    bool Available,
+    string RawText,
+    IReadOnlyList<OcrLine> Lines,
+    double? MinConfidence = null)
 {
     public static OcrResult Unavailable { get; } = new(false, string.Empty, []);
 
@@ -62,8 +78,8 @@ public sealed record OcrResult(bool Available, string RawText, IReadOnlyList<Ocr
         new(true, rawText, SplitLines(rawText));
 
     /// <summary>A read from an engine that reports per-line quality signals.</summary>
-    public static OcrResult Read(string rawText, IReadOnlyList<OcrLine> lines) =>
-        new(true, rawText, lines);
+    public static OcrResult Read(string rawText, IReadOnlyList<OcrLine> lines, double? minConfidence = null) =>
+        new(true, rawText, lines, minConfidence);
 
     private static List<OcrLine> SplitLines(string rawText) =>
         [.. (rawText ?? string.Empty)

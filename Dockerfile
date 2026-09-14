@@ -74,6 +74,11 @@ FROM mcr.microsoft.com/dotnet/aspnet:10.0@sha256:6a94333d37514e385650a3c81a55e53
 # what a pull actually costs), all of it Python, numpy and onnxruntime. It buys reading a photograph rather
 # than a scanned page. On the benchmark's real bags Tesseract returns "lam" where the
 # label says "LA LIBERTAD" and nothing at all for "INTENSO BLEND"; RapidOCR reads both.
+# Versions are pinned in deploy/rapidocr/requirements.txt, which CI installs too, so the
+# engine the benchmark scores is the engine that ships. Both opencv builds are removed
+# before the headless one goes back: they share the `cv2` directory, so uninstalling one
+# takes it away and pip then skips reinstalling the other as already present.
+#
 # The package is `rapidocr`, not `rapidocr-onnxruntime`: the latter is the same
 # project's earlier name, frozen since January 2025 on PP-OCRv4, while `rapidocr` ships
 # PP-OCRv6 and reads these bags visibly better (TORREFACTEUR at 99.7% against a mangled
@@ -86,14 +91,15 @@ FROM mcr.microsoft.com/dotnet/aspnet:10.0@sha256:6a94333d37514e385650a3c81a55e53
 # tenth of the size and a fair answer for anyone who would rather not carry the rest.
 # gosu drops privileges in the entrypoint; curl is only for the HEALTHCHECK (the aspnet
 # image ships neither curl nor wget). TESSDATA_PREFIX is the parent of the tessdata dir.
+COPY deploy/rapidocr/requirements.txt /tmp/requirements.txt
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
         tesseract-ocr tesseract-ocr-eng \
         python3 python3-pip libglib2.0-0 \
         gosu curl \
-    && pip3 install --no-cache-dir --break-system-packages rapidocr onnxruntime \
-    && pip3 uninstall -y --break-system-packages opencv-python \
-    && pip3 install --no-cache-dir --break-system-packages opencv-python-headless \
+    && pip3 install --no-cache-dir --break-system-packages -r /tmp/requirements.txt \
+    && pip3 uninstall -y --break-system-packages opencv-python opencv-python-headless \
+    && pip3 install --no-cache-dir --break-system-packages "$(grep '^opencv-python-headless' /tmp/requirements.txt)" \
     && rm -rf /var/lib/apt/lists/*
 
 # The reader the RapidOCR adapter pipes into. RapidOCR's own CLI only takes a file path,

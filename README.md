@@ -40,7 +40,8 @@ about when anything lands.
 - **Two ways to sign in:** app accounts, or your own OpenID Connect provider with
   admin rights mapped from a group claim. See [Signing in](#signing-in).
 - **Admin screens** for account policy (who may register, whether app accounts can
-  sign in at all) and for reaping photos left behind by abandoned scans.
+  sign in at all), for choosing the OCR engine snap-to-fill uses, and for reaping photos
+  left behind by abandoned scans.
 - **Backup and restore.** Download the whole catalog as a JSON file, and restore one,
   onto this instance or another. Data only: the photos are files on the photo volume,
   which you copy the same way you copy anything else off it.
@@ -50,8 +51,9 @@ about when anything lands.
   ASP.NET Core Identity + JWT.
 - **Frontend:** Angular 22 (standalone components, signals, Signal Forms),
   shipped as an installable PWA.
-- **Snap-to-fill:** photograph a coffee bag, and open-source OCR (Tesseract first,
-  behind a swappable `IOcrService`) pre-fills the Add Coffee form.
+- **Snap-to-fill:** photograph a coffee bag, and open-source OCR (RapidOCR by default,
+  Tesseract one setting away, both behind `IOcrService`) pre-fills the Add Coffee form.
+  An administrator picks the engine in **Admin -> Scanning**.
 - **Deploy:** GitHub Actions builds a `linux/amd64` + `linux/arm64` image and
   publishes it to GHCR; you install/update it manually from your NAS's Docker GUI.
 
@@ -146,12 +148,11 @@ never face the internet directly.
 | `Oidc__AdminClaim`                | no       | none            | Claim carrying the admin assertion (e.g. `groups`). Set with `Oidc__AdminClaimValue`; both or neither. Unset, the first user to sign in through the provider becomes admin. |
 | `Oidc__AdminClaimValue`           | no       | none            | Value `Oidc__AdminClaim` must carry to grant admin. Re-evaluated on every sign-in, so removing someone from the group revokes their rights at their next sign-in. |
 | `ForwardedHeaders__KnownProxies`  | recommended | none         | Comma-separated host names or IPs of your reverse proxy, so the app trusts its `X-Forwarded-For`/`-Proto`. **Set this** behind a proxy, otherwise auth rate-limiting keys off the proxy's single IP and throttles every client together, and HSTS is not emitted. Prefer a name (`swag`, a service name, a DNS record) over an address, because an orchestrator assigns the address and a pinned IP holds only until the proxy restarts onto another one. Names are resolved at startup; one that cannot be resolved is ignored rather than guessed. |
-| `Ocr__Engine`                     | no       | `rapidocr`       | OCR engine for `/api/coffees/scan`: `rapidocr` (default, reads photographs of bags markedly better), `tesseract` (lighter, better on flat scans), or `none` (disables scanning → 503). |
-| `Ocr__MinConfidence`              | no       | per engine       | Confidence below which a recognised line is treated as background noise. Defaults to 70 for `rapidocr` and 55 for `tesseract`, which is where each engine separates text from clutter. Only worth setting if you are tuning against your own bags. |
+| `Ocr__Engine`                     | no       | `rapidocr`       | The OCR engine a **new** instance starts with: `rapidocr` (reads photographs of bags markedly better), `tesseract` (lighter, better on flat scans), or `none` (disables scanning → 503). Once an administrator picks one in **Admin → Scanning**, that choice is stored and this variable no longer applies. |
 | `Ocr__TessdataPath`               | no       | system path      | Override the tessdata directory; defaults to the `TESSDATA_PREFIX` system path (the image ships English data). |
 | `Ocr__Language`                   | no       | `eng`            | Tesseract language code. |
 | `Ocr__TimeoutSeconds`             | no       | `30`             | Hard ceiling on a single OCR run; a slower/stuck scan is terminated and returns `503` so it can't pin a worker. |
-| `Ocr__MaxConcurrency`             | no       | `0` (≈ 2× CPUs)  | Max OCR processes running at once; extra scans queue instead of spawning unbounded `tesseract` processes. `0` resolves to twice the processor count. |
+| `Ocr__MaxConcurrency`             | no       | `0` (per engine) | Max OCR processes running at once; extra scans queue instead of spawning unbounded ones. `0` lets each engine pick its own: twice the processor count for `tesseract`, but **2** for `rapidocr`, which loads two models per process and would get the container OOM-killed at sixteen. Setting this applies the same number to both. |
 | `PUID`                            | no       | `99`             | User ID the app runs as. Set to match your host volume owner so `/config`/`/photos` are writable (Unraid default `99` = `nobody`). |
 | `PGID`                            | no       | `100`            | Group ID the app runs as (Unraid default `100` = `users`). |
 
@@ -254,9 +255,6 @@ Nothing committed, just a parking lot for when the mood strikes:
 - **Brew log** for per-cup extraction notes (grind, dose, yield, time) beyond a rating.
 - **Wishlist & "finished bag"** states; optional low-stock nudges.
 - **Stats & charts**: rating trends over time, favourite roasters/origins.
-- **Export / import** (JSON/CSV) and a one-click backup endpoint.
-- **OCR upgrade** to PaddleOCR or RapidOCR behind `IOcrService`, if Tesseract turns out
-  weak on real bags.
 - **i18n**. The UI is English-only today.
 
 ## Contributing

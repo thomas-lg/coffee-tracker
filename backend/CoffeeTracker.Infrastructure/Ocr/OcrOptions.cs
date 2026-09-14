@@ -11,23 +11,6 @@ public class OcrOptions
     /// </summary>
     public string Engine { get; set; } = "rapidocr";
 
-    /// <summary>
-    /// Mean per-line confidence (0-100) below which the label parser treats a line as
-    /// background noise. Left unset it takes the default for the selected engine, which
-    /// is what you want: the number is a property of how that engine scores, not of the
-    /// bag.
-    /// </summary>
-    /// <remarks>
-    /// Tesseract's default is 55, measured from a photograph where its noise lines scored
-    /// 15.6 to 48.8 and its printed lines 58.8 to 96.6. RapidOCR scores far more
-    /// confidently: on the same corpus real text lands at 94 to 100 and the little noise
-    /// it produces around 81. Swept, 55 and 70 both score 82.8%, 80 scores 81.8% and 90
-    /// upward falls away as genuine lines start being dropped. 70 is the middle of that
-    /// plateau, which leaves margin against noise on a bag this corpus has never seen
-    /// without costing anything on the ones it has.
-    /// </remarks>
-    public double? MinConfidence { get; set; }
-
     /// <summary>Python interpreter that runs the RapidOCR reader. Resolved from PATH when unset.</summary>
     public string? PythonPath { get; set; }
 

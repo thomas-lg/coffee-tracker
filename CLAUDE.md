@@ -100,7 +100,18 @@ See the README's *Running the tests* for the commands. What matters when writing
 
 ## OCR
 
-Two engines behind `IOcrService`, selected by `Ocr:Engine`.
+Two engines behind `IOcrService`, chosen **at runtime from the admin view** and stored
+in the settings row. `Ocr:Engine` is only the default an instance starts from, which is
+what an upgraded instance keeps: the column is nullable, and null means "whatever the
+deployment configured", so adding this could not change how an existing instance scans.
+
+`SwitchingOcrService` is the `IOcrService` the app resolves. Both engines stay singletons
+because each caps its own concurrency with a semaphore that a per-request copy would not
+cap; the wrapper is scoped because reading the policy needs the request's DbContext. Its
+`IsAvailable` answers "some engine could run", deliberately weaker than "the chosen one
+can", because the port's check is synchronous and the choice lives in the database.
+`ReadAsync` returns `Unavailable` when the chosen engine cannot run, and the endpoint
+maps both to the same 503.
 
 **`rapidocr` is the default.** PP-OCRv6 detection and recognition on onnxruntime,
 driven through `deploy/rapidocr/read.py`. It reads photographs, which is what the app
@@ -136,23 +147,46 @@ whose native loading proved too brittle on Linux (it probes version-pinned `lib*
 names and needs a `libdl` shim), and it passes `--tessdata-dir` explicitly because
 Tesseract 5 treats `TESSDATA_PREFIX` as the directory itself, not its parent.
 
-**The confidence gate is per engine**, and that is the subtle part. Tesseract's noise
-lines score under 50 and its real text above 58, so its gate is 55. RapidOCR scores the
-the same text at 94 to 100 and the little noise it produces around 81, so its gate is 70,
-in the middle of a plateau rather than at a cliff. `AddOcr` registers the gate alongside
-the engine, and the number for each was swept, not picked.
+**The confidence gate is per engine**, and it travels with the read: `OcrResult` carries
+the floor the engine that produced it calls for, so nothing downstream has to know which
+engine is plugged in. That matters more now that the engine changes at runtime, and it is
+why there is no gate in DI any more.
+
+The two floors are not the same kind of number, which is worth knowing before tuning
+either. Tesseract's 55 sits in a real gap: its clutter scores under 50 and its printed
+lines above 58. RapidOCR's 70 does not, because it reads small print confidently too, and
+a barcode caption came back at 81. It was chosen by sweeping (55 and 70 both score 82.8%,
+80 scores 81.8%, 90 upward drops real lines), and what actually keeps that caption out of
+the fields is the rest of the parser: the four-letter minimum and the height ranking.
 
 ### Measuring it
 
 **Do not change the OCR adapter or the label parser without running the benchmark.**
 `OcrBenchmarkTests` scores the whole pipeline against a fixed corpus and fails below a
-floor, so a change can be compared instead of argued about. It runs inside the normal
-backend suite (the `backend` CI job already installs Tesseract) and prints a scorecard:
-per field, per shooting condition, and every wrong answer as `wanted X, got Y`. CI copies
-it into the run summary.
+floor, so a change can be compared instead of argued about. It prints a scorecard: per
+field, per shooting condition, and every wrong answer as `wanted X, got Y`.
 
-On a host without Tesseract the benchmark **skips with a reason**, so on a bare Windows
-host you have measured nothing and the number to quote is CI's.
+**Both engines are scored on every run**, each against its own floor, and CI publishes
+both scorecards. That is not thoroughness for its own sake: every constant in
+`CoffeeLabelParser` is shared between the engines, and all three were swept against
+Tesseract before RapidOCR existed. Measured since, the optima coincide, but only because
+RapidOCR is insensitive to the line gap and the letter minimum that Tesseract needs:
+
+| | RapidOCR | Tesseract |
+| --- | --: | --: |
+| band tolerance 0.70 (shipped) | **82.8%** | **74.4%** |
+| band tolerance 0.80 | 79.2% | 72.8% |
+| line gap 0.4 | 82.8% | 70.8% |
+| line gap 0.8 (shipped) | **82.8%** | **74.4%** |
+| four-letter minimum, at 3 | 82.8% | 73.8% |
+
+Nothing guarantees that stays true, so scoring one engine would let a tuning pass for it
+quietly cost the other.
+
+The dev container carries **both** engines and defaults to `rapidocr`, so both halves
+run there and reproduce CI's numbers exactly (82.8% and 74.4%). On a host missing an
+engine that half **skips with a reason**, so on a bare Windows host you have measured
+nothing and the number to quote is CI's.
 
 There are two corpora, scored separately and never averaged into one number.
 `synthetic/` is rendered: `node scripts/generate-ocr-fixtures.mjs` draws six labels under

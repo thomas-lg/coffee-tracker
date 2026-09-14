@@ -51,35 +51,19 @@ public static class OcrFixtures
     /// <summary>The fixtures directory, copied next to the test assembly at build.</summary>
     public static string Root => System.IO.Path.Combine(AppContext.BaseDirectory, "Ocr", "Fixtures");
 
-    /// <summary>
-    /// Which engine the benchmark scores. Defaults to the one the app ships with, so the
-    /// number in CI is the number users get; set <c>OCR_BENCH_ENGINE=tesseract</c> to
-    /// score the other one and compare them on the same images.
-    /// </summary>
-    public static string Engine =>
-        Environment.GetEnvironmentVariable("OCR_BENCH_ENGINE") ?? new OcrOptions().Engine;
-
-    /// <summary>
-    /// The confidence gate the selected engine calls for, mirroring what
-    /// <c>AddOcr</c> registers. Mirrored rather than shared because the benchmark builds
-    /// its adapter by hand instead of resolving one out of the container.
-    /// </summary>
-    public static double Gate =>
-        string.Equals(Engine, "tesseract", StringComparison.OrdinalIgnoreCase) ? 55 : 70;
-
-    /// <summary>Builds the adapter named by <see cref="Engine"/>.</summary>
-    public static IOcrService NewEngine(OcrOptions options, ILoggerFactory logs) =>
-        string.Equals(Engine, "tesseract", StringComparison.OrdinalIgnoreCase)
+    /// <summary>Builds the adapter for one engine.</summary>
+    public static IOcrService NewEngine(OcrEngine engine, OcrOptions options, ILoggerFactory logs) =>
+        engine == OcrEngine.Tesseract
             ? new TesseractCliOcrService(Options.Create(options), logs.CreateLogger<TesseractCliOcrService>())
             : new RapidOcrService(Options.Create(options), logs.CreateLogger<RapidOcrService>());
 
     /// <summary>
-    /// Whether a benchmark run is possible here. Asked through the adapter's own
-    /// availability check rather than re-derived, so a change to how either engine
-    /// locates its files cannot leave this lying.
+    /// Whether one engine can run here. Asked through the adapter's own availability
+    /// check rather than re-derived, so a change to how either locates its files cannot
+    /// leave this lying.
     /// </summary>
-    public static bool EngineAvailable =>
-        string.Equals(Engine, "tesseract", StringComparison.OrdinalIgnoreCase)
+    public static bool Available(OcrEngine engine) =>
+        engine == OcrEngine.Tesseract
             ? ExecutableOnPath("tesseract")
                 && new TesseractCliOcrService(
                     Options.Create(new OcrOptions()),
@@ -87,7 +71,42 @@ public static class OcrFixtures
             : ExecutableOnPath("python3")
                 && new RapidOcrService(
                     Options.Create(new OcrOptions { RapidOcrScriptPath = RapidOcrScript }),
-                    NullLogger<RapidOcrService>.Instance).IsAvailable;
+                    NullLogger<RapidOcrService>.Instance).IsAvailable
+                && RapidOcrImportable.Value;
+
+    /// <summary>
+    /// Whether the reader's Python package is actually installed, paid for once.
+    ///
+    /// The script being on disk is not enough, and the difference is not academic: a
+    /// checkout on a host with python3 but no rapidocr passes every cheaper check, then
+    /// every fixture comes back unavailable and the benchmark fails its floor with a
+    /// score of zero instead of saying it could not run.
+    /// </summary>
+    private static readonly Lazy<bool> RapidOcrImportable = new(() =>
+    {
+        try
+        {
+            using var probe = System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo("python3")
+            {
+                ArgumentList = { "-c", "import rapidocr" },
+                RedirectStandardError = true,
+                RedirectStandardOutput = true,
+                UseShellExecute = false,
+            });
+
+            if (probe is null)
+            {
+                return false;
+            }
+
+            return probe.WaitForExit(TimeSpan.FromSeconds(30)) && probe.ExitCode == 0;
+        }
+        catch (Exception)
+        {
+            // Any failure to even ask is an answer: the engine cannot run here.
+            return false;
+        }
+    });
 
     /// <summary>
     /// The reader script, found in the repo when running from a checkout and at its
@@ -160,19 +179,19 @@ public static class OcrFixtures
 }
 
 /// <summary>
-/// A <see cref="FactAttribute"/> for the benchmark, skipped with a reason when the host
-/// carries no Tesseract, which is the bare Windows host this repo is often driven from
+/// A <see cref="FactAttribute"/> for one engine's benchmark, skipped with a reason when
+/// that engine is absent, which is the bare Windows host this repo is often driven from
 /// (CLAUDE.md § Gotchas). Skipped rather than quietly passing: a benchmark that reports
 /// green having measured nothing is worse than one that says it did not run.
 /// </summary>
 public sealed class OcrBenchmarkFactAttribute : FactAttribute
 {
-    public OcrBenchmarkFactAttribute()
+    public OcrBenchmarkFactAttribute(OcrEngine engine)
     {
-        if (!OcrFixtures.EngineAvailable)
+        if (!OcrFixtures.Available(engine))
         {
-            Skip = "tesseract (or its eng.traineddata) is not installed here; "
-                + "run the benchmark in the dev container or in the ocr-bench CI job.";
+            Skip = $"the {engine} engine is not installed here; this one is scored in CI, "
+                + "which installs both.";
         }
     }
 }
