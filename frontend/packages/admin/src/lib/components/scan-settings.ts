@@ -1,13 +1,15 @@
 import {
   ChangeDetectionStrategy,
   Component,
-  ElementRef,
+  Injector,
+  afterNextRender,
   computed,
   inject,
+  linkedSignal,
   signal,
-  viewChildren,
 } from '@angular/core';
 import { rxResource } from '@angular/core/rxjs-interop';
+import { FormField, form } from '@angular/forms/signals';
 import { firstValueFrom } from 'rxjs';
 import { AdminScanSettingsApi, type OcrEngine, type ScanSettings } from '@coffee-tracker/data';
 import { ToastService } from '@coffee-tracker/ui';
@@ -24,11 +26,13 @@ interface EngineCopy {
 @Component({
   selector: 'ct-scan-settings',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [FormField],
   templateUrl: './scan-settings.html',
 })
 export class ScanSettingsScreen {
   private readonly api = inject(AdminScanSettingsApi);
   private readonly toast = inject(ToastService);
+  private readonly injector = inject(Injector);
 
   private readonly settingsRes = rxResource({ stream: () => this.api.get() });
 
@@ -80,25 +84,20 @@ export class ScanSettingsScreen {
     },
   ];
 
+  /** The engine actually in force, as the server last reported it. */
   protected readonly current = computed(() => this.settings()?.engine);
 
-  private readonly inputs = viewChildren<ElementRef<HTMLInputElement>>('radio');
-
   /**
-   * Writes the radios back from state.
-   *
-   * A radio the user clicks is checked by the browser, not by Angular, and `[checked]`
-   * is a property binding that is only written when the bound *value* changes. When a
-   * change is refused the value ends up exactly where it started, so Angular writes
-   * nothing and the DOM keeps the click: the administrator is left looking at Tesseract
-   * selected on an instance still scanning with RapidOCR. Nothing about binding order
-   * fixes that, so the element is set directly.
+   * The radio group's value. A linkedSignal rather than an effect because the selection
+   * *is* a view of the settings until someone clicks: every answer the server gives
+   * reseeds it, and the click in between is the only thing that moves it on its own.
    */
-  private restoreSelection(): void {
-    for (const input of this.inputs()) {
-      input.nativeElement.checked = input.nativeElement.value === this.current();
-    }
-  }
+  private readonly model = linkedSignal<ScanSettings | undefined, { engine: OcrEngine | '' }>({
+    source: this.settings,
+    computation: (settings) => ({ engine: settings?.engine ?? '' }),
+  });
+
+  protected readonly f = form(this.model);
 
   /** Whether an engine can run here; a build may ship without one. */
   protected available(engine: OcrEngine): boolean {
@@ -111,17 +110,32 @@ export class ScanSettingsScreen {
     }
 
     this.saving.set(true);
+    // Let the group render with the click applied before the request can answer.
+    //
+    // A radio is written back from the model only when the model's *value* changes, and
+    // that is true of Signal Forms' own binding as much as it was of the hand-rolled
+    // one. A refusal sets the model back to where it started, so if nothing has rendered
+    // in between there is no change to write and the browser keeps the click: the
+    // administrator is left looking at Tesseract selected on an instance still scanning
+    // with RapidOCR. One frame here makes the revert a real change every time, instead
+    // of only when the request happens to be slower than the scheduler.
+    await new Promise<void>((resolve) =>
+      afterNextRender(() => resolve(), { injector: this.injector }),
+    );
+
     try {
       const updated = await firstValueFrom(this.api.setEngine(engine));
       this.settingsRes.set(updated satisfies ScanSettings);
       this.toast.show('Scanning engine changed.', 'success');
     } catch {
       this.toast.show('Could not change the scanning engine.', 'error');
+      // The click has already moved the model and a refusal leaves the settings exactly
+      // where they were, so nothing else would put it back: a linkedSignal only
+      // recomputes when its source changes. Writing the engine still in force is what
+      // unchecks the refused radio.
+      this.model.set({ engine: this.current() ?? '' });
     } finally {
       this.saving.set(false);
-      // After either outcome, because a success re-renders from the new settings and a
-      // refusal has to undo the browser's optimistic move.
-      this.restoreSelection();
     }
   }
 }

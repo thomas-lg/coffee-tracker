@@ -84,6 +84,9 @@ describe('ScanSettingsScreen', () => {
     await load();
 
     radios()[1]?.click();
+    // The request waits for one render, so the group is on screen with the click applied
+    // before anything can answer it. Without settling here there is no PUT to expect.
+    await settle();
     const req = http.expectOne({ method: 'PUT', url: '/api/admin/scan-settings' });
     expect(req.request.body).toEqual({ engine: 'Tesseract' });
     req.flush({ ...SETTINGS, engine: 'Tesseract' });
@@ -110,6 +113,7 @@ describe('ScanSettingsScreen', () => {
     await load();
 
     radios()[1]?.click();
+    await settle();
     // The browser has already moved the selection; nothing has confirmed it yet.
     expect(radios()[1]?.checked).toBe(true);
 
@@ -117,9 +121,11 @@ describe('ScanSettingsScreen', () => {
     await settle();
 
     expect(toast.show).toHaveBeenCalledWith(expect.stringContaining('Could not'), 'error');
-    // Back on the engine actually in force. Without the pending signal the DOM stayed
-    // where the click left it, showing Tesseract selected on an instance still scanning
-    // with RapidOCR.
+    // Back on the engine actually in force. The form binding only rewrites a radio when
+    // the model's value changes, so a refusal that arrives with no render in between has
+    // nothing to write and the DOM keeps the click: drop the settle() above and this goes
+    // red. choose() waits for that render rather than leaving it to the scheduler, which
+    // is the part this test can require but not itself provoke.
     expect(radios()[0]?.checked).toBe(true);
     expect(radios()[1]?.checked).toBe(false);
   });

@@ -26,23 +26,43 @@
       @for (option of copy; track option.engine) {
         @let chosen = current() === option.engine;
         @let usable = available(option.engine);
+        <!-- for/id rather than relying on the wrapping: the control sits inside an @if,
+             which the label-has-associated-control lint rule cannot see through. -->
         <label
+          [attr.for]="'scan-engine-' + option.engine"
           class="block cursor-pointer rounded-2xl border-2 bg-foam p-5 transition"
           [class]="chosen ? 'border-crema' : 'border-line hover:border-crema/50'"
           [class.opacity-60]="!usable"
           [class.cursor-not-allowed]="!usable"
         >
           <div class="flex items-start gap-3">
-            <input
-              #radio
-              type="radio"
-              name="engine"
-              [value]="option.engine"
-              class="mt-1 size-4 shrink-0 accent-crema"
-              [checked]="chosen"
-              [disabled]="!usable"
-              (change)="choose(option.engine)"
-            />
+            <!-- Two branches because Signal Forms owns `disabled` on the node carrying
+                 [formField] and rejects any binding to it (NG8022): it is a property of
+                 the field, and here it is a property of the option. An engine this host
+                 cannot run is not part of the choice, so it is not part of the form. -->
+            @if (usable) {
+              <input
+                type="radio"
+                [id]="'scan-engine-' + option.engine"
+                [formField]="f.engine"
+                [value]="option.engine"
+                class="mt-1 size-4 shrink-0 accent-crema"
+                (change)="choose(option.engine)"
+              />
+            } @else {
+              <!-- [checked] is safe on an inert control: nothing can move it out of step
+                   with the value, which is the whole reason it was wrong on the others.
+                   It matters when the configured engine has left the image. -->
+              <input
+                type="radio"
+                [id]="'scan-engine-' + option.engine"
+                name="engine"
+                disabled
+                [value]="option.engine"
+                class="mt-1 size-4 shrink-0 accent-crema"
+                [checked]="chosen"
+              />
+            }
             <div class="min-w-0">
               <div class="flex flex-wrap items-center gap-2">
                 <span class="font-display text-lg font-semibold text-ink">{{ option.name }}</span>
