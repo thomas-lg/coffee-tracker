@@ -3,7 +3,6 @@ using System.Text;
 using CoffeeTracker.Application.Dtos;
 using CoffeeTracker.Application.Services;
 using CoffeeTracker.Infrastructure.Ocr;
-using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Xunit;
 using Xunit.Abstractions;
@@ -27,11 +26,15 @@ namespace CoffeeTracker.Tests.Ocr;
 public sealed class OcrBenchmarkTests(ITestOutputHelper output)
 {
     /// <summary>
-    /// Minimum overall score. Measured at 65.7% on tesseract 5.3.4 the day the corpus
-    /// was written; the floor sits below that so a patch release of the engine scoring a
-    /// point differently does not fail the build, while a real regression does.
+    /// Minimum overall score, measured at 65.7% on tesseract 5.3.4. The floor sits below
+    /// that so a patch release of the engine scoring a point differently does not fail
+    /// the build, while a real regression does.
     ///
-    /// Raise it when a change earns it — that is the point of having it — but never to
+    /// The orientation fix in this change does not move it, and that is expected: every
+    /// rendered fixture is already upright and none carries EXIF, so the corpus cannot
+    /// see the bug at all. `TesseractOrientationTests` is where that fix is covered.
+    ///
+    /// Raise it when a change earns it (that is the point of having it), but never to
     /// paper over a corpus that got easier.
     /// </summary>
     private const double Floor = 0.60;
@@ -50,9 +53,15 @@ public sealed class OcrBenchmarkTests(ITestOutputHelper output)
         var fixtures = OcrFixtures.All();
         Assert.NotEmpty(fixtures);
 
+        // A generous ceiling, and one process at a time. The production default of 30s
+        // bounds a *user's* scan against a hung engine; this loop runs 30 images while
+        // the rest of the suite competes for the same cores on a CI runner, and one slow
+        // run timing out would degrade to "unavailable" and read as a pipeline failure.
         var ocr = new TesseractCliOcrService(
-            Options.Create(new OcrOptions()),
-            NullLogger<TesseractCliOcrService>.Instance);
+            Options.Create(new OcrOptions { TimeoutSeconds = 120, MaxConcurrency = 1 }),
+            // Not NullLogger: the adapter never throws, so its log is the only place that
+            // says *why* a fixture came back unavailable.
+            new TestOutputLogger<TesseractCliOcrService>(output));
         var parser = new CoffeeLabelParser();
 
         List<Scored> scored = [];
@@ -62,7 +71,10 @@ public sealed class OcrBenchmarkTests(ITestOutputHelper output)
             var read = await ocr.ReadAsync(image);
             // An engine outage mid-corpus would otherwise read as a catastrophic score
             // and send the next reader hunting for a parser bug.
-            Assert.True(read.Available, $"the engine went unavailable on {fixture.File}");
+            Assert.True(
+                read.Available,
+                $"the engine went unavailable on {fixture.File} — the adapter's own log is "
+                + "in this test's output, and says which of start, exit code or timeout it was");
 
             var parsed = parser.Parse(read);
             scored.Add(new Scored(fixture, Score(fixture.Expected, parsed), parsed));

@@ -132,6 +132,16 @@ from the images. Rendered type is cleaner than a real bag, so treat the score as
 **regression signal, not an accuracy figure** — `Ocr/Fixtures/real/README.md` explains
 how to add real photographs, which is what settles an engine question.
 
+One thing has been swept against it so far: preprocessing, which bought nothing.
+Grayscale was worth +0.3 and upscaling *cost* two to four points, so don't re-add a
+preprocessing pipeline without a scorecard showing it pays.
+
+What preprocessing *is* there is EXIF auto-orientation, and it earns its place on a
+different argument: Leptonica ignores the orientation tag, so a bag photographed in
+portrait reaches the engine sideways and comes back as mirrored nonsense. The rendered
+corpus cannot see that — it has no EXIF — so `TesseractOrientationTests` covers it
+instead, and it was written red first.
+
 Two scoring rules are deliberate and worth knowing before reading a scorecard:
 
 - A `null` expectation is a real assertion: it says the parser should leave the field
