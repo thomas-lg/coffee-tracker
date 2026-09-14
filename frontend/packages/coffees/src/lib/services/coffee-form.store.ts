@@ -64,7 +64,7 @@ export const CoffeeFormStore = signalStore(
     _catalog: inject(CoffeesStore),
     /**
      * The form's value. A plain writable signal in withProps rather than withState,
-     * because Signal Forms binds two-way and writes back into it — patchState-managed
+     * because Signal Forms binds two-way and writes back into it, patchState-managed
      * state is readonly and cannot be a form model.
      */
     model: signal<CoffeeFormModel>(emptyModel()),
@@ -72,7 +72,7 @@ export const CoffeeFormStore = signalStore(
   withMethods((store) => ({
     /**
      * Fed a signal, so it re-runs when the route id changes. switchMap then abandons a
-     * load still in flight, which the previous effect-plus-await could not — two quick
+     * load still in flight, which the previous effect-plus-await could not, two quick
      * edits raced and the slower response won.
      */
     load: rxMethod<number | null>(
@@ -126,7 +126,7 @@ export const CoffeeFormStore = signalStore(
                 }));
                 patchState(store, { scanning: false });
                 store._toast.show(
-                  'Bag scanned — fields pre-filled. Check them before saving.',
+                  'Bag scanned. Fields pre-filled, check them before saving.',
                   'success',
                 );
               },
@@ -135,7 +135,7 @@ export const CoffeeFormStore = signalStore(
                 const off = err instanceof HttpErrorResponse && err.status === 503;
                 store._toast.show(
                   off
-                    ? 'OCR is off on this host — fill the form in manually.'
+                    ? 'OCR is off on this host. Fill the form in manually.'
                     : 'Could not read that photo.',
                   off ? 'info' : 'error',
                 );
@@ -152,7 +152,7 @@ export const CoffeeFormStore = signalStore(
      *
      * The photo failure is caught into a flag rather than left to reject. The coffee is
      * already saved at that point, so surfacing it as a failure would invite a resubmit
-     * and a duplicate — only the save itself may keep the user on the form.
+     * and a duplicate, only the save itself may keep the user on the form.
      */
     save: rxMethod<{ id: number | null; file: File | null }>(
       pipe(

@@ -11,7 +11,7 @@ namespace CoffeeTracker.Application.Services;
 ///
 /// The validation here is not ceremony. A restore is the one operation that writes rows
 /// nobody typed into a form, so the checks the API boundary normally performs have to
-/// happen somewhere — a rating of 9 or an empty name would otherwise land in the database
+/// happen somewhere, a rating of 9 or an empty name would otherwise land in the database
 /// and only surface as a broken screen much later.
 /// </summary>
 public class BackupService(IBackupStore store, TimeProvider timeProvider) : IBackupService

@@ -10,7 +10,7 @@ namespace CoffeeTracker.Tests;
 // here we only assert it degrades gracefully when the binary is absent.
 // One case mutates the process-global TESSDATA_PREFIX. Tagging this class into a named
 // collection serializes it against any *other* class that opts into the same
-// collection — add that tag to future tests that read TESSDATA_PREFIX to avoid races.
+// collection, add that tag to future tests that read TESSDATA_PREFIX to avoid races.
 [Collection("env-mutating")]
 public class TesseractCliOcrServiceTests : IDisposable
 {
@@ -30,7 +30,7 @@ public class TesseractCliOcrServiceTests : IDisposable
     [Fact]
     public async Task ReadAsync_ReportsUnavailable_WhenExecutableMissing()
     {
-        // traineddata present (IsAvailable true) but a bogus binary path — ReadAsync
+        // traineddata present (IsAvailable true) but a bogus binary path, ReadAsync
         // must degrade to unavailable rather than throw, so the endpoint returns 503.
         Directory.CreateDirectory(_tempDir);
         File.WriteAllText(Path.Combine(_tempDir, "eng.traineddata"), "x");

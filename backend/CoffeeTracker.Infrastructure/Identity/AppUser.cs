@@ -4,7 +4,7 @@ namespace CoffeeTracker.Infrastructure.Identity;
 
 /// <summary>
 /// The application's user. Subclasses ASP.NET Identity's <see cref="IdentityUser"/>
-/// (a framework/persistence type), which is why it lives in Infrastructure — the
+/// (a framework/persistence type), which is why it lives in Infrastructure, the
 /// Domain stays framework-free and only ever references a user *id string*
 /// (e.g. <c>Coffee.CreatedByUserId</c>).
 /// </summary>

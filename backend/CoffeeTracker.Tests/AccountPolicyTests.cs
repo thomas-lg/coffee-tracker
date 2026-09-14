@@ -9,8 +9,8 @@ namespace CoffeeTracker.Tests;
 
 // The account policy against real (in-memory) SQLite: what an instance's policy is
 // before anyone sets one, and that the seed is written exactly once. The seeding rule
-// is the upgrade path — get it wrong and every existing deployment either locks its
-// users out or reopens registration behind their back — so it is pinned here rather
+// is the upgrade path, get it wrong and every existing deployment either locks its
+// users out or reopens registration behind their back, so it is pinned here rather
 // than only exercised end-to-end.
 public sealed class AccountPolicyTests : IDisposable
 {
@@ -51,7 +51,7 @@ public sealed class AccountPolicyTests : IDisposable
         Assert.True(policy.RegistrationOpenedForBootstrap);
     }
 
-    // The sole automated cover for the upgrade path — an instance with users and no
+    // The sole automated cover for the upgrade path, an instance with users and no
     // settings row. Nothing else exercises it, so do not delete it without replacing it.
     [Fact]
     public async Task An_instance_that_already_has_users_is_seeded_closed()
@@ -99,7 +99,7 @@ public sealed class AccountPolicyTests : IDisposable
     {
         AddUser();
 
-        // No row at all — a context that was never seeded. Reporting sign-in as off here
+        // No row at all, a context that was never seeded. Reporting sign-in as off here
         // would lock an instance out on the strength of a missing row.
         var policy = await new EfAccountPolicy(NewContext()).GetAsync();
 

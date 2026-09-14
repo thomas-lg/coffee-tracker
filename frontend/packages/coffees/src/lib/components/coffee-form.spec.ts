@@ -17,7 +17,7 @@ function coffee(p: Partial<Coffee> & Pick<Coffee, 'id' | 'name'>): Coffee {
 }
 
 // CoffeesStore keys its resource on the signed-in user, so it stays idle until there is
-// a session — seed one the way a real browser would before TestBed builds the store.
+// a session, seed one the way a real browser would before TestBed builds the store.
 function seedSession(): void {
   localStorage.setItem(
     'ct.session',

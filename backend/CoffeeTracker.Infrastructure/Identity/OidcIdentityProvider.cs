@@ -39,13 +39,13 @@ public sealed class OidcIdentityProvider : IExternalIdentityProvider
     }
 
     /// <summary>
-    /// The key external logins are recorded under — the configured authority, not the
+    /// The key external logins are recorded under, the configured authority, not the
     /// discovery document's issuer. The two are allowed to differ (a trailing slash, a
     /// path prefix), so the validator stamps this same value rather than the token's
     /// issuer: the lock-out guard compares them, and deriving one from discovery would
     /// mean a blocking network call behind a property.
     ///
-    /// The token's own `iss` is still validated against the discovery issuer — this is
+    /// The token's own `iss` is still validated against the discovery issuer, this is
     /// a local namespace for identities, not a trust decision.
     /// </summary>
     public string? ConfiguredIssuer => _authority;
@@ -69,8 +69,8 @@ public sealed class OidcIdentityProvider : IExternalIdentityProvider
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
             // Deliberately broad: any failure to reach or parse the discovery document
-            // means the same thing to every caller — there is no usable provider right
-            // now — and none of them can do anything but wait.
+            // means the same thing to every caller, there is no usable provider right
+            // now, and none of them can do anything but wait.
             _logger.LogWarning(ex, "OIDC discovery failed for {Issuer}; the provider is unavailable for now.", ConfiguredIssuer);
             return null;
         }

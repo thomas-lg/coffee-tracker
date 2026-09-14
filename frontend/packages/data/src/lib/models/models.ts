@@ -7,7 +7,7 @@
  * (string-tolerant), but ASP.NET always serialises real JSON numbers.
  *
  * The drift guards at the bottom assert these keep *field-parity* with the generated
- * schemas — if the backend adds/removes a DTO field, regenerating `api-types.ts` makes
+ * schemas, if the backend adds/removes a DTO field, regenerating `api-types.ts` makes
  * this file fail to compile until it is reconciled.
  */
 import type { components } from './api-types';
@@ -19,10 +19,10 @@ export interface FlavorTag {
   name: string;
 }
 
-/** Roast band — a closed set mirrored from the backend enum. */
+/** Roast band, a closed set mirrored from the backend enum. */
 export type RoastLevel = 'Light' | 'Medium' | 'Dark';
 
-/** The roast bands in display order — single source for selects/filters. */
+/** The roast bands in display order, single source for selects/filters. */
 export const ROAST_LEVELS: readonly RoastLevel[] = ['Light', 'Medium', 'Dark'];
 
 export interface Coffee {
@@ -101,11 +101,11 @@ export interface ScanResult {
 
 export interface AuthResponse {
   token: string;
-  /** ISO date-time — when the short-lived access token expires. */
+  /** ISO date-time, when the short-lived access token expires. */
   expiresAt: string;
   /** Opaque refresh token used to obtain the next access/refresh pair. */
   refreshToken: string;
-  /** ISO date-time — when the refresh token expires. */
+  /** ISO date-time, when the refresh token expires. */
   refreshExpiresAt: string;
   userId: string;
   displayName: string | null;
@@ -161,7 +161,7 @@ export interface AccountSettings {
 
 // --- Admin photo cleanup ---
 export interface PhotoListItem {
-  /** Raw relative path — what the delete endpoint expects back. */
+  /** Raw relative path, what the delete endpoint expects back. */
   path: string;
   /** Signed, ready-to-use display URL. */
   url: string;
@@ -176,7 +176,7 @@ export interface PhotoDeleteResult {
 /* ---- compile-time drift guards: curated types must keep field-parity with the
    generated OpenAPI schemas. Each alias must resolve to `true`; a backend field
    add/remove turns it into an error object and breaks the build until reconciled.
-   NOTE: this checks KEY parity only — a field whose type/nullability changes
+   NOTE: this checks KEY parity only, a field whose type/nullability changes
    (without an add/remove) is not caught, since the generated numerics are
    `number | string`. Re-run `npm run gen:api` and re-check this file when DTOs change. ---- */
 type SameKeys<A, B> = [keyof A] extends [keyof B]

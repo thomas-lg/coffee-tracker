@@ -7,7 +7,7 @@ using Xunit;
 namespace CoffeeTracker.Tests.Integration;
 
 // End-to-end coffee catalog flow: the authenticated CRUD round-trip and the
-// model-validation rejections — including the roast-level regression where an
+// model-validation rejections, including the roast-level regression where an
 // omitted roastLevel must 400 rather than silently default to Light.
 public sealed class CoffeeApiTests : IntegrationTest
 {
@@ -24,7 +24,7 @@ public sealed class CoffeeApiTests : IntegrationTest
     [Fact]
     public async Task Catalog_requires_authentication()
     {
-        // Reads included — an account is mandatory to use the app at all.
+        // Reads included, an account is mandatory to use the app at all.
         var res = await Client.Get("/api/coffees");
 
         Assert.Equal(HttpStatusCode.Unauthorized, res.StatusCode);
@@ -82,7 +82,7 @@ public sealed class CoffeeApiTests : IntegrationTest
         Assert.True(admin.IsAdmin);
         Assert.False(alice.IsAdmin);
 
-        // Alice creates a coffee — she owns it.
+        // Alice creates a coffee, she owns it.
         var createRes = await Client.Post("/api/coffees", SampleCoffee(), alice.Token);
         var coffee = (await createRes.Content.ReadFromJsonAsync<CoffeeResponseDto>())!;
 

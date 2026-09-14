@@ -80,7 +80,7 @@ public sealed class UploadEndpointTests : IntegrationTest
     {
         var (token, coffeeId) = await CreateOwnedCoffeeAsync();
 
-        // Claims image/png but the bytes are not a PNG — the magic-byte sniff must reject.
+        // Claims image/png but the bytes are not a PNG, the magic-byte sniff must reject.
         var res = await Client.PostFile($"/api/coffees/{coffeeId}/photo", "totally not a png"u8.ToArray(), "image/png", token);
 
         Assert.Equal(HttpStatusCode.BadRequest, res.StatusCode);
@@ -92,7 +92,7 @@ public sealed class UploadEndpointTests : IntegrationTest
         var (token, coffeeId) = await CreateOwnedCoffeeAsync();
 
         // Valid PNG magic number followed by garbage: passes the sniff, fails the
-        // decode — the re-encoding pipeline must reject it, not store it.
+        // decode, the re-encoding pipeline must reject it, not store it.
         byte[] polyglot = [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0x00, 0x01, 0x02, 0x03, 0x04];
         var res = await Client.PostFile($"/api/coffees/{coffeeId}/photo", polyglot, "image/png", token);
 
@@ -126,7 +126,7 @@ public sealed class UploadEndpointTests : IntegrationTest
         var res = await Client.PostFile($"/api/coffees/{coffee.Id}/photo", ApiClient.RealPng(), "image/png", intruder.Token);
 
         Assert.Equal(HttpStatusCode.Forbidden, res.StatusCode);
-        // The coffee must remain photo-less — the upload was rejected before storage.
+        // The coffee must remain photo-less, the upload was rejected before storage.
         var reloaded = await (await Client.Get($"/api/coffees/{coffee.Id}", owner.Token)).Content.ReadFromJsonAsync<CoffeeResponseDto>();
         Assert.Null(reloaded!.PhotoUrl);
     }

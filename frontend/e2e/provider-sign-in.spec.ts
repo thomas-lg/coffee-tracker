@@ -9,7 +9,7 @@ import { startFakeProvider, type FakeProvider } from './support/fake-oidc-provid
  * reachable without a browser actually coming back from a redirect.
  *
  * Each guard below was verified by reintroducing the bug and watching the test go
- * red — a test that has never failed proves nothing:
+ * red, a test that has never failed proves nothing:
  *
  *   caught  the callback racing the router (the exchange not awaited before bootstrap)
  *   caught  the ID token replayed on every reload
@@ -17,7 +17,7 @@ import { startFakeProvider, type FakeProvider } from './support/fake-oidc-provid
  *               needs the library to restore the pre-authorize route, which it does
  *               against the real provider but not here; the mutation passes green.
  *               Left documented rather than faked into a test that would not mean it.
- *   out of scope  the provider's CORS configuration — that lives in the identity
+ *   out of scope  the provider's CORS configuration, that lives in the identity
  *                 provider, not in this repository.
  *
  * The API is stubbed rather than run: what broke was the client's handling of the
@@ -26,7 +26,7 @@ import { startFakeProvider, type FakeProvider } from './support/fake-oidc-provid
  */
 test.describe('provider sign-in', () => {
   let provider: FakeProvider;
-  /** Every POST to the sign-in endpoint, refused ones included — a replay has to be
+  /** Every POST to the sign-in endpoint, refused ones included, a replay has to be
    *  visible here, and counting only what succeeded would hide exactly that. */
   let attempts: string[];
 
@@ -52,7 +52,7 @@ test.describe('provider sign-in', () => {
     await page.getByRole('button', { name: /identity provider|Test Provider/i }).click();
 
     // The redirect comes back to '/', and the session has to be established before
-    // any guard runs — otherwise the user is bounced to /login and the code is lost
+    // any guard runs, otherwise the user is bounced to /login and the code is lost
     // with the URL.
     await expect(page).toHaveURL(/\/$/);
     await expect(page.locator('input[type="password"]')).toHaveCount(0);
@@ -66,7 +66,7 @@ test.describe('provider sign-in', () => {
 
     await page.reload();
 
-    // Still signed in, and — the part that regressed — the token is not even posted a
+    // Still signed in, and, the part that regressed, the token is not even posted a
     // second time. Asserting on attempts rather than successes is deliberate: a replay
     // is refused by the API, so counting successes would show 1 either way and the
     // regression would sail straight through.
@@ -105,7 +105,7 @@ test.describe('provider sign-in', () => {
 
 /**
  * Stands in for the API: reports the fake provider through /api/config, and turns a
- * posted ID token into a session the way the real endpoint does — once per token.
+ * posted ID token into a session the way the real endpoint does, once per token.
  */
 async function stubApi(page: Page, provider: FakeProvider, attempts: string[]): Promise<void> {
   await page.route('**/api/config', (route) =>

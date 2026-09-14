@@ -13,7 +13,7 @@ export class AdminBackupApi {
     return this.http.get<Backup>(this.base);
   }
 
-  /** Replaces the catalog. Destructive — the screen confirms before calling this. */
+  /** Replaces the catalog. Destructive, the screen confirms before calling this. */
   import(backup: Backup): Observable<ImportResult> {
     return this.http.post<ImportResult>(this.base, backup);
   }

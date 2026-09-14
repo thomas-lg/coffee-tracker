@@ -11,7 +11,7 @@ import { PhotoCleanupStore } from '../services/photo-cleanup.store';
 
 /**
  * Admin photo-cleanup screen: audit every stored photo (used vs orphaned) and delete
- * a selected set of orphans. Used photos aren't selectable — the API skips them, and
+ * a selected set of orphans. Used photos aren't selectable, the API skips them, and
  * disabling selection makes that guarantee visible.
  */
 @Component({
@@ -29,8 +29,8 @@ export class PhotoCleanup {
   constructor() {
     // Arming removes the Delete button and cancelling removes the Cancel button, so
     // either way the focused element disappears and focus drops to <body>. autofocus on
-    // the Cancel button does work here — @if inserts it for real, and all three engines
-    // honour that — but the template a11y lint bans the attribute outright.
+    // the Cancel button does work here, @if inserts it for real, and all three engines
+    // honour that, but the template a11y lint bans the attribute outright.
     //
     // Only on a transition: this effect also runs on first render, and focusing a
     // toolbar button merely because the screen loaded would yank focus from the reader.

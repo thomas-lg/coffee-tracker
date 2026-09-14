@@ -182,7 +182,7 @@ public sealed class ExternalSignInServiceTests
     public async Task Linking_retires_the_local_password_and_sessions_of_the_account_it_takes_over()
     {
         // Registration accepts any address and confirms none, so this account may have
-        // been opened by someone who typed the provider user's address in advance — and
+        // been opened by someone who typed the provider user's address in advance, and
         // an administrator claim is about to be applied to whatever this resolves to.
         var squatted = new AuthUser("user-1", "person@example.com", "A Person", IsAdmin: false);
         var refreshTokens = new FakeRefreshTokens();
@@ -298,7 +298,7 @@ public sealed class ExternalSignInServiceTests
         await service.SignInAsync("token");
 
         // An instance whose first account arrives through the provider must close the
-        // door behind it, exactly as a local registration does — otherwise it sits on
+        // door behind it, exactly as a local registration does; otherwise it sits on
         // the internet accepting sign-ups nobody meant to allow.
         Assert.False(policy.Current.LocalRegistrationEnabled);
         Assert.False(policy.Current.RegistrationOpenedForBootstrap);
@@ -362,7 +362,7 @@ public sealed class ExternalSignInServiceTests
 
         // The provider is only repeating what its user typed. Writing it would let that
         // user squat an address they do not own and be linked to by whoever later proves
-        // they do — the same collision the verified-email guard refuses on the way in.
+        // they do, the same collision the verified-email guard refuses on the way in.
         Assert.Equal($"{Subject}@id.example.com.invalid", users.CreatedWithEmail);
     }
 

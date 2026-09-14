@@ -2,7 +2,7 @@ namespace CoffeeTracker.Tests.Integration;
 
 // Base class giving each test method its own freshly-booted API + throwaway DB.
 // xUnit constructs a new test-class instance per [Fact], so the factory (and its
-// database) are isolated per test — which matters here because the first registered
+// database) are isolated per test, which matters here because the first registered
 // user becomes admin, so shared state would make registration tests order-dependent.
 // The client/app boot lazily, so a test that spins up its own ApiFactory (e.g. with
 // registration disabled) doesn't pay for the default one.

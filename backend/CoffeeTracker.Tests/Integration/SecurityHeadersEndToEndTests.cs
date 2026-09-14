@@ -3,7 +3,7 @@ using Xunit;
 
 namespace CoffeeTracker.Tests.Integration;
 
-// The headers have to reach real responses — including the anonymous ones a browser
+// The headers have to reach real responses, including the anonymous ones a browser
 // meets before it has a session, which is exactly when the app is least protected.
 public sealed class SecurityHeadersEndToEndTests : IntegrationTest
 {
@@ -28,7 +28,7 @@ public sealed class SecurityHeadersEndToEndTests : IntegrationTest
     public async Task A_rejected_photo_request_is_covered_too()
     {
         // Unsigned /photos requests are refused by the signing middleware, which
-        // short-circuits before the static-file middleware — a path that would miss
+        // short-circuits before the static-file middleware, a path that would miss
         // the headers if they were applied any later in the pipeline.
         var response = await Client.GetAsync("/photos/nothing.jpg");
 

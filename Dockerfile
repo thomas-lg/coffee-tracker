@@ -14,7 +14,7 @@
 FROM --platform=$BUILDPLATFORM node:24-slim@sha256:2fe369e969550cde8e867afc3fe370b260140cab4a23d467074295b42163d553 AS web
 WORKDIR /web
 # Restore deps in their own layer (cached until a manifest changes). This is an npm
-# workspaces repo, so `npm ci` needs every member's package.json present up front —
+# workspaces repo, so `npm ci` needs every member's package.json present up front;
 # the lockfile links @coffee-tracker/* to packages/*; without their manifests the
 # install fails. `packages/app` is the Angular app, not a workspace member, so it has
 # no package.json and is copied with the sources below.
@@ -36,7 +36,7 @@ RUN npx ng build app --configuration production
 # --- Stage 2: publish the API ---
 # mcr.microsoft.com/dotnet/sdk:10.0
 #
-# Also pinned to the BUILD platform. The publish is portable — no -r/-a, so the output is
+# Also pinned to the BUILD platform. The publish is portable, no -r/-a, so the output is
 # architecture-neutral IL plus a runtimes/ folder carrying every native asset, and the
 # entrypoint starts it through the `dotnet` muxer rather than the apphost. The runtime
 # stage below is what makes the image arm64 or amd64.
@@ -48,7 +48,7 @@ RUN npx ng build app --configuration production
 FROM --platform=$BUILDPLATFORM mcr.microsoft.com/dotnet/sdk:10.0@sha256:2fa828c68761b1b8c23d7662dc134421b9d3b59fe1425fdbc80804e390cdb24d AS api
 WORKDIR /src
 # Restore in its own layer (cached until a manifest or lock file changes), the same shape
-# as the npm restore in stage 1 — otherwise every edit to any .cs file re-resolves and
+# as the npm restore in stage 1, otherwise every edit to any .cs file re-resolves and
 # re-downloads the whole package graph. Only the Api's transitive closure is restored, so
 # the test project's dependencies never enter the image's build.
 COPY backend/Directory.Build.props ./backend/
@@ -97,7 +97,7 @@ COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
 # The entrypoint starts as root to re-own the volumes for PUID/PGID, then uses gosu
-# to run the app as that (non-root) user. Don't set USER here — the entrypoint drops
+# to run the app as that (non-root) user. Don't set USER here, the entrypoint drops
 # privileges itself after fixing ownership.
 EXPOSE 8080
 HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \

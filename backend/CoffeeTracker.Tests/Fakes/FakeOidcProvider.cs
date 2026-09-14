@@ -18,7 +18,7 @@ namespace CoffeeTracker.Tests.Fakes;
 /// document and a JWKS, and mints genuinely RSA-signed ID tokens.
 ///
 /// Real rather than stubbed because the thing under test is <c>OidcTokenValidator</c>,
-/// and every check it makes — signature, issuer, audience, lifetime — is only exercised
+/// and every check it makes (signature, issuer, audience, lifetime) is only exercised
 /// if the token really was signed by a key really published at a really discovered
 /// endpoint. Handing the validator a pre-built configuration would leave the validation
 /// doing nothing while the tests went green. The Playwright suite takes the same line
@@ -52,7 +52,7 @@ public sealed class FakeOidcProvider : IAsyncDisposable
         var app = builder.Build();
 
         // Hand-built rather than JsonWebKeySet: its ToString() returns the type name, not
-        // JSON, so serving that silently publishes a key set nobody can parse — and the
+        // JSON, so serving that silently publishes a key set nobody can parse, and the
         // validator then rejects every token for want of a signing key.
         var rsaParameters = signingKey.Rsa.ExportParameters(includePrivateParameters: false);
         var jwks = JsonSerializer.Serialize(new
@@ -128,7 +128,7 @@ public sealed class FakeOidcProvider : IAsyncDisposable
         return new JwtSecurityTokenHandler().WriteToken(token);
     }
 
-    /// <summary>An RSA key this provider never publishes — for signature-failure tests.</summary>
+    /// <summary>An RSA key this provider never publishes, for signature-failure tests.</summary>
     public static RsaSecurityKey UnpublishedKey() => new(RSA.Create(2048)) { KeyId = KeyId };
 
     private static Claim[] Subject(string subject) =>

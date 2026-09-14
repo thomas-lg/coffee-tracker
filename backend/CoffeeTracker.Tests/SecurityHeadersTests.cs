@@ -4,7 +4,7 @@ using Xunit;
 namespace CoffeeTracker.Tests;
 
 // The content-security-policy is assembled rather than written out, so the properties
-// that make it worth having are asserted here — a header read off the Development host
+// that make it worth having are asserted here, a header read off the Development host
 // the integration tests boot would show the relaxed policy and prove nothing.
 public class SecurityHeadersTests
 {

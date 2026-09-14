@@ -8,8 +8,8 @@ using Microsoft.Extensions.Hosting;
 namespace CoffeeTracker.Tests.Integration;
 
 // Boots the real API in-process (WebApplicationFactory) against a throwaway SQLite
-// database + photos directory, so the e2e suite drives the full HTTP stack —
-// routing, model validation, auth, EF Core, migrations — without touching real
+// database + photos directory, so the e2e suite drives the full HTTP stack:
+// routing, model validation, auth, EF Core, migrations, without touching real
 // data. Runs in Development so the JWT signing key is auto-generated and OCR is
 // off; registration can be toggled to exercise the local-account policy gate.
 public sealed class ApiFactory(
@@ -19,14 +19,14 @@ public sealed class ApiFactory(
 {
     /// <summary>
     /// Known signing key (48 bytes, above the HS256 minimum) so security tests can
-    /// mint their own tokens — correctly or deliberately malformed — and prove the
+    /// mint their own tokens, correctly or deliberately malformed, and prove the
     /// bearer validation rejects the bad ones.
     /// </summary>
     public const string JwtKey = "integration-test-signing-key-integration-test-si";
 
     // Program.cs reads Jwt:Key and Storage:PhotosPath at top-level (to build
     // TokenValidationParameters and the /photos static-file root) BEFORE the
-    // factory's in-memory configuration is applied — only the process environment
+    // factory's in-memory configuration is applied, only the process environment
     // is visible at that point. Without these env vars, validation would use an
     // ephemeral dev key (401s for every issued token) and /photos would serve from
     // a different directory than the storage adapter writes to. The photos dir is
@@ -72,7 +72,7 @@ public sealed class ApiFactory(
     /// Stamps the account policy once the host is up, standing in for an administrator
     /// who set it from the admin view. Going through the policy (rather than the app's
     /// own seeding) matters: registration opened deliberately stays open,
-    /// whereas the empty-instance bootstrap closes itself after the first account — so a
+    /// whereas the empty-instance bootstrap closes itself after the first account, so a
     /// suite that registers several users would otherwise be gated after the first.
     ///
     /// Pass <c>stampPolicy: false</c> to leave the app's own seeding in charge, which is
@@ -138,7 +138,7 @@ public sealed class ApiFactory(
         }
         catch (IOException)
         {
-            // Best effort — a leftover temp file/dir is harmless.
+            // Best effort, a leftover temp file/dir is harmless.
         }
     }
 }

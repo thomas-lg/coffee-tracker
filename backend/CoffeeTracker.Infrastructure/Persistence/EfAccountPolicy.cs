@@ -45,7 +45,7 @@ public sealed class EfAccountPolicy(AppDbContext db) : IAccountPolicy
     private async Task<AccountPolicy> DefaultForUnseededInstanceAsync(CancellationToken ct)
     {
         // One read, used twice. Asking twice also let the two flags disagree if a user
-        // registered in between — the exact state AccountPolicySeeder says can only ever
+        // registered in between, the exact state AccountPolicySeeder says can only ever
         // coincide here.
         var hasNoUsers = !await db.Users.AnyAsync(ct);
         return new AccountPolicy(

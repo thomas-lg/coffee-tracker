@@ -18,7 +18,7 @@ public interface ICoffeeLabelParser
 
     /// <summary>
     /// Text-only parse, for engines (or tests) with no quality signals. Falls back to
-    /// reading order, which is materially worse on photos — the top of a photo is
+    /// reading order, which is materially worse on photos, the top of a photo is
     /// usually background, not the product name.
     /// </summary>
     ScannedCoffeeDto Parse(string rawText);

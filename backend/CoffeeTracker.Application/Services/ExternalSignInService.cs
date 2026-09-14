@@ -120,7 +120,7 @@ public sealed class ExternalSignInService(
             identity.Subject,
             // Only an email the provider says it verified is written to the account. An
             // unverified one is the provider repeating what its user typed, so trusting
-            // it would let that user squat an address they do not own — and be linked to
+            // it would let that user squat an address they do not own, and be linked to
             // by whoever later proves they do. A provider that asserts no usable email
             // still needs a unique, stable local identifier; the subject is both.
             identity is { Email: { } email, EmailVerified: true } ? email : SyntheticEmailFor(identity),
@@ -156,7 +156,7 @@ public sealed class ExternalSignInService(
 
     /// <summary>
     /// A stable, unique local identifier for a provider that asserts no email. Built
-    /// from the issuer's host when it is a URL and the whole issuer otherwise — an
+    /// from the issuer's host when it is a URL and the whole issuer otherwise, an
     /// issuer is only required to be a case-sensitive string, and parsing one as a URI
     /// unguarded turns a compliant provider into a 500.
     /// </summary>
@@ -187,7 +187,7 @@ public sealed class ExternalSignInService(
         if (!asserted && !await users.HasOtherAdminAsync(user.Id, ct))
         {
             // Revoking here would leave the instance with no administrator and no way to
-            // appoint one from inside the app — whether this account was just promoted by
+            // appoint one from inside the app, whether this account was just promoted by
             // the first-user bootstrap or has been the only administrator for months. The
             // last one keeps their rights; the provider governs every other account.
             logger.LogWarning(

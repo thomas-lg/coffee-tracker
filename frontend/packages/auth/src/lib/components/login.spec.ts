@@ -9,7 +9,7 @@ import { Login } from './login';
 import { ProviderSignIn } from '../provider-sign-in';
 
 // What the sign-in screen offers is decided entirely by /api/config. Getting this
-// wrong strands a visitor on a screen whose only visible way in does not work — or,
+// wrong strands a visitor on a screen whose only visible way in does not work, or,
 // worse, hides the one that does.
 describe('Login', () => {
   let fixture: ComponentFixture<Login>;

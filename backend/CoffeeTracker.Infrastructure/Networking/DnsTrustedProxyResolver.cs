@@ -11,12 +11,12 @@ namespace CoffeeTracker.Infrastructure.Networking;
 /// orchestrator assigns the address, not the operator: pinning the reverse proxy's
 /// current IP works until it restarts onto another one, at which point forwarded
 /// headers are silently ignored and the rate limiter goes back to seeing every request
-/// as the proxy. Naming the proxy — a container name, a service name, a DNS record —
+/// as the proxy. Naming the proxy (a container name, a service name, a DNS record)
 /// is the thing that stays true.
 ///
 /// Resolution happens once, at startup, because that is when the forwarded-headers
 /// options are built. A proxy that moves to another address while the app is running
-/// therefore stops being trusted until the app restarts — headers are ignored and the
+/// therefore stops being trusted until the app restarts, headers are ignored and the
 /// rate limiter sees the proxy again, which is the same degraded behaviour as
 /// configuring nothing at all. Never the other way round: an address is never trusted
 /// because it once belonged to the proxy.

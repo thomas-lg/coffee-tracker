@@ -6,7 +6,7 @@ using Xunit;
 
 namespace CoffeeTracker.Tests;
 
-// Exercises orphan detection and the delete-safety guard against fakes — the same
+// Exercises orphan detection and the delete-safety guard against fakes, the same
 // hexagon boundary that lets the catalog tests skip EF/filesystem.
 public class PhotoAdminServiceTests
 {

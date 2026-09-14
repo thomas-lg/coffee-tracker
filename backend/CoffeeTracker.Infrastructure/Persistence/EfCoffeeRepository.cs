@@ -12,7 +12,7 @@ public class EfCoffeeRepository(AppDbContext db) : ICoffeeRepository
     private sealed record StatRow(Coffee Coffee, double? AverageRating, int ReviewCount);
 
     // Projects a coffee query to its scalar review aggregates. The average/count are
-    // correlated subqueries — ONE SQL query, no N+1, and AVG over no rows yields null
+    // correlated subqueries, ONE SQL query, no N+1, and AVG over no rows yields null
     // via the nullable cast. Flavour tags are loaded separately (see AttachTagsAsync):
     // SQLite can't translate a collection subquery nested alongside these scalars.
     private IQueryable<StatRow> WithScalarStats(IQueryable<Coffee> source) =>
@@ -87,7 +87,7 @@ public class EfCoffeeRepository(AppDbContext db) : ICoffeeRepository
         await db.Coffees.AnyAsync(c => c.Id == id, ct);
 
     public async Task<IReadOnlyList<string>> GetUsedPhotoPathsAsync(CancellationToken ct = default) =>
-        // Projection only — the non-null filter and Select push to SQL, so no Coffee
+        // Projection only, the non-null filter and Select push to SQL, so no Coffee
         // entities are materialized.
         await db.Coffees.AsNoTracking()
             .Where(c => c.PhotoPath != null)

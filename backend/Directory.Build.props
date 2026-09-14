@@ -7,7 +7,7 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
 
-    <!-- Built-in .NET analyzers at the default (curated) rule set — correctness,
+    <!-- Built-in .NET analyzers at the default (curated) rule set, correctness,
          security, and reliability CA rules as warnings, without the noisy perf
          micro-optimisation rules that a self-hosted app doesn't need promoted. -->
     <EnableNETAnalyzers>true</EnableNETAnalyzers>

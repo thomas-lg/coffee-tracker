@@ -12,7 +12,7 @@ namespace CoffeeTracker.Infrastructure.Migrations
         {
             // RoastLevel is now an enum stored as its name. Normalize any pre-existing
             // free-text values (e.g. "medium-dark", "DARK") to the canonical enum names
-            // so they round-trip through the value converter — mirrors roastBucket().
+            // so they round-trip through the value converter, mirrors roastBucket().
             migrationBuilder.Sql(
                 @"UPDATE Coffees SET RoastLevel = CASE
                     WHEN lower(RoastLevel) LIKE '%light%' THEN 'Light'

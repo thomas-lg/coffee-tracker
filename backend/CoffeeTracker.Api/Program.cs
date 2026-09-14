@@ -23,10 +23,10 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Logging: console (captured by `docker logs`) + a rolling file in the persistent volume so
 // crashes can be diagnosed post-mortem after the container is recreated. The directory is
-// config-driven (FileLog:Directory) — relative `logs/` in dev, `/config/logs` in the container
+// config-driven (FileLog:Directory), relative `logs/` in dev, `/config/logs` in the container
 // (set via FileLog__Directory in the Dockerfile), mirroring how the DB/photos paths are wired.
 // The file sink is unbuffered (Serilog's default), so each event is flushed to the OS as it is
-// written — a crash won't lose the lines that led up to it.
+// written, a crash won't lose the lines that led up to it.
 builder.Host.UseSerilog((context, services, lc) =>
 {
     var logDir = context.Configuration["FileLog:Directory"] ?? "logs";
@@ -45,7 +45,7 @@ builder.Host.UseSerilog((context, services, lc) =>
 });
 
 // Enums serialise as their names (not ints) via a
-// [JsonConverter] attribute on the enum type itself — that single annotation drives
+// [JsonConverter] attribute on the enum type itself, that single annotation drives
 // both the JSON wire format and the generated OpenAPI schema (a global converter would
 // fix the wire format but the OpenAPI generator wouldn't see it). See RoastLevel.
 builder.Services.AddControllers();
@@ -55,7 +55,7 @@ builder.Services.AddControllers();
 builder.Services.AddHealthChecks();
 
 // Emit RFC7807 application/problem+json for error responses so every client-error
-// shape is consistent — the automatic [ApiController] model-validation 400, the
+// shape is consistent, the automatic [ApiController] model-validation 400, the
 // explicit Problem(...)/ValidationProblem(...) calls in controllers, and unhandled
 // exceptions all share one body format.
 builder.Services.AddProblemDetails();
@@ -84,7 +84,7 @@ if (storageOptions.MaxPhotoBytes <= 0)
 }
 
 // Refuse oversized uploads at the request boundary (this caps every endpoint, which
-// is fine here — all others take small JSON) rather than after buffering the whole
+// is fine here, all others take small JSON) rather than after buffering the whole
 // body; the adapter still enforces the exact cap. Headroom covers multipart framing,
 // clamped so an extreme configured cap can't overflow to a negative limit.
 const long multipartFramingHeadroom = 64 * 1024;
@@ -95,7 +95,7 @@ builder.Services.Configure<KestrelServerOptions>(o => o.Limits.MaxRequestBodySiz
 builder.Services.Configure<FormOptions>(o => o.MultipartBodyLengthLimit = maxRequestBytes);
 
 // --- Authentication (JWT bearer) ---
-// The signing key must come from config/env and be strong — never a baked-in
+// The signing key must come from config/env and be strong, never a baked-in
 // default (a weak/known key lets anyone forge admin tokens). In Development we
 // generate a random ephemeral key when none is configured, so there is no secret
 // in git and `dotnet run` still works locally; outside Development a missing/weak
@@ -133,7 +133,7 @@ builder.Services
             ValidAudience = jwtOptions.Audience,
             ValidateIssuerSigningKey = true,
             IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtOptions.Key)),
-            // Pin the algorithm so the key can only ever be used for HS256 — closes
+            // Pin the algorithm so the key can only ever be used for HS256, closes
             // any algorithm-substitution ambiguity as defense-in-depth.
             ValidAlgorithms = [SecurityAlgorithms.HmacSha256],
             ValidateLifetime = true,
@@ -163,14 +163,14 @@ builder.Services.AddAuthorization(options =>
 //
 // Entries may be host names as well as addresses, and naming is what an operator can
 // actually rely on: a container orchestrator assigns the address, so a pinned IP holds
-// only until the proxy restarts onto another one — after which headers are silently
+// only until the proxy restarts onto another one, after which headers are silently
 // ignored and every request looks like it came from the proxy. Resolution happens here,
 // once, because that is when these options are built.
 builder.Services
     .AddOptions<ForwardedHeadersOptions>()
     // Take the logger from the container rather than standing up a private console
     // factory: an entry dropped here is the reason a proxy silently stops being trusted,
-    // so it has to reach the rolling file the rest of the app logs to — and the factory
+    // so it has to reach the rolling file the rest of the app logs to, and the factory
     // this replaced was never disposed.
     .Configure<ILogger<DnsTrustedProxyResolver>>((options, logger) =>
     {
@@ -191,12 +191,12 @@ builder.Services
 // Every policy partitions by client IP rather than by account: the limiter runs before
 // authentication, so the caller's identity is not known here. UseForwardedHeaders has
 // already put the real client's address on the connection wherever KnownProxies names
-// the reverse proxy — without that, all of these bucket every client together.
+// the reverse proxy; without that, all of these bucket every client together.
 builder.Services.AddRateLimiter(options =>
 {
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
 
-    // Each policy's budget — and why it is what it is — lives on RateLimiterPolicies
+    // Each policy's budget, and why it is what it is, lives on RateLimiterPolicies
     // next to its name, so nothing here or in the tests restates it.
     void PerClientIp(string policy, int permitsPerMinute) =>
         options.AddPolicy(policy, httpContext =>
@@ -233,7 +233,7 @@ var app = builder.Build();
 if (generatedDevKey)
 {
     app.Logger.LogWarning(
-        "No {Section}:Key configured — generated a random ephemeral signing key for Development. " +
+        "No {Section}:Key configured; generated a random ephemeral signing key for Development. " +
         "Tokens will be invalidated on restart. Set Jwt__Key for a stable key.", JwtOptions.SectionName);
 }
 
@@ -261,28 +261,28 @@ if (!app.Environment.IsDevelopment())
 app.UseForwardedHeaders();
 
 // Behind the NAS reverse proxy, TLS is terminated upstream; emit HSTS in prod so
-// browsers stick to HTTPS. TLS itself is the proxy's job — no HttpsRedirection here.
+// browsers stick to HTTPS. TLS itself is the proxy's job, no HttpsRedirection here.
 if (!app.Environment.IsDevelopment())
 {
     app.UseHsts();
 }
 
-// Security headers on every response — before the static-file middleware, which would
+// Security headers on every response, before the static-file middleware, which would
 // otherwise serve the SPA shell and the photos without them. The provider's origin is
 // read from configuration so the policy can let the browser reach it.
 app.UseSecurityHeaders(builder.Configuration[$"{OidcOptions.SectionName}:{nameof(OidcOptions.Authority)}"]);
 
 // Apply pending migrations on startup (single-instance, self-hosted app). A failure here
 // (locked/corrupt DB, bad connection string, failed migration) is the most likely crash-loop
-// cause; log it through the configured Serilog logger so it lands in the persistent file — not
-// just on stderr — then rethrow so the process still exits non-zero for the orchestrator.
+// cause; log it through the configured Serilog logger so it lands in the persistent file, not
+// just on stderr, then rethrow so the process still exits non-zero for the orchestrator.
 try
 {
     await app.Services.InitializeDatabaseAsync();
 }
 catch (Exception ex)
 {
-    app.Logger.LogCritical(ex, "Database initialization failed during startup — aborting.");
+    app.Logger.LogCritical(ex, "Database initialization failed during startup, aborting.");
     throw;
 }
 
@@ -317,7 +317,7 @@ app.Use(async (context, next) =>
 {
     if (context.Request.Path.StartsWithSegments(PhotoRoute.RequestPath, out var remainder))
     {
-        // Already percent-decoded by the path parser — decoding again would sign a
+        // Already percent-decoded by the path parser, decoding again would sign a
         // different string than the static-file middleware resolves on disk for any name
         // containing a '%'.
         var fileName = remainder.Value?.TrimStart('/') ?? string.Empty;
@@ -355,7 +355,7 @@ if (!app.Environment.IsDevelopment())
     {
         // The service worker's control files must always be revalidated, or the
         // browser keeps serving a stale ngsw.json/worker and never learns a new
-        // version was deployed — users get stuck on the old cached app. The
+        // version was deployed, users get stuck on the old cached app. The
         // hashed JS/CSS bundles are safe to cache long-term (their names change
         // every build), so only the control files get no-cache.
         OnPrepareResponse = ctx =>
@@ -388,7 +388,7 @@ app.MapHealthChecks("/health").AllowAnonymous();
 
 // SPA fallback: Angular client-side routes (e.g. /coffees/1) resolve to index.html.
 // API/photos/openapi are matched first, so only unknown paths fall through.
-// AllowAnonymous so the shell (and `/`) load without auth — otherwise the global
+// AllowAnonymous so the shell (and `/`) load without auth, otherwise the global
 // RequireAuthenticatedUser fallback policy gates this endpoint and unauthenticated
 // visitors get 401 instead of the app, with no way to reach the login page. API
 // endpoints keep their own auth; only the static SPA shell is public.

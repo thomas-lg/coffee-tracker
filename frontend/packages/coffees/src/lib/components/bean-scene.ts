@@ -28,7 +28,7 @@ interface Wisp {
 
 /**
  * The signature ambient moment: faint coffee beans drifting slowly upward through a
- * warm glow, with a few rising steam wisps. Pure 2D canvas (no WebGL) — cheap enough
+ * warm glow, with a few rising steam wisps. Pure 2D canvas (no WebGL), cheap enough
  * to run on first paint. Theme-aware (beans lift to tan on dark) and reduced-motion
  * aware (renders a single static frame). Set `beanCount` to 0 for a steam-only label.
  */
@@ -106,7 +106,7 @@ export class BeanScene implements AfterViewInit, OnDestroy {
       ctx.save();
       ctx.translate(b.x, b.y);
       ctx.rotate(b.a);
-      // body — an elongated oval
+      // body, an elongated oval
       ctx.fillStyle = `rgba(${tp.fill},${o})`;
       ctx.beginPath();
       ctx.ellipse(0, 0, b.r, b.r * 0.58, 0, 0, 6.28);
@@ -117,7 +117,7 @@ export class BeanScene implements AfterViewInit, OnDestroy {
       ctx.beginPath();
       ctx.ellipse(0, 0, b.r, b.r * 0.58, 0, 0, 6.28);
       ctx.stroke();
-      // center fold — the S-curved groove that reads as "coffee bean"
+      // center fold, the S-curved groove that reads as "coffee bean"
       ctx.lineWidth = Math.max(1.2, b.r * 0.13);
       ctx.lineCap = 'round';
       ctx.strokeStyle = `rgba(${tp.crease},${o * 1.7})`;
@@ -128,7 +128,7 @@ export class BeanScene implements AfterViewInit, OnDestroy {
       ctx.restore();
     };
 
-    /** One motionless frame — the reduced-motion rendering (no rAF loop). */
+    /** One motionless frame, the reduced-motion rendering (no rAF loop). */
     const drawStatic = () => {
       ctx.clearRect(0, 0, w, h);
       bg();
@@ -140,7 +140,7 @@ export class BeanScene implements AfterViewInit, OnDestroy {
       t += 0.016;
       ctx.clearRect(0, 0, w, h);
       bg();
-      // steam wisps — faint sinuous vertical strokes
+      // steam wisps, faint sinuous vertical strokes
       for (const p of wisps) {
         ctx.beginPath();
         for (let y = h; y > h * 0.15; y -= 6) {

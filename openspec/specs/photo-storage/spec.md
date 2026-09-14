@@ -33,7 +33,7 @@ The system SHALL accept only image uploads whose content type is on an allowlist
 
 ### Requirement: Stored photos use server-generated names in a fixed directory
 
-The system SHALL store each accepted photo under a configurable photos directory using a server-generated random filename, with the extension derived from the validated content type — never from the client-supplied filename. The storage layer SHALL return a relative path for persistence.
+The system SHALL store each accepted photo under a configurable photos directory using a server-generated random filename, with the extension derived from the validated content type, never from the client-supplied filename. The storage layer SHALL return a relative path for persistence.
 
 #### Scenario: A valid photo is stored with a safe name
 
@@ -73,7 +73,7 @@ The system SHALL delete a stored photo file when it is replaced by a new upload 
 
 The system SHALL expose, to administrators only, a listing of every stored photo via
 `GET /api/admin/photos`, each marked **used** (its path is referenced by a coffee) or
-**unused** (orphaned — e.g. a scan whose coffee was never saved). Non-administrators
+**unused** (orphaned, e.g. a scan whose coffee was never saved). Non-administrators
 SHALL be refused with `403` and SHALL NOT receive the listing.
 
 #### Scenario: Listing photos with usage

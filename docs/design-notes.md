@@ -1,6 +1,6 @@
 # Design notes
 
-Standing rationale for Coffee Tracker — the decisions that shaped the app and still
+Standing rationale for Coffee Tracker, the decisions that shaped the app and still
 govern it. For *what it does* and how to run it see [the README](../README.md); for
 conventions when changing the code see [CLAUDE.md](../CLAUDE.md); for live behaviour
 specs see [`openspec/specs/`](../openspec/specs/); for how each piece was built see the
@@ -13,7 +13,7 @@ while using familiar Angular. It is meant to be **shared publicly so others can
 self-host it**, which is why security is a first-class requirement and every piece of
 configuration is environment-driven.
 
-Development happens **inside a dev container** — reproducible toolchain, no host setup.
+Development happens **inside a dev container**, reproducible toolchain, no host setup.
 Deployment is **GitHub Actions → GHCR (public image) → manual install from the NAS's
 Docker GUI**; there is no Watchtower, SSH, or compose-on-NAS. The repo's
 `docker-compose.yml` is a local dev/test and reference convenience, **not** the deploy
@@ -25,7 +25,7 @@ path. Images are published as a manifest list covering `linux/amd64` and
 - **Controllers**, not minimal APIs. Clearer grouping across auth/coffees/reviews while
   learning. Minimal APIs are the modern alternative and would have worked too.
 - Flavor tags are a full many-to-many (`FlavorTag` + join table) rather than a
-  denormalized string column — the correct model, and better EF Core practice.
+  denormalized string column, the correct model, and better EF Core practice.
 - The OCR engine sits behind `IOcrService` so it can be swapped for PaddleOCR or
   RapidOCR without the application layer noticing. The shipped adapter shells out to the
   `tesseract` CLI rather than binding a native library; [CLAUDE.md](../CLAUDE.md) § OCR
@@ -43,14 +43,14 @@ Instances may be internet-exposed and shared, so:
   the image or committed.
 - The app keeps its own login. Every endpoint requires a token, and a global fallback
   authorization policy means an endpoint cannot be left public by forgetting
-  `[Authorize]` — the reverse proxy is not the authentication.
+  `[Authorize]`, the reverse proxy is not the authentication.
 - TLS terminates at the proxy. The container speaks HTTP and trusts `X-Forwarded-*` only
   from proxies named in `ForwardedHeaders:KnownProxies`. Absent that the headers are
   ignored, which is the secure default but also collapses rate-limiting onto the proxy's
   single IP.
 - Access tokens are short-lived; refresh tokens rotate and can be revoked. Presenting a
   rotated token revokes **the whole session family**, on the assumption it was stolen.
-- Login, register, the anonymous config endpoint and label scanning are rate-limited —
+- Login, register, the anonymous config endpoint and label scanning are rate-limited:
   the paths whose cost an anonymous or single caller could otherwise impose at will.
 - Uploads are content-type allowlisted, magic-byte sniffed, size- and pixel-capped, and
   fully re-encoded, which strips any embedded payload or metadata. Filenames are
@@ -65,7 +65,7 @@ Instances may be internet-exposed and shared, so:
 
 - DTOs at the boundary. Entities are never serialized directly.
 - Dev config lives in `appsettings`, production config in environment variables. Real
-  keys are never committed — `.env` is gitignored for exactly this reason.
+  keys are never committed, `.env` is gitignored for exactly this reason.
 - **Comments explain why, not what.** It is the rule this codebase is most deliberate
   about; see [CLAUDE.md](../CLAUDE.md) § Comment style.
 - Feature branch → PR → CI green → squash-merge. Linear history, no merge commits.

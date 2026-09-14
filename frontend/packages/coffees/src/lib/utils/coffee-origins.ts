@@ -1,6 +1,6 @@
 /**
  * Common coffee-producing countries, used to seed the Origin field's autocomplete.
- * It's only a suggestion list — the field stays free text, and values already on the
+ * It's only a suggestion list, the field stays free text, and values already on the
  * shelf are merged in alongside these.
  */
 export const COFFEE_ORIGINS: readonly string[] = [

@@ -174,7 +174,7 @@ When an administrator claim and value are configured, the system SHALL set the u
 
 ### Requirement: An administrator controls local sign-in and local registration
 
-The system SHALL persist two settings — whether accounts created in the app may sign in, and whether new ones may be registered — SHALL expose both to administrators for reading and updating, and SHALL enforce each on the corresponding endpoint. The settings SHALL survive restarts and SHALL be changeable without redeploying.
+The system SHALL persist two settings, whether accounts created in the app may sign in, and whether new ones may be registered, SHALL expose both to administrators for reading and updating, and SHALL enforce each on the corresponding endpoint. The settings SHALL survive restarts and SHALL be changeable without redeploying.
 
 #### Scenario: Disabling local sign-in refuses local login
 

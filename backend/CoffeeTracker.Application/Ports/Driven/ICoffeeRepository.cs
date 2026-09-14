@@ -33,7 +33,7 @@ public interface ICoffeeRepository
     /// <summary>
     /// Returns the set of photo paths currently referenced by a coffee (non-null
     /// <see cref="Coffee.PhotoPath"/> values), for diffing against stored files to
-    /// find orphans. Projected — no full entities are materialized.
+    /// find orphans. Projected, no full entities are materialized.
     /// </summary>
     Task<IReadOnlyList<string>> GetUsedPhotoPathsAsync(CancellationToken ct = default);
 

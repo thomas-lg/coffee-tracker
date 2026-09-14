@@ -16,7 +16,7 @@ const EMAIL = process.env.EMAIL ?? 'demo@example.com';
 const PASSWORD = process.env.PASSWORD ?? 'D3mo-Passw0rd!';
 const OUT = process.env.OUT_DIR ?? 'docs/screenshots';
 
-/** localStorage key AuthStore persists under — keep in step with auth.store.ts. */
+/** localStorage key AuthStore persists under, keep in step with auth.store.ts. */
 const SESSION_KEY = 'ct.session';
 
 // Heights are tuned so each shot ends on a natural boundary rather than slicing a card
@@ -32,7 +32,7 @@ const res = await fetch(`${BASE}/api/auth/login`, {
   headers: { 'content-type': 'application/json' },
   body: JSON.stringify({ email: EMAIL, password: PASSWORD }),
 });
-if (!res.ok) throw new Error(`login failed (${res.status}) — is ${BASE} running and seeded?`);
+if (!res.ok) throw new Error(`login failed (${res.status}). Is ${BASE} running and seeded?`);
 const auth = await res.json();
 
 await mkdir(OUT, { recursive: true });

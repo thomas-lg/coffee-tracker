@@ -15,7 +15,7 @@ public sealed class RateLimitTests : IntegrationTest
     [Fact]
     public async Task Auth_endpoint_returns_429_after_exceeding_the_window()
     {
-        // Unknown-user logins (401) so account lockout never enters the picture — we are
+        // Unknown-user logins (401) so account lockout never enters the picture, we are
         // isolating the rate limiter. The first 10 are permitted; the 11th is rejected.
         var attempt = new LoginDto("nobody@example.com", "whatever-password");
 
@@ -33,7 +33,7 @@ public sealed class RateLimitTests : IntegrationTest
     public async Task The_anonymous_config_endpoint_returns_429_after_exceeding_its_window()
     {
         // Anonymous, and it reads the database and the provider's discovery document on
-        // every call — the one endpoint an unauthenticated caller can reach at will.
+        // every call, the one endpoint an unauthenticated caller can reach at will.
         for (var i = 0; i < RateLimiterPolicies.PublicPermitsPerMinute; i++)
         {
             Assert.Equal(HttpStatusCode.OK, (await Client.Get("/api/config")).StatusCode);
@@ -64,7 +64,7 @@ public sealed class RateLimitTests : IntegrationTest
     public async Task Each_policy_holds_its_own_budget()
     {
         // Spending the public budget on an unauthenticated poll must not cost a user
-        // their ability to sign in — separate policies, separate windows.
+        // their ability to sign in, separate policies, separate windows.
         for (var i = 0; i <= RateLimiterPolicies.PublicPermitsPerMinute; i++)
         {
             await Client.Get("/api/config");

@@ -17,7 +17,7 @@ import { RouterLink } from '@angular/router';
  * the `<button>`; otherwise a `<button>`.
  *
  * The projected label lives in a single `<ng-content>` stamped into whichever wrapper
- * is active — two `<ng-content>` slots (one per branch) would drop the content.
+ * is active, two `<ng-content>` slots (one per branch) would drop the content.
  *
  * `fullWidth` also blocks the host: the inner control is inline-flex, so stretching it
  * inside an inline host would leave the percentage resolving against the wrong box.
@@ -72,7 +72,7 @@ export class Button {
 
   /**
    * Moves focus to the real control. Callers hold a template reference to the component,
-   * not to the element — the host itself is not focusable, and which element exists
+   * not to the element, the host itself is not focusable, and which element exists
    * depends on whether `link` is set. Used when a dismissed confirm has to put focus back
    * where it came from.
    */

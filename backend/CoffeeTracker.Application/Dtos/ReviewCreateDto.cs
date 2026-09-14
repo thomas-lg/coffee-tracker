@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations;
 namespace CoffeeTracker.Application.Dtos;
 
 /// <summary>
-/// Payload to create a review. Rating is validated 1–5 by the model-binding
+/// Payload to create a review. Rating is validated 1-5 by the model-binding
 /// pipeline; <see cref="TagIds"/> references existing flavor tags by id.
 /// </summary>
 public record ReviewCreateDto(

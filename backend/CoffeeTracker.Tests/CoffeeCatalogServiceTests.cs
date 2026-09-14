@@ -7,7 +7,7 @@ using Xunit;
 
 namespace CoffeeTracker.Tests;
 
-// Exercises the application service against fakes — no database, EF Core, or
+// Exercises the application service against fakes, no database, EF Core, or
 // filesystem involved. This is only possible because persistence and photo
 // storage sit behind ports (the architectural boundary the hexagon enforces).
 public class CoffeeCatalogServiceTests
@@ -23,7 +23,7 @@ public class CoffeeCatalogServiceTests
         private readonly Dictionary<int, Coffee> _store = new();
         private int _nextId = 1;
 
-        /// <summary>When set, UpdateAsync throws — to exercise failure paths.</summary>
+        /// <summary>When set, UpdateAsync throws, to exercise failure paths.</summary>
         public bool ThrowOnUpdate { get; set; }
 
         public InMemoryCoffeeRepository(params Coffee[] seed)

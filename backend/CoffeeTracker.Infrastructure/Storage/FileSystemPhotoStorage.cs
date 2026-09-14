@@ -11,7 +11,7 @@ namespace CoffeeTracker.Infrastructure.Storage;
 
 /// <summary>
 /// Driven adapter: stores uploaded photos on the local filesystem. Owns the
-/// storage-security decisions — content-type allowlist, size cap, server-generated
+/// storage-security decisions, content-type allowlist, size cap, server-generated
 /// filenames, and re-encoding the image through a decoder so only pixel data (no
 /// embedded payload/EXIF) is ever written to disk.
 /// </summary>
@@ -175,7 +175,7 @@ public class FileSystemPhotoStorage : IPhotoStorage
 
     /// <summary>
     /// Confirms the file-signature (magic number) of <paramref name="header"/> matches
-    /// the claimed <paramref name="contentType"/> — JPEG (FF D8 FF), PNG (89 50 4E 47
+    /// the claimed <paramref name="contentType"/>, JPEG (FF D8 FF), PNG (89 50 4E 47
     /// 0D 0A 1A 0A), or WebP (RIFF....WEBP).
     /// </summary>
     private static bool SignatureMatches(string contentType, ReadOnlySpan<byte> header)
@@ -224,7 +224,7 @@ public class FileSystemPhotoStorage : IPhotoStorage
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
             // Cleanup is best-effort: a failure here must not turn an already-committed
-            // delete/replace into a 500 — an orphaned file is recoverable, a failed user
+            // delete/replace into a 500, an orphaned file is recoverable, a failed user
             // operation isn't. Report "not deleted" so admin counts stay honest.
             _logger.LogWarning(ex, "Failed to delete stored photo {RelativePath}; leaving it as an orphan.", ForLog(relativePath));
             return Task.FromResult(false);

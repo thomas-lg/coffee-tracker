@@ -29,7 +29,7 @@ public sealed class FileSystemPhotoStorageTests : IDisposable
         }
         catch (IOException)
         {
-            // Best effort — leftover temp dirs are harmless.
+            // Best effort, leftover temp dirs are harmless.
         }
     }
 
@@ -94,7 +94,7 @@ public sealed class FileSystemPhotoStorageTests : IDisposable
     [Fact]
     public async Task Save_rejects_a_stream_that_lies_about_its_length_but_overruns_the_cap()
     {
-        // Declared length is tiny, but the actual stream exceeds the cap — the
+        // Declared length is tiny, but the actual stream exceeds the cap, the
         // adapter must measure what it buffered, not trust the declaration.
         var storage = NewStorage(maxBytes: 64);
         var bytes = RealImage("image/png"); // a real PNG is comfortably > 64 bytes
@@ -168,7 +168,7 @@ public sealed class FileSystemPhotoStorageTests : IDisposable
 
         Assert.True(await storage.DeleteAsync(stored.RelativePath!));
         Assert.Empty(StoredFiles());
-        // Second delete: the file is already gone — idempotent, but reported false.
+        // Second delete: the file is already gone, idempotent, but reported false.
         Assert.False(await storage.DeleteAsync(stored.RelativePath!));
         Assert.False(await storage.DeleteAsync("photos/never-existed.png"));
     }

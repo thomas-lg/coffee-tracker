@@ -15,7 +15,7 @@ namespace CoffeeTracker.Infrastructure.Persistence;
 /// Every state change to a token row is a single guarded UPDATE rather than a
 /// read-then-write: SQLite serialises writes, but not a read on one connection against
 /// a write on another, and the context is scoped per request. Rotation in particular
-/// must claim the row atomically — if two requests could both observe an unrevoked
+/// must claim the row atomically, if two requests could both observe an unrevoked
 /// token and both proceed, one stolen token would yield two live session families and
 /// the reuse detection below would never fire.
 /// </summary>
@@ -63,7 +63,7 @@ public sealed class EfRefreshTokenStore(
         var now = clock.GetUtcNow().UtcDateTime;
 
         // Presenting an already-rotated/revoked token means either a replay or a stolen
-        // token being used after the legitimate client already rotated it — revoke the
+        // token being used after the legitimate client already rotated it, revoke the
         // whole family so neither side can continue.
         if (existing.RevokedAtUtc is not null)
         {
@@ -80,7 +80,7 @@ public sealed class EfRefreshTokenStore(
 
         // Claim the row: revoke it only if it is still unrevoked, and let the database
         // report whether this request is the one that did it. A concurrent rotation of
-        // the same token loses here (0 rows) rather than both sides succeeding — and
+        // the same token loses here (0 rows) rather than both sides succeeding, and
         // losing means someone else already spent this token, which is reuse.
         var claimed = await db.RefreshTokens
             .Where(t => t.TokenHash == hash && t.RevokedAtUtc == null)

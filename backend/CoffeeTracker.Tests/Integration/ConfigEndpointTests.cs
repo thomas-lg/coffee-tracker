@@ -13,7 +13,7 @@ public sealed class ConfigEndpointTests : IntegrationTest
     [Fact]
     public async Task Config_is_anonymous_and_reports_registration_enabled()
     {
-        // No Authorization header — must still succeed under the global auth fallback.
+        // No Authorization header, must still succeed under the global auth fallback.
         var res = await Client.Get("/api/config");
 
         Assert.Equal(HttpStatusCode.OK, res.StatusCode);

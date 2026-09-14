@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 import { injectSession } from './support/session';
 
 /**
- * Route-guard smoke — cheap (no auth calls): the guard must keep unauthenticated
+ * Route-guard smoke, cheap (no auth calls): the guard must keep unauthenticated
  * and expired sessions out of the app and bounce them to /login, carrying the page it
  * interrupted so sign-in can resume it.
  */

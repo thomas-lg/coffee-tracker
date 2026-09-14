@@ -7,7 +7,7 @@ import { AuthStore } from './auth.store';
 import { ProviderSignIn } from './provider-sign-in';
 
 /**
- * The callback handler had no unit cover, only the Playwright suite — which documents
+ * The callback handler had no unit cover, only the Playwright suite, which documents
  * one bug it cannot catch: the URL being restored to /login behind a perfectly valid
  * session. That one is asserted here, because the fix is a single history.replaceState
  * call and nothing else in the flow reveals it.
@@ -49,7 +49,7 @@ describe('ProviderSignIn.complete', () => {
 
     expect(await complete()).toBe(false);
     // checkAuth() keeps its own session and would hand back the same ID token on every
-    // later load — posting that again asks the API to spend a token it already spent.
+    // later load, posting that again asks the API to spend a token it already spent.
     expect(checkAuth).not.toHaveBeenCalled();
   });
 

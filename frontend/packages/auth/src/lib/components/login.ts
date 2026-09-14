@@ -40,7 +40,7 @@ export class Login {
   });
 
   // Reading value() on an errored resource throws, so the error has to be checked
-  // first here as it is above — otherwise a failed config read takes the whole screen
+  // first here as it is above, otherwise a failed config read takes the whole screen
   // down instead of falling back to the local form.
   protected readonly providerAvailable = computed<boolean>(() => {
     if (this.configRes.error()) return false;
@@ -49,7 +49,7 @@ export class Login {
 
   /**
    * What to call the provider on the button. The operator names it; unset, the label
-   * stays generic — the app never hard-codes which product it is talking to.
+   * stays generic, the app never hard-codes which product it is talking to.
    */
   protected readonly providerName = computed<string>(() => {
     if (this.configRes.error()) return '';
@@ -63,7 +63,7 @@ export class Login {
    */
   protected readonly configResolved = computed(() => this.localLoginEnabled() !== null);
 
-  /** Neither door is open — the screen explains that instead of showing an empty card. */
+  /** Neither door is open, the screen explains that instead of showing an empty card. */
   protected readonly noMethod = computed(
     () => this.localLoginEnabled() === false && !this.providerAvailable(),
   );

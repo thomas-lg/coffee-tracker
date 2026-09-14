@@ -90,7 +90,7 @@ export const BackupStore = signalStore(
               },
               error: (err: unknown) => {
                 patchState(store, { importing: false, staged: null });
-                // The API's reason is the useful one — it names the format version it
+                // The API's reason is the useful one, it names the format version it
                 // found, or the row it refused.
                 store._toast.show(detailOf(err) ?? 'The restore was refused.', 'error');
               },

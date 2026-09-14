@@ -23,8 +23,8 @@ module.exports = tseslint.config(
     files: ['**/*.ts'],
     extends: [
       eslint.configs.recommended,
-      // Type-aware. The rules worth having in a codebase this strict — floating
-      // promises, misused promises, unsafe `any` flowing out of untyped APIs — all
+      // Type-aware. The rules worth having in a codebase this strict, floating
+      // promises, misused promises, unsafe `any` flowing out of untyped APIs, all
       // need the type checker. projectService resolves each file's owning tsconfig.
       ...tseslint.configs.recommendedTypeChecked,
       ...angular.configs.tsRecommended,

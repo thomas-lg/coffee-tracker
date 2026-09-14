@@ -3,10 +3,10 @@
 [![CI](https://github.com/thomas-lg/coffee-tracker/actions/workflows/ci.yml/badge.svg)](https://github.com/thomas-lg/coffee-tracker/actions/workflows/ci.yml)
 
 A self-hosted web app to catalog the coffees I buy and rate them to taste, with
-multiple users each keeping their own ratings. Built to be shared — anyone can
+multiple users each keeping their own ratings. Built to be shared, anyone can
 self-host it on a NAS via Docker.
 
-This is a personal, for-fun project — a no-pressure space to learn modern C#/.NET
+This is a personal, for-fun project, a no-pressure space to learn modern C#/.NET
 (and drink good coffee) on my own schedule. There's no roadmap and no promises
 about when anything lands.
 
@@ -18,7 +18,7 @@ about when anything lands.
 <td width="50%"><img src="docs/screenshots/shelf-dark.png" alt="The same shelf in dark mode"></td>
 </tr>
 <tr>
-<td><em>Every rating is kept and dated — a bag can be re-rated as it opens up.</em></td>
+<td><em>Every rating is kept and dated, a bag can be re-rated as it opens up.</em></td>
 <td><em>Light and dark, following the system theme.</em></td>
 </tr>
 </table>
@@ -133,19 +133,19 @@ never face the internet directly.
 
 | Variable                          | Required | Default          | Description                                                                 |
 | --------------------------------- | -------- | ---------------- | --------------------------------------------------------------------------- |
-| `Jwt__Key`                        | **yes**  | —                | Long random secret for signing auth tokens. The app refuses to start without a strong value (`openssl rand -base64 48`). |
+| `Jwt__Key`                        | **yes**  | none            | Long random secret for signing auth tokens. The app refuses to start without a strong value (`openssl rand -base64 48`). |
 | `Jwt__Issuer`                     | no       | `coffee-tracker` | JWT issuer claim.                                                           |
 | `Jwt__Audience`                   | no       | `coffee-tracker` | JWT audience claim.                                                         |
 | `Jwt__AccessTokenMinutes`         | no       | `15`             | Access-token lifetime (minutes). Kept short; sessions persist via a rotating refresh token, so a stolen access token expires quickly. |
 | `Jwt__RefreshTokenDays`           | no       | `14`             | Refresh-token lifetime (days), which is the effective session length. Refresh tokens rotate on use and are revoked on logout. |
 | `Storage__SignedUrlLifetimeMinutes` | no     | `60`             | How long a signed `/photos/…` URL stays valid (minutes). Photos are served only via short-lived signed URLs, never anonymously. |
-| `Oidc__Authority`                 | no       | —                | Base URL of an OpenID Connect provider (Authelia, Keycloak, Authentik, Google…). Set it with `Oidc__ClientId` to offer sign-in through that provider; leave both unset to run with app accounts only. Endpoints are discovered from `/.well-known/openid-configuration`. |
-| `Oidc__ClientId`                  | no       | —                | The client id registered with that provider. Required whenever `Oidc__Authority` is set — the app refuses to start with only one of the two. |
+| `Oidc__Authority`                 | no       | none            | Base URL of an OpenID Connect provider (Authelia, Keycloak, Authentik, Google…). Set it with `Oidc__ClientId` to offer sign-in through that provider; leave both unset to run with app accounts only. Endpoints are discovered from `/.well-known/openid-configuration`. |
+| `Oidc__ClientId`                  | no       | none            | The client id registered with that provider. Required whenever `Oidc__Authority` is set, the app refuses to start with only one of the two. |
 | `Oidc__Scopes`                    | no       | `openid profile email` | Scopes requested from the provider. Add `groups` if you use the admin claim mapping below. |
-| `Oidc__DisplayName`               | no       | —                | What to call the provider on the sign-in button (e.g. `Authelia`). Unset, the button reads "your identity provider" — the app never hard-codes which product it talks to. |
-| `Oidc__AdminClaim`                | no       | —                | Claim carrying the admin assertion (e.g. `groups`). Set with `Oidc__AdminClaimValue`; both or neither. Unset, the first user to sign in through the provider becomes admin. |
-| `Oidc__AdminClaimValue`           | no       | —                | Value `Oidc__AdminClaim` must carry to grant admin. Re-evaluated on every sign-in, so removing someone from the group revokes their rights at their next sign-in. |
-| `ForwardedHeaders__KnownProxies`  | recommended | —             | Comma-separated host names or IPs of your reverse proxy, so the app trusts its `X-Forwarded-For`/`-Proto`. **Set this** behind a proxy — otherwise auth rate-limiting keys off the proxy's single IP and throttles every client together, and HSTS is not emitted. Prefer a name (`swag`, a service name, a DNS record) over an address, because an orchestrator assigns the address and a pinned IP holds only until the proxy restarts onto another one. Names are resolved at startup; one that cannot be resolved is ignored rather than guessed. |
+| `Oidc__DisplayName`               | no       | none            | What to call the provider on the sign-in button (e.g. `Authelia`). Unset, the button reads "your identity provider", the app never hard-codes which product it talks to. |
+| `Oidc__AdminClaim`                | no       | none            | Claim carrying the admin assertion (e.g. `groups`). Set with `Oidc__AdminClaimValue`; both or neither. Unset, the first user to sign in through the provider becomes admin. |
+| `Oidc__AdminClaimValue`           | no       | none            | Value `Oidc__AdminClaim` must carry to grant admin. Re-evaluated on every sign-in, so removing someone from the group revokes their rights at their next sign-in. |
+| `ForwardedHeaders__KnownProxies`  | recommended | none         | Comma-separated host names or IPs of your reverse proxy, so the app trusts its `X-Forwarded-For`/`-Proto`. **Set this** behind a proxy, otherwise auth rate-limiting keys off the proxy's single IP and throttles every client together, and HSTS is not emitted. Prefer a name (`swag`, a service name, a DNS record) over an address, because an orchestrator assigns the address and a pinned IP holds only until the proxy restarts onto another one. Names are resolved at startup; one that cannot be resolved is ignored rather than guessed. |
 | `Ocr__Engine`                     | no       | `tesseract`      | OCR engine for `/api/coffees/scan`: `tesseract` (uses the bundled native libs) or `none` (disables scanning → 503). |
 | `Ocr__TessdataPath`               | no       | system path      | Override the tessdata directory; defaults to the `TESSDATA_PREFIX` system path (the image ships English data). |
 | `Ocr__Language`                   | no       | `eng`            | Tesseract language code. |
@@ -191,7 +191,7 @@ with it. Only an email the provider asserts as verified is recorded; otherwise t
 account gets a placeholder address, so nobody can claim someone else's.
 
 Once an administrator has signed in through the provider at least once, you can switch
-app-account sign-in off entirely. Before that the app refuses to — it would be the last
+app-account sign-in off entirely. Before that the app refuses to, it would be the last
 way in.
 
 If the provider later disappears (URL changed, certificate expired, instance gone) and
@@ -218,7 +218,7 @@ and recreate the container. Volumes persist your data across the update.
 
 `beta` is for trying a change on real hardware before it reaches anyone. Merge into the
 `beta` branch, wait for CI, and point a container at `:beta`. Nothing tracking `:latest`
-sees it, and the two channels never share a build — a publish always builds the commit
+sees it, and the two channels never share a build: a publish always builds the commit
 whose CI passed, not whatever is on the default branch.
 
 Going back is repointing the container at `:latest`. **Take a copy of `coffee.db`
@@ -275,4 +275,4 @@ project.
 
 ## License
 
-[MIT](./LICENSE) — do what you like with it, just keep the copyright notice.
+[MIT](./LICENSE). Do what you like with it, just keep the copyright notice.

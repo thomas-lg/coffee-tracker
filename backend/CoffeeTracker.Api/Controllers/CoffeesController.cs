@@ -8,8 +8,8 @@ namespace CoffeeTracker.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-// An account is mandatory to use the app, so every catalog endpoint — reads
-// included — requires a valid token. Only the auth endpoints are anonymous.
+// An account is mandatory to use the app, so every catalog endpoint, reads
+// included, requires a valid token. Only the auth endpoints are anonymous.
 [Authorize]
 public class CoffeesController(ICoffeeCatalogService catalog) : ControllerBase
 {

@@ -4,15 +4,15 @@ import { defineConfig, devices } from '@playwright/test';
  * Playwright e2e config for the Coffee Tracker SPA.
  *
  * Playwright starts ONLY the Angular dev server (`ng serve app` on :4200). The
- * backend API is expected to already be running on :5000 — `proxy.conf.json`
+ * backend API is expected to already be running on :5000, `proxy.conf.json`
  * forwards `/api` and `/photos` there. CI starts the backend in a separate step
  * before invoking the tests; locally, run the backend yourself (see e2e/README
- * notes / the repo's local-run guidance — port 5000 is squatted by AirPlay on
+ * notes / the repo's local-run guidance, port 5000 is squatted by AirPlay on
  * macOS, so disable AirPlay Receiver or remap the backend + proxy).
  */
 export default defineConfig({
   testDir: './e2e',
-  // Claims the first account and reopens registration before anything runs — see
+  // Claims the first account and reopens registration before anything runs, see
   // the file for why the suite cannot leave that to whichever test gets there first.
   globalSetup: './e2e/support/global-setup.ts',
   fullyParallel: true,

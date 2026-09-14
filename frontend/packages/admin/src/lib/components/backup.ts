@@ -13,7 +13,7 @@ import { BackupStore } from '../services/backup.store';
 /**
  * Admin backup screen: download the whole catalog as JSON, or restore one.
  *
- * A restore replaces the catalog, so choosing a file only arms a confirmation — the
+ * A restore replaces the catalog, so choosing a file only arms a confirmation, the
  * same two-step shape the photo cleanup screen uses for its bulk delete.
  */
 @Component({
@@ -42,7 +42,7 @@ export class BackupScreen {
     if (!file) return;
 
     await this.store.choose(file);
-    if (!this.store.staged()) return; // refused — the toast said why, focus stays put
+    if (!this.store.staged()) return; // refused, the toast said why, focus stays put
 
     // Staging replaces the picker with the confirm row, so the button that had focus is
     // gone and focus drops to <body>. The row only exists after the next render, which

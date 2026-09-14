@@ -5,7 +5,7 @@ namespace CoffeeTracker.Infrastructure.Persistence;
 
 /// <summary>
 /// Design-time factory so `dotnet ef` can build the context from the
-/// Infrastructure project alone — the Api (startup) project stays free of any
+/// Infrastructure project alone, the Api (startup) project stays free of any
 /// EF Core / design-time dependency. Not used at runtime.
 /// </summary>
 public class AppDbContextFactory : IDesignTimeDbContextFactory<AppDbContext>

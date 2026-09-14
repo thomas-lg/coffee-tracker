@@ -3,7 +3,7 @@ import { Skeleton } from '@coffee-tracker/ui';
 
 /**
  * Loading placeholder that mirrors {@link CoffeeCard}'s shape. Shared by the grid
- * and the home teaser so the two stay in sync. Decorative — callers mark the
+ * and the home teaser so the two stay in sync. Decorative, callers mark the
  * surrounding grid `aria-busy` and announce loading via an sr-only status.
  */
 @Component({

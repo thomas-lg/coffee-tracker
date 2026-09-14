@@ -10,7 +10,7 @@ import { CoffeeDetailStore } from './coffee-detail.store';
 const ME = 'me-1';
 const SOMEONE_ELSE = 'them-2';
 
-// CoffeesStore keys its resource on the signed-in user, and this store injects it —
+// CoffeesStore keys its resource on the signed-in user, and this store injects it,
 // so there has to be a session before TestBed builds either.
 function seedSession(): void {
   localStorage.setItem(
@@ -87,7 +87,7 @@ describe('CoffeeDetailStore', () => {
 
   /**
    * rxResource publishes on a macrotask after the response, so settling it takes more
-   * than a tick — the same reason the sibling specs pause here.
+   * than a tick, the same reason the sibling specs pause here.
    */
   const settle = async (): Promise<void> => {
     await new Promise((resolve) => setTimeout(resolve, 0));
@@ -167,8 +167,8 @@ describe('CoffeeDetailStore', () => {
   });
 
   // The screen hands over its id *signal*, because the router reuses the component when
-  // only the route parameter changes. Reading the id once — in a store onInit, or an
-  // ngOnInit — would leave the screen on the previous coffee forever.
+  // only the route parameter changes. Reading the id once, in a store onInit, or an
+  // ngOnInit, would leave the screen on the previous coffee forever.
   it('follows the id signal it was given rather than reading it once', async () => {
     const routeId = signal(7);
     const store = TestBed.inject(CoffeeDetailStore);

@@ -4,7 +4,7 @@ namespace CoffeeTracker.Api;
 /// The named rate-limiter policies and the budget each one grants a client per minute.
 ///
 /// Both halves live here because both are shared. The name has to be a compile-time
-/// constant — it is what a controller's <c>[EnableRateLimiting]</c> attribute names —
+/// constant, it is what a controller's <c>[EnableRateLimiting]</c> attribute names,
 /// and the budget is read by the registration in Program.cs and asserted by the tests,
 /// neither of which should be restating a number the other owns.
 /// </summary>
@@ -41,8 +41,8 @@ public static class RateLimiterPolicies
     public const int ScanPermitsPerMinute = 12;
 
     /// <summary>
-    /// Every upload is decoded and re-encoded in full — up to the configured pixel
-    /// ceiling — so the cost is CPU and memory, not just disk. Higher than the scan
+    /// Every upload is decoded and re-encoded in full, up to the configured pixel
+    /// ceiling, so the cost is CPU and memory, not just disk. Higher than the scan
     /// budget because uploading is a normal thing to do repeatedly while filling in a
     /// coffee, and unlike a scan it does not hold a subprocess.
     /// </summary>

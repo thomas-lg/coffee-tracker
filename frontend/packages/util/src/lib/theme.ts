@@ -2,7 +2,7 @@ export type ThemeMode = 'light' | 'dark';
 
 const THEME_KEY = 'ct.theme';
 
-/** The OS-preferred theme — used as the default when the user hasn't chosen one. */
+/** The OS-preferred theme, used as the default when the user hasn't chosen one. */
 function prefersDark(): boolean {
   return typeof matchMedia !== 'undefined' && matchMedia('(prefers-color-scheme: dark)').matches;
 }
@@ -13,7 +13,7 @@ export function initialTheme(): ThemeMode {
     const stored = localStorage.getItem(THEME_KEY);
     if (stored === 'light' || stored === 'dark') return stored;
   } catch {
-    // Storage unavailable (private mode / SSR) — fall through to the OS preference.
+    // Storage unavailable (private mode / SSR), fall through to the OS preference.
   }
   return prefersDark() ? 'dark' : 'light';
 }
@@ -23,7 +23,7 @@ export function persistTheme(mode: ThemeMode): void {
   try {
     localStorage.setItem(THEME_KEY, mode);
   } catch {
-    // Best-effort — the in-page theme still applies.
+    // Best-effort, the in-page theme still applies.
   }
 }
 

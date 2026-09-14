@@ -37,8 +37,8 @@ export const CoffeesStore = signalStore(
       // template consumer below is safe without re-implementing the guard.
       _list: extendResource(
         rxResource({
-          // Keyed on who is asking, not because the catalog differs per user — it is
-          // shared — but because this store is providedIn: 'root' and signing out is a
+          // Keyed on who is asking, not because the catalog differs per user, it is
+          // shared, but because this store is providedIn: 'root' and signing out is a
           // client-side navigation. Without a key the instance outlives the session and
           // the next person to sign in reads the previous one's snapshot: coffees added
           // since are missing, and every photo URL in it is a signed URL that has since

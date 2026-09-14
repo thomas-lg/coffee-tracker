@@ -7,7 +7,7 @@ using Xunit;
 
 namespace CoffeeTracker.Tests;
 
-// Repository tests against a real (in-memory) SQLite database — the InMemory
+// Repository tests against a real (in-memory) SQLite database, the InMemory
 // provider can't validate correlated-subquery aggregates, unique indexes, or
 // cascade deletes, all of which this milestone relies on. Each test gets a fresh
 // schema (EnsureCreated also applies the HasData-seeded flavor tags).

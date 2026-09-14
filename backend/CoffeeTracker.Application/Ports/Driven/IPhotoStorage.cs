@@ -16,8 +16,8 @@ public interface IPhotoStorage
     Task<PhotoStorageResult> SaveAsync(Stream content, string? contentType, long length, CancellationToken ct = default);
 
     /// <summary>
-    /// Runs every check <see cref="SaveAsync"/> would run — content type, size, magic
-    /// number, decompression-bomb ceiling, and whether the bytes actually decode — and
+    /// Runs every check <see cref="SaveAsync"/> would run, content type, size, magic
+    /// number, decompression-bomb ceiling, and whether the bytes actually decode, and
     /// writes nothing.
     ///
     /// For callers that need to know an upload is a real image without keeping it: the

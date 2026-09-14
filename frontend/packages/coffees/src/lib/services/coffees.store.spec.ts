@@ -32,7 +32,7 @@ const SEED: Coffee[] = [
 ];
 
 // CoffeesStore keys its resource on the signed-in user, so it stays idle until there is
-// a session — seed one the way a real browser would before TestBed builds the store.
+// a session, seed one the way a real browser would before TestBed builds the store.
 function seedSession(): void {
   localStorage.setItem(
     'ct.session',
@@ -65,7 +65,7 @@ describe('CoffeesStore', () => {
     http = TestBed.inject(HttpTestingController);
     appRef = TestBed.inject(ApplicationRef);
 
-    // The resource fetches from a reactive effect — tick to fire it, flush, tick again.
+    // The resource fetches from a reactive effect, tick to fire it, flush, tick again.
     appRef.tick();
     http.expectOne('/api/coffees').flush(SEED);
     appRef.tick();

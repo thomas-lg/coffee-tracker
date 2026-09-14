@@ -43,7 +43,7 @@ describe('AccountSettingsScreen', () => {
   /**
    * Lets pending promises run and re-renders. Deliberately not fixture.whenStable():
    * that waits for outstanding HTTP, and here there is always a request waiting to be
-   * answered by the test itself — which deadlocks.
+   * answered by the test itself, which deadlocks.
    */
   async function settle(): Promise<void> {
     await new Promise((resolve) => setTimeout(resolve, 0));

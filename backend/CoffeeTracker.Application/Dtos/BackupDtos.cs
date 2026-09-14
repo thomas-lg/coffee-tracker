@@ -7,7 +7,7 @@ namespace CoffeeTracker.Application.Dtos;
 ///
 /// The point of it is the thing the README warns about: a failed startup migration has
 /// no rollback, so a copy taken beforehand is the only way back. A JSON document is a
-/// deliberate choice over a database dump — it survives a schema change, and a human can
+/// deliberate choice over a database dump, it survives a schema change, and a human can
 /// read it to see what they are about to restore.
 ///
 /// Photos are referenced by the path they are stored under and are not carried here. The
@@ -43,7 +43,7 @@ public record BackupCoffeeDto(
     /// <summary>
     /// Kept as-is. On a restore into the same instance it keeps ownership intact; on a
     /// different one it names an account that no longer exists, which leaves the coffee
-    /// editable by administrators only — the same rule already applied to rows written
+    /// editable by administrators only, the same rule already applied to rows written
     /// before owner-stamping existed.
     /// </summary>
     string? CreatedByUserId,

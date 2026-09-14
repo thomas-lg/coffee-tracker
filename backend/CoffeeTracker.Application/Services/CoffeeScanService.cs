@@ -10,7 +10,7 @@ namespace CoffeeTracker.Application.Services;
 ///
 /// The bytes are validated but never written. Scanning and saving are separate requests
 /// and the client uploads the photo again when it saves, so a file kept here was claimed
-/// by nothing — on every scan, not only an abandoned one. Keeping it grew the photos
+/// by nothing, on every scan, not only an abandoned one. Keeping it grew the photos
 /// directory with the same image the save was about to store a second time, and left the
 /// admin cleanup as the only thing bounding it.
 ///
@@ -25,7 +25,7 @@ public class CoffeeScanService(
     public async Task<ScanResult> ScanAsync(Stream image, string? contentType, long length, CancellationToken ct = default)
     {
         // Short-circuit before any work when OCR can't run here (e.g. the host with
-        // no native Tesseract libs) — endpoint maps this to 503.
+        // no native Tesseract libs), endpoint maps this to 503.
         if (!ocr.IsAvailable)
         {
             return new ScanResult(ScanStatus.OcrUnavailable, null);

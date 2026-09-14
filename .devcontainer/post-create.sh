@@ -19,7 +19,7 @@ if [ -n "${GH_TOKEN:-}" ]; then
   gh auth setup-git
   echo "gh: authenticated via GH_TOKEN ($(gh api user --jq .login 2>/dev/null || echo '?'))"
 else
-  echo "gh: no GH_TOKEN set on host — run 'gh auth login' manually if needed"
+  echo "gh: no GH_TOKEN set on host; run 'gh auth login' manually if needed"
 fi
 
 echo "=== Coffee Tracker dev container toolchain ==="

@@ -6,7 +6,7 @@ using Xunit;
 
 namespace CoffeeTracker.Tests;
 
-// Scan service against fakes — verifies the orchestration (OCR availability gate,
+// Scan service against fakes, verifies the orchestration (OCR availability gate,
 // upload validation, photo retention, parse) without native libs. Uses the real
 // CoffeeLabelParser since it's pure.
 public class CoffeeScanServiceTests
@@ -94,7 +94,7 @@ public class CoffeeScanServiceTests
 
     // The point of the change: a scan reads the bag and keeps nothing. Storing the photo
     // here left an orphan on every scan, because the client uploads the image again when
-    // it saves the coffee — which left the admin cleanup as the only thing bounding the
+    // it saves the coffee, which left the admin cleanup as the only thing bounding the
     // photos directory.
     [Fact]
     public async Task ScanAsync_WritesNoFile_OnAnyPath()

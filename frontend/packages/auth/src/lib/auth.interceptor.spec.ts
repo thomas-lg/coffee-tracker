@@ -43,7 +43,7 @@ describe('authInterceptor', () => {
         provideZonelessChangeDetection(),
         provideHttpClient(withInterceptors([authInterceptor])),
         provideHttpClientTesting(),
-        // Minimal stub — the interceptor reads token()/canRefresh() and calls
+        // Minimal stub, the interceptor reads token()/canRefresh() and calls
         // refresh()/logout()/navigate.
         {
           provide: AuthStore,
@@ -94,7 +94,7 @@ describe('authInterceptor', () => {
       .flush('nope', { status: 401, statusText: 'Unauthorized', headers: API_CHALLENGE });
 
     expect(refresh).not.toHaveBeenCalled();
-    // logout() clears the session and returns to /login — see auth.store.spec.
+    // logout() clears the session and returns to /login, see auth.store.spec.
     expect(logout).toHaveBeenCalledOnce();
     expect(reload).not.toHaveBeenCalled();
   });
@@ -134,7 +134,7 @@ describe('authInterceptor', () => {
     httpCtrl.expectNone('/api/coffees');
   });
 
-  it('gives up (logout + /login) when the retried request still 401s — no refresh loop', async () => {
+  it('gives up (logout + /login) when the retried request still 401s, no refresh loop', async () => {
     canRefresh = true;
     let errored = false;
     http.get('/api/coffees').subscribe({ next: () => {}, error: () => (errored = true) });

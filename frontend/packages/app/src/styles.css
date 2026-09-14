@@ -1,16 +1,16 @@
 /* Self-hosted variable fonts (Fraunces + Inter) are loaded via angular.json's
-   "styles" array — no CDN, works offline / in the PWA. */
+   "styles" array, no CDN, works offline / in the PWA. */
 @import 'tailwindcss';
 
 /* Manual + OS dark mode: `dark:` utilities apply under [data-theme="dark"]. */
 @custom-variant dark (&:where([data-theme='dark'], [data-theme='dark'] *));
 
-/* Coffee palette — light (default). Warm, chosen neutrals. */
+/* Coffee palette, light (default). Warm, chosen neutrals. */
 :root {
   --ink: #241813;        /* deep roasted espresso */
   --cocoa: #6f4e37;      /* primary brown */
-  --crema: #cc8b43;      /* gold accent — the single bold note */
-  --crema-deep: #8f5419;  /* AA on both grounds — see note below */
+  --crema: #cc8b43;      /* gold accent, the single bold note */
+  --crema-deep: #8f5419;  /* AA on both grounds, see note below */
   --latte: #f3e9db;      /* page ground */
   --foam: #fffcf6;       /* card surface */
   --line: #e6d6bf;       /* warm hairline */
@@ -20,7 +20,7 @@
 }
 
 /* --muted and --crema-deep carry most of the small text (labels, eyebrows, metadata),
-   so both are set against the WORSE of the two light grounds — the page ground --latte,
+   so both are set against the WORSE of the two light grounds, the page ground --latte,
    not the --foam card surface. At 4.5:1 that costs about half a step of lightness:
    #8a7561 and #a8692b read fine on foam but land at 3.65 and 3.71 on latte.
    Dark theme already clears comfortably and is unchanged. */
@@ -56,7 +56,7 @@
   --font-sans: 'Inter Variable', system-ui, -apple-system, sans-serif;
 }
 
-/* Card entrance — staggered via per-item animation-delay; reduced-motion zeroes it. */
+/* Card entrance, staggered via per-item animation-delay; reduced-motion zeroes it. */
 @keyframes ct-rise {
   from {
     opacity: 0;
@@ -89,7 +89,7 @@
   }
 }
 
-/* Brand mark — a glossy coffee-bean chip for the header (the seam is the ::after arc). */
+/* Brand mark, a glossy coffee-bean chip for the header (the seam is the ::after arc). */
 .ct-bean-mark {
   position: relative;
   width: 1.75rem;
@@ -135,7 +135,7 @@
     font-family: var(--font-display);
     text-wrap: balance;
   }
-  /* Tailwind v4 preflight no longer sets pointer on buttons — restore it. */
+  /* Tailwind v4 preflight no longer sets pointer on buttons, restore it. */
   button:not(:disabled), [role='button'] {
     cursor: pointer;
   }

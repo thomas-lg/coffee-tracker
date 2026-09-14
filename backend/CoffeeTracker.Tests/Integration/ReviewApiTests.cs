@@ -66,7 +66,7 @@ public sealed class ReviewApiTests : IntegrationTest
         var user = await Client.RegisterAsync("rater@example.com", "Rater");
         var coffeeId = await CreateCoffeeAsync(user.Token);
 
-        // The same user rates the same coffee three times over its life — each POST
+        // The same user rates the same coffee three times over its life, each POST
         // is a separate dated entry (no one-per-user limit).
         foreach (var (rating, stage) in new[] { (5, "Fresh bag"), (4, "Mid-week"), (3, "Last cups") })
         {

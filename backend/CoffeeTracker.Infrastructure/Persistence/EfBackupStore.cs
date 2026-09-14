@@ -55,7 +55,7 @@ public class EfBackupStore(AppDbContext db) : IBackupStore
         await db.Coffees.ExecuteDeleteAsync(ct);
 
         // Coffees first and saved, because Review carries a plain CoffeeId with no
-        // navigation property to let EF infer the link — the ids have to exist before the
+        // navigation property to let EF infer the link, the ids have to exist before the
         // reviews can point at them. Both writes are inside the transaction above.
         foreach (var entry in coffees)
         {

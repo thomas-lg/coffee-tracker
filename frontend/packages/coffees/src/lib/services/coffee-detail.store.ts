@@ -14,7 +14,7 @@ import { CoffeesStore } from './coffees.store';
  * Everything the coffee detail screen does apart from render it: three reads keyed on
  * the route id, the rate-today form, and the armed-confirm delete.
  *
- * Component-provided rather than root, like CoffeeFormStore — the state belongs to one
+ * Component-provided rather than root, like CoffeeFormStore, the state belongs to one
  * screen and should die with it, which also means two tabs on different coffees do not
  * share a half-typed rating.
  */
@@ -61,7 +61,7 @@ export const CoffeeDetailStore = signalStore(
   }),
   withComputed(({ _coffee, _reviews, _tags, _auth, coffeeId }) => {
     // A resource's value() THROWS while it is in an error state, so every read is
-    // guarded — same reason as CoffeesStore. A 404 has to render "not found", not
+    // guarded, same reason as CoffeesStore. A 404 has to render "not found", not
     // blow up mid-render.
     const coffee = computed(() => (_coffee.error() ? undefined : _coffee.value()));
     const reviews = computed(() => (_reviews.error() ? [] : _reviews.value()));
@@ -96,7 +96,7 @@ export const CoffeeDetailStore = signalStore(
       /**
        * Fed the screen's id signal, not its value. The router reuses this component
        * when only the parameter changes (/coffees/7 → /coffees/8, one route config),
-       * so anything that reads the id once — a store onInit, an ngOnInit — would leave
+       * so anything that reads the id once, a store onInit, an ngOnInit, would leave
        * the screen showing the previous coffee. rxMethod re-emits when the signal does,
        * which is the same shape CoffeeFormStore.load already uses.
        */
@@ -120,7 +120,7 @@ export const CoffeeDetailStore = signalStore(
 
       /**
        * exhaustMap, not switchMap: a double-clicked Save must not post two ratings, and
-       * unlike a load there is nothing to abandon — the first request is the real one.
+       * unlike a load there is nothing to abandon, the first request is the real one.
        */
       rate: rxMethod<void>(
         pipe(

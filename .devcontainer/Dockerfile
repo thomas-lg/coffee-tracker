@@ -1,5 +1,5 @@
 # Dev container image for Coffee Tracker.
-# Base: Microsoft's .NET 10 dev container image — UBUNTU 24.04 "Noble"
+# Base: Microsoft's .NET 10 dev container image, UBUNTU 24.04 "Noble"
 # (.NET 10 moved off Debian; there is no 1-10.0-bookworm/trixie release tag).
 # Ships the .NET 10 SDK + the `vscode` non-root user. Node + Angular CLI are
 # layered via the devcontainer Node feature + post-create.sh; this Dockerfile
@@ -9,11 +9,11 @@ FROM mcr.microsoft.com/devcontainers/dotnet:10.0
 
 # The base image ships a yarn apt source whose GPG signing key has rotated,
 # so `apt-get update` hard-fails on dl.yarnpkg.com ("NO_PUBKEY ... repository
-# is not signed"). We don't use that repo — Node/yarn come from the Node
-# devcontainer feature — so remove the source before updating.
+# is not signed"). We don't use that repo, Node/yarn come from the Node
+# devcontainer feature, so remove the source before updating.
 #
 # OCR (M5): the app shells out to the tesseract CLI, so we just need the binary
-# (tesseract-ocr) + the English data (tesseract-ocr-eng). No -dev packages — those
+# (tesseract-ocr) + the English data (tesseract-ocr-eng). No -dev packages, those
 # were only for the old P/Invoke NuGet, which we dropped for the CLI.
 RUN rm -f /etc/apt/sources.list.d/yarn.list \
     && apt-get update \
