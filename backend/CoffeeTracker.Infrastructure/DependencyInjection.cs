@@ -68,7 +68,7 @@ public static class DependencyInjection
 
     /// <summary>See <see cref="OcrOptions.MinConfidence"/>; both were measured, not picked.</summary>
     private const double TesseractConfidence = 55;
-    private const double RapidOcrConfidence = 80;
+    private const double RapidOcrConfidence = 70;
 
     /// <summary>
     /// Registers ASP.NET Identity (UserManager only, this API authenticates with

@@ -65,7 +65,7 @@ public static class OcrFixtures
     /// its adapter by hand instead of resolving one out of the container.
     /// </summary>
     public static double Gate =>
-        string.Equals(Engine, "tesseract", StringComparison.OrdinalIgnoreCase) ? 55 : 80;
+        string.Equals(Engine, "tesseract", StringComparison.OrdinalIgnoreCase) ? 55 : 70;
 
     /// <summary>Builds the adapter named by <see cref="Engine"/>.</summary>
     public static IOcrService NewEngine(OcrOptions options, ILoggerFactory logs) =>

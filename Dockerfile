@@ -70,10 +70,14 @@ FROM mcr.microsoft.com/dotnet/aspnet:10.0@sha256:6a94333d37514e385650a3c81a55e53
 # Two OCR engines, both driven by shelling out and piping the image over stdin.
 #
 # RapidOCR (PP-OCR on onnxruntime) is the default, and it is what costs the size here:
-# the image goes from 351 MB to 763 MB, all of it Python, numpy and onnxruntime. It buys reading a photograph rather
+# the image goes from 351 MB to 784 MB on disk (145 MB to 302 MB compressed, which is
+# what a pull actually costs), all of it Python, numpy and onnxruntime. It buys reading a photograph rather
 # than a scanned page. On the benchmark's real bags Tesseract returns "lam" where the
 # label says "LA LIBERTAD" and nothing at all for "INTENSO BLEND"; RapidOCR reads both.
-# rapidocr-onnxruntime depends on opencv-python, whose GUI build carries ~116 MB of X11
+# The package is `rapidocr`, not `rapidocr-onnxruntime`: the latter is the same
+# project's earlier name, frozen since January 2025 on PP-OCRv4, while `rapidocr` ships
+# PP-OCRv6 and reads these bags visibly better (TORREFACTEUR at 99.7% against a mangled
+# "TORREFACTEY,"). It depends on opencv-python, whose GUI build carries ~116 MB of X11
 # libraries to draw windows a server will never open, so it is swapped for the headless
 # build afterwards. Installing headless alongside does not help: pip honours the
 # dependency and ships both.
@@ -87,7 +91,7 @@ RUN apt-get update \
         tesseract-ocr tesseract-ocr-eng \
         python3 python3-pip libglib2.0-0 \
         gosu curl \
-    && pip3 install --no-cache-dir --break-system-packages rapidocr-onnxruntime \
+    && pip3 install --no-cache-dir --break-system-packages rapidocr onnxruntime \
     && pip3 uninstall -y --break-system-packages opencv-python \
     && pip3 install --no-cache-dir --break-system-packages opencv-python-headless \
     && rm -rf /var/lib/apt/lists/*
@@ -99,7 +103,7 @@ COPY deploy/rapidocr/read.py /opt/rapidocr/read.py
 
 # Fetch the models at build time rather than on the first user's scan, which would
 # otherwise pay a download on a machine that may have no route out.
-RUN python3 -c "from rapidocr_onnxruntime import RapidOCR; RapidOCR()"
+RUN python3 -c "from rapidocr import RapidOCR; RapidOCR()"
 
 # PUID/PGID default to Unraid's nobody:users. Override at runtime to match whoever
 # owns the host appdata dirs, so the bind-mounted volumes are writable. HOME points

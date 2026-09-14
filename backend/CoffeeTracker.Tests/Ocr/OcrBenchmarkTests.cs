@@ -26,7 +26,7 @@ namespace CoffeeTracker.Tests.Ocr;
 public sealed class OcrBenchmarkTests(ITestOutputHelper output)
 {
     /// <summary>
-    /// Minimum overall score, currently 77.9% on RapidOCR (the shipping default) and
+    /// Minimum overall score, currently 82.8% on RapidOCR (the shipping default) and
     /// 74.4% on Tesseract, each with the confidence gate its own scoring calls for. The
     /// floor sits below both, so scoring the other engine with
     /// <c>OCR_BENCH_ENGINE=tesseract</c> does not fail the build and a real regression in
@@ -41,7 +41,7 @@ public sealed class OcrBenchmarkTests(ITestOutputHelper output)
     /// Raise it when a change earns it (that is the point of having it), but never to
     /// paper over a corpus that got easier.
     /// </summary>
-    private const double Floor = 0.72;
+    private const double Floor = 0.78;
 
     /// <summary>
     /// How close two free-text values have to be to count as a half credit. OCR drops a

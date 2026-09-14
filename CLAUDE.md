@@ -102,13 +102,17 @@ See the README's *Running the tests* for the commands. What matters when writing
 
 Two engines behind `IOcrService`, selected by `Ocr:Engine`.
 
-**`rapidocr` is the default.** PP-OCR detection and recognition models on onnxruntime,
+**`rapidocr` is the default.** PP-OCRv6 detection and recognition on onnxruntime,
 driven through `deploy/rapidocr/read.py`. It reads photographs, which is what the app
 actually gets: on the benchmark's real bags Tesseract returns "lam" where the label says
-"LA LIBERTAD" and nothing at all for "INTENSO BLEND", while RapidOCR reads both and even
-a script-font logo Tesseract never sees. It scores 77.9% against Tesseract's 74.4%, and
-72% against 58% on the name field alone. It costs the image 351 MB to 763 MB, which is
-the whole argument against it.
+"LA LIBERTAD" and nothing at all for "INTENSO BLEND", while RapidOCR reads both, and
+"TORRÉFACTEUR" with its accent at 99.7% where Tesseract manages "TORREFACTEY,". It scores
+82.8% against Tesseract's 74.4%. It costs the image 351 MB to 784 MB on disk, or 145 MB
+to 302 MB to pull, which is the whole argument against it.
+
+Install `rapidocr`, **not** `rapidocr-onnxruntime`. The second is the same project's
+earlier name, frozen since January 2025 on PP-OCRv4; the first is where the work went.
+Measured on this corpus the difference is 77.9% against 82.8%, so it is not cosmetic.
 
 **`tesseract` is still there**, a tenth of the size and one setting away, for anyone who
 would rather not carry that. `none` disables scanning; `appsettings.Development.json`
@@ -134,9 +138,9 @@ Tesseract 5 treats `TESSDATA_PREFIX` as the directory itself, not its parent.
 
 **The confidence gate is per engine**, and that is the subtle part. Tesseract's noise
 lines score under 50 and its real text above 58, so its gate is 55. RapidOCR scores the
-same noise around 55 and the same text above 87, so 55 lets the noise straight through
-and its gate is 80. `AddOcr` registers the gate alongside the engine, and the number for
-each was swept, not picked.
+the same text at 94 to 100 and the little noise it produces around 81, so its gate is 70,
+in the middle of a plateau rather than at a cliff. `AddOcr` registers the gate alongside
+the engine, and the number for each was swept, not picked.
 
 ### Measuring it
 

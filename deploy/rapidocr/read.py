@@ -10,10 +10,14 @@ adapter's contract rather than like RapidOCR's CLI:
   confidence gate drops background noise, and top/height are what let it rejoin a name
   the bag printed across two lines.
 
-RapidOCR returns each line as (box, text, score), where box is four corner points in
-image coordinates. Top and height are derived from the box rather than reported, so a
-rotated line yields the height of its bounding box, which is what the parser's band
-grouping expects.
+The package is `rapidocr`, not `rapidocr-onnxruntime`. The latter is the same project's
+earlier name, last released in January 2025 and still shipping PP-OCRv4; `rapidocr` is
+where the work went and carries PP-OCRv6. The difference is visible on this repo's own
+benchmark bags, so do not "simplify" back to the old name.
+
+A result carries parallel `txts`, `scores` and `boxes`. Top and height are derived from
+the box's corner points rather than reported, so a rotated line yields the height of its
+bounding box, which is what the parser's band grouping expects.
 
 One JSON object per line of output, so a partial read is still parseable and a failure
 is visible in stderr rather than swallowed into an empty document.
@@ -22,11 +26,11 @@ is visible in stderr rather than swallowed into an empty document.
 import json
 import sys
 
-from rapidocr_onnxruntime import RapidOCR
+from rapidocr import RapidOCR
 
-# Loading the models is the expensive part (a few hundred ms), and it happens once per
-# process. The adapter starts one process per scan, which is the same bargain the
-# Tesseract adapter already makes and keeps the two comparable.
+# Loading the models is the expensive part, and it happens once per process. The adapter
+# starts one process per scan, which is the same bargain the Tesseract adapter makes and
+# keeps the two comparable.
 _ocr = RapidOCR()
 
 
@@ -36,11 +40,14 @@ def main() -> int:
         print("rapidocr: empty input on stdin", file=sys.stderr)
         return 2
 
-    result, _ = _ocr(image)
-    for box, text, score in result or []:
+    result = _ocr(image)
+    if result is None or result.txts is None:
+        return 0
+
+    for text, score, box in zip(result.txts, result.scores, result.boxes):
         if not text or not text.strip():
             continue
-        ys = [point[1] for point in box]
+        ys = [float(point[1]) for point in box]
         print(
             json.dumps(
                 {

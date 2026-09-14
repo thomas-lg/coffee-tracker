@@ -19,11 +19,12 @@ public class OcrOptions
     /// </summary>
     /// <remarks>
     /// Tesseract's default is 55, measured from a photograph where its noise lines scored
-    /// 15.6 to 48.8 and its printed lines 58.8 to 96.6. RapidOCR is calibrated tighter and
-    /// higher: on the same corpus its noise sits around 53 to 58 and real text at 87 to
-    /// 96, so 55 lets the noise straight through. Swept, 80 and 84 score 77.9% where 55
-    /// through 75 score 77.4% and 88 upward falls back again; 80 is the looser of the two
-    /// that tie. It takes handheld photographs from 64% to 72%.
+    /// 15.6 to 48.8 and its printed lines 58.8 to 96.6. RapidOCR scores far more
+    /// confidently: on the same corpus real text lands at 94 to 100 and the little noise
+    /// it produces around 81. Swept, 55 and 70 both score 82.8%, 80 scores 81.8% and 90
+    /// upward falls away as genuine lines start being dropped. 70 is the middle of that
+    /// plateau, which leaves margin against noise on a bag this corpus has never seen
+    /// without costing anything on the ones it has.
     /// </remarks>
     public double? MinConfidence { get; set; }
 
