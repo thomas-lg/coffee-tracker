@@ -51,33 +51,19 @@ public static class OcrFixtures
     /// <summary>The fixtures directory, copied next to the test assembly at build.</summary>
     public static string Root => System.IO.Path.Combine(AppContext.BaseDirectory, "Ocr", "Fixtures");
 
-    /// <summary>
-    /// Which engine the benchmark scores: <c>OCR_BENCH_ENGINE</c> to compare the two on
-    /// the same images, else whatever this host is configured to scan with, else the
-    /// shipping default so the number in CI is the number users get.
-    ///
-    /// The middle step matters in the dev container, which carries Tesseract and sets
-    /// <c>Ocr__Engine</c> accordingly. Without it the benchmark would reach for an engine
-    /// that is not installed there and give a developer no signal at all.
-    /// </summary>
-    public static string Engine =>
-        Environment.GetEnvironmentVariable("OCR_BENCH_ENGINE")
-        ?? Environment.GetEnvironmentVariable("Ocr__Engine")
-        ?? new OcrOptions().Engine;
-
-    /// <summary>Builds the adapter named by <see cref="Engine"/>.</summary>
-    public static IOcrService NewEngine(OcrOptions options, ILoggerFactory logs) =>
-        string.Equals(Engine, "tesseract", StringComparison.OrdinalIgnoreCase)
+    /// <summary>Builds the adapter for one engine.</summary>
+    public static IOcrService NewEngine(OcrEngine engine, OcrOptions options, ILoggerFactory logs) =>
+        engine == OcrEngine.Tesseract
             ? new TesseractCliOcrService(Options.Create(options), logs.CreateLogger<TesseractCliOcrService>())
             : new RapidOcrService(Options.Create(options), logs.CreateLogger<RapidOcrService>());
 
     /// <summary>
-    /// Whether a benchmark run is possible here. Asked through the adapter's own
-    /// availability check rather than re-derived, so a change to how either engine
-    /// locates its files cannot leave this lying.
+    /// Whether one engine can run here. Asked through the adapter's own availability
+    /// check rather than re-derived, so a change to how either locates its files cannot
+    /// leave this lying.
     /// </summary>
-    public static bool EngineAvailable =>
-        string.Equals(Engine, "tesseract", StringComparison.OrdinalIgnoreCase)
+    public static bool Available(OcrEngine engine) =>
+        engine == OcrEngine.Tesseract
             ? ExecutableOnPath("tesseract")
                 && new TesseractCliOcrService(
                     Options.Create(new OcrOptions()),
@@ -193,20 +179,19 @@ public static class OcrFixtures
 }
 
 /// <summary>
-/// A <see cref="FactAttribute"/> for the benchmark, skipped with a reason when the host
-/// carries no Tesseract, which is the bare Windows host this repo is often driven from
+/// A <see cref="FactAttribute"/> for one engine's benchmark, skipped with a reason when
+/// that engine is absent, which is the bare Windows host this repo is often driven from
 /// (CLAUDE.md § Gotchas). Skipped rather than quietly passing: a benchmark that reports
 /// green having measured nothing is worse than one that says it did not run.
 /// </summary>
 public sealed class OcrBenchmarkFactAttribute : FactAttribute
 {
-    public OcrBenchmarkFactAttribute()
+    public OcrBenchmarkFactAttribute(OcrEngine engine)
     {
-        if (!OcrFixtures.EngineAvailable)
+        if (!OcrFixtures.Available(engine))
         {
-            Skip = $"the '{OcrFixtures.Engine}' engine is not installed here; run the "
-                + "benchmark in the dev container or in CI, or set OCR_BENCH_ENGINE to one "
-                + "this host carries.";
+            Skip = $"the {engine} engine is not installed here; this one is scored in CI, "
+                + "which installs both.";
         }
     }
 }

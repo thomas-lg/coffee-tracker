@@ -46,9 +46,14 @@ jobs:
           sudo apt-get install -y --no-install-recommends \
             tesseract-ocr tesseract-ocr-eng libtesseract-dev libleptonica-dev \
             libgl1 libglib2.0-0
-          pip install --no-cache-dir rapidocr onnxruntime
-          pip uninstall -y opencv-python
-          pip install --no-cache-dir opencv-python-headless
+          # The same pinned file the image installs, so CI scores the engine that ships.
+          pip install --no-cache-dir -r deploy/rapidocr/requirements.txt
+          # Both go, then only the headless wheel comes back: the two share the `cv2`
+          # directory, so removing one takes it away and pip skips reinstalling the
+          # other as already present. Re-running the whole file would also let pip
+          # satisfy rapidocr's dependency and bring the GUI build back.
+          pip uninstall -y opencv-python opencv-python-headless
+          pip install --no-cache-dir "$(grep '^opencv-python-headless' deploy/rapidocr/requirements.txt)"
           # Fetch the models now, so the benchmark's first fixture is not also a download.
           python3 -c "from rapidocr import RapidOCR; RapidOCR()"
       # --locked-mode fails the restore if packages.lock.json is out of date, so a
@@ -68,11 +73,17 @@ jobs:
       - name: OCR benchmark scorecard
         if: ${{ !cancelled() }}
         run: |
-          card=backend/CoffeeTracker.Tests/bin/Release/net10.0/ocr-benchmark.md
-          if [ -f "$card" ]; then
-            cat "$card" >> "$GITHUB_STEP_SUMMARY"
-          else
+          shopt -s nullglob
+          cards=(backend/CoffeeTracker.Tests/bin/Release/net10.0/ocr-benchmark-*.md)
+          if [ ${#cards[@]} -eq 0 ]; then
             echo "OCR benchmark did not run (no scorecard produced)." >> "$GITHUB_STEP_SUMMARY"
+          else
+            # One per engine. Both are published because every parser constant is shared
+            # between them, so a change that helps one can cost the other.
+            for card in "${cards[@]}"; do
+              cat "$card" >> "$GITHUB_STEP_SUMMARY"
+              echo >> "$GITHUB_STEP_SUMMARY"
+            done
           fi
 
   frontend:

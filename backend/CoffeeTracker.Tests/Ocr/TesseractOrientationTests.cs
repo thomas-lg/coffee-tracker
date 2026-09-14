@@ -1,3 +1,4 @@
+using CoffeeTracker.Application.Ports.Driven;
 using CoffeeTracker.Infrastructure.Ocr;
 using Microsoft.Extensions.Options;
 using SixLabors.ImageSharp;
@@ -49,7 +50,7 @@ public sealed class TesseractOrientationTests(ITestOutputHelper output)
         return stored;
     }
 
-    [OcrBenchmarkFact]
+    [OcrBenchmarkFact(OcrEngine.Tesseract)]
     public async Task A_photo_the_camera_tagged_as_rotated_is_read_upright()
     {
         using var photo = await AsPhoneWouldStoreIt("kirinyaga-flat.jpg");
@@ -67,7 +68,7 @@ public sealed class TesseractOrientationTests(ITestOutputHelper output)
     /// paying a full decode and re-encode on every one of them to honour a tag that is
     /// not there would be a cost with nothing bought.
     /// </summary>
-    [OcrBenchmarkFact]
+    [OcrBenchmarkFact(OcrEngine.Tesseract)]
     public async Task An_image_with_no_orientation_tag_still_reads()
     {
         await using var upright = File.OpenRead(

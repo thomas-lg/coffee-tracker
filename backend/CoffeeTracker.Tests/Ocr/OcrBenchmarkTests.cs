@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Text;
 using CoffeeTracker.Application.Dtos;
 using CoffeeTracker.Application.Services;
+using CoffeeTracker.Application.Ports.Driven;
 using CoffeeTracker.Infrastructure.Ocr;
 using Microsoft.Extensions.Options;
 using Xunit;
@@ -26,22 +27,23 @@ namespace CoffeeTracker.Tests.Ocr;
 public sealed class OcrBenchmarkTests(ITestOutputHelper output)
 {
     /// <summary>
-    /// Minimum overall score, currently 82.8% on RapidOCR (the shipping default) and
-    /// 74.4% on Tesseract, each with the confidence gate its own scoring calls for. The
-    /// floor sits below both, so scoring the other engine with
-    /// <c>OCR_BENCH_ENGINE=tesseract</c> does not fail the build and a real regression in
-    /// either still does.
+    /// Minimum overall score per engine, each measured and each a little under what the
+    /// engine currently reaches, so a patch release scoring a point differently does not
+    /// fail the build while a real regression does.
     ///
-    /// It is a property of *this corpus*, not a constant of the pipeline: it read 82.0%
-    /// over the rendered fixtures alone and dropped when nine photographs joined them,
-    /// because the photographs are much harder than the renders. So adding fixtures means
-    /// re-measuring this number, and a change in it is only meaningful against an
-    /// unchanged corpus.
+    /// Both are scored on every run, and that is the point. Every constant in
+    /// <see cref="CoffeeLabelParser"/> is shared between the engines, and all three were
+    /// swept against Tesseract before RapidOCR existed. Measured since, the optima
+    /// coincide, but not by design: RapidOCR is simply insensitive to the line gap and
+    /// the letter minimum that Tesseract needs. Nothing guarantees that stays true, and a
+    /// benchmark that scored one engine would let a tuning pass for it quietly cost the
+    /// other.
     ///
-    /// Raise it when a change earns it (that is the point of having it), but never to
-    /// paper over a corpus that got easier.
+    /// Floors are a property of *this corpus*, not of the pipeline, so adding fixtures
+    /// means re-measuring them.
     /// </summary>
-    private const double Floor = 0.78;
+    private const double RapidOcrFloor = 0.78;
+    private const double TesseractFloor = 0.70;
 
     /// <summary>
     /// How close two free-text values have to be to count as a half credit. OCR drops a
@@ -51,19 +53,27 @@ public sealed class OcrBenchmarkTests(ITestOutputHelper output)
     /// </summary>
     private const double NearThreshold = 0.8;
 
-    [OcrBenchmarkFact]
-    public async Task The_pipeline_scores_at_or_above_the_recorded_floor()
+    [OcrBenchmarkFact(OcrEngine.RapidOcr)]
+    public Task RapidOcr_scores_at_or_above_its_floor() =>
+        ScoreEngine(OcrEngine.RapidOcr, RapidOcrFloor);
+
+    [OcrBenchmarkFact(OcrEngine.Tesseract)]
+    public Task Tesseract_scores_at_or_above_its_floor() =>
+        ScoreEngine(OcrEngine.Tesseract, TesseractFloor);
+
+    private async Task ScoreEngine(OcrEngine engine, double floor)
     {
         var fixtures = OcrFixtures.All();
         Assert.NotEmpty(fixtures);
 
-        // A generous ceiling, and one process at a time. The production default of 30s
-        // bounds a *user's* scan against a hung engine; this loop runs 30 images while
-        // the rest of the suite competes for the same cores on a CI runner, and one slow
-        // run timing out would degrade to "unavailable" and read as a pipeline failure.
+        // A generous ceiling, and one process at a time. The production default bounds a
+        // *user's* scan against a hung engine; this loop runs every fixture while the rest
+        // of the suite competes for the same cores on a CI runner, and one slow run timing
+        // out would degrade to "unavailable" and read as a pipeline failure.
         // Not NullLogger: the adapters never throw, so their log is the only place that
         // says *why* a fixture came back unavailable.
         var ocr = OcrFixtures.NewEngine(
+            engine,
             new OcrOptions
             {
                 TimeoutSeconds = 120,
@@ -83,24 +93,24 @@ public sealed class OcrBenchmarkTests(ITestOutputHelper output)
             // and send the next reader hunting for a parser bug.
             Assert.True(
                 read.Available,
-                $"the engine went unavailable on {fixture.File}. The adapter's own log is "
+                $"{engine} went unavailable on {fixture.File}. The adapter's own log is "
                 + "in this test's output, and says which of start, exit code or timeout it was");
 
             var parsed = parser.Parse(read);
             scored.Add(new Scored(fixture, Score(fixture.Expected, parsed), parsed));
         }
 
-        var report = Report(scored);
+        var report = Report(engine, scored);
         output.WriteLine(report);
-        // Also on disk, so the CI job can put it in the run summary rather than leaving
-        // it buried in log output nobody expands.
+        // Also on disk, one file per engine, so the CI job can put both in the run summary
+        // rather than leaving them in log output nobody expands.
         await File.WriteAllTextAsync(
-            Path.Combine(AppContext.BaseDirectory, "ocr-benchmark.md"), report);
+            Path.Combine(AppContext.BaseDirectory, $"ocr-benchmark-{engine}.md"), report);
 
         var total = scored.Average(s => s.Fields.Average(f => f.Value.Credit()));
         Assert.True(
-            total >= Floor,
-            $"OCR pipeline scored {total:P1}, below the {Floor:P1} floor. Scorecard:\n{report}");
+            total >= floor,
+            $"{engine} scored {total:P1}, below the {floor:P1} floor. Scorecard:\n{report}");
     }
 
     private static IReadOnlyDictionary<string, Outcome> Score(
@@ -223,13 +233,13 @@ public sealed class OcrBenchmarkTests(ITestOutputHelper output)
         _ => (scored.Fixture.Expected.Weight, scored.Parsed.Weight),
     };
 
-    private static string Report(IReadOnlyList<Scored> scored)
+    private static string Report(OcrEngine engine, IReadOnlyList<Scored> scored)
     {
         var fields = (string[])["name", "roaster", "origin", "roastLevel", "weight"];
         var report = new StringBuilder();
 
         var total = scored.Average(s => s.Fields.Average(f => f.Value.Credit()));
-        report.AppendLine(CultureInfo.InvariantCulture, $"# OCR benchmark: {total:P1} over {scored.Count} fixtures");
+        report.AppendLine(CultureInfo.InvariantCulture, $"# OCR benchmark, {engine}: {total:P1} over {scored.Count} fixtures");
         report.AppendLine();
 
         report.AppendLine("| field | exact | near | missing | wrong | score |");

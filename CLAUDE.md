@@ -163,10 +163,25 @@ the fields is the rest of the parser: the four-letter minimum and the height ran
 
 **Do not change the OCR adapter or the label parser without running the benchmark.**
 `OcrBenchmarkTests` scores the whole pipeline against a fixed corpus and fails below a
-floor, so a change can be compared instead of argued about. It runs inside the normal
-backend suite (the `backend` CI job already installs Tesseract) and prints a scorecard:
-per field, per shooting condition, and every wrong answer as `wanted X, got Y`. CI copies
-it into the run summary.
+floor, so a change can be compared instead of argued about. It prints a scorecard: per
+field, per shooting condition, and every wrong answer as `wanted X, got Y`.
+
+**Both engines are scored on every run**, each against its own floor, and CI publishes
+both scorecards. That is not thoroughness for its own sake: every constant in
+`CoffeeLabelParser` is shared between the engines, and all three were swept against
+Tesseract before RapidOCR existed. Measured since, the optima coincide, but only because
+RapidOCR is insensitive to the line gap and the letter minimum that Tesseract needs:
+
+| | RapidOCR | Tesseract |
+| --- | --: | --: |
+| band tolerance 0.70 (shipped) | **82.8%** | **74.4%** |
+| band tolerance 0.80 | 79.2% | 72.8% |
+| line gap 0.4 | 82.8% | 70.8% |
+| line gap 0.8 (shipped) | **82.8%** | **74.4%** |
+| four-letter minimum, at 3 | 82.8% | 73.8% |
+
+Nothing guarantees that stays true, so scoring one engine would let a tuning pass for it
+quietly cost the other.
 
 On a host without Tesseract the benchmark **skips with a reason**, so on a bare Windows
 host you have measured nothing and the number to quote is CI's.
