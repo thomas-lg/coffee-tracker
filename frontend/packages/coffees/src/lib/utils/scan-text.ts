@@ -1,16 +1,18 @@
 /**
  * Tidies a value read off a bag before it lands in the form.
  *
- * Labels are printed in capitals, so OCR returns "LA LIBERTAD" and "TORREFACTEUR", and
- * pre-filling those verbatim means the catalog shouts wherever they are shown. Only
- * fully uppercase words are touched: a bag that prints "Café de Colombia" already has
- * the casing its roaster chose, and forcing every word would make that worse, not
- * better.
+ * Labels are printed in capitals, so OCR returns "INTENSO BLEND" and "GREEN LION
+ * COFFEE", and pre-filling those verbatim means the catalog shouts wherever it shows
+ * them. Each shouted word gets a capital and the rest lowercased: "Intenso Blend".
+ *
+ * Only shouted words are touched. A bag printing "Café de Colombia" has the casing its
+ * roaster chose, and capitalising every word would turn it into "Café De Colombia",
+ * which is worse than what arrived.
  *
  * Applies to the free-text fields alone. Origin and roast level come back from closed
  * vocabularies the parser has already canonicalised.
  */
-export function sentenceCaseScan(value: string): string {
+export function titleCaseScan(value: string): string {
   return value.replace(/\S+/g, (word) => (isShouting(word) ? capitalise(word) : word));
 }
 
@@ -45,7 +47,7 @@ const PRESERVED = new Set([
 
 /**
  * A word is shouting when it has letters, none of them lowercase, and it is not one of
- * the marks above. "PACIFIC" is; "250g" and "-" have nothing to change and pass through.
+ * the marks above. "250g" and "-" have nothing to change and pass through.
  */
 function isShouting(word: string): boolean {
   if (word === word.toLowerCase() || word !== word.toUpperCase()) return false;

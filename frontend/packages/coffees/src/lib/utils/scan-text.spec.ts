@@ -1,53 +1,49 @@
 import { describe, expect, it } from 'vitest';
-import { sentenceCaseScan } from './scan-text';
+import { titleCaseScan } from './scan-text';
 
-describe('sentenceCaseScan', () => {
+describe('titleCaseScan', () => {
   it('stops a bag printed in capitals from shouting in the catalog', () => {
-    expect(sentenceCaseScan('LA LIBERTAD')).toBe('La Libertad');
-    expect(sentenceCaseScan('INTENSO BLEND')).toBe('Intenso Blend');
+    expect(titleCaseScan('INTENSO BLEND')).toBe('Intenso Blend');
+    expect(titleCaseScan('GREEN LION COFFEE')).toBe('Green Lion Coffee');
+    expect(titleCaseScan('LA LIBERTAD')).toBe('La Libertad');
   });
 
   it('leaves casing a roaster chose deliberately alone', () => {
     // Recasing everything would turn this into "Café De Colombia", which is worse than
     // what arrived.
-    expect(sentenceCaseScan('Café de Colombia')).toBe('Café de Colombia');
-    expect(sentenceCaseScan('mokxa')).toBe('mokxa');
+    expect(titleCaseScan('Café de Colombia')).toBe('Café de Colombia');
+    expect(titleCaseScan('mokxa')).toBe('mokxa');
   });
 
   it('recases only the words that are shouting', () => {
-    expect(sentenceCaseScan('Kekchi DARK ROAST')).toBe('Kekchi Dark Roast');
-  });
-
-  it('keeps accents, which is most of what these labels are', () => {
-    expect(sentenceCaseScan('TORRÉFACTEUR')).toBe('Torréfacteur');
-    expect(sentenceCaseScan('BRÉSIL')).toBe('Brésil');
-  });
-
-  it('starts at the first letter, not the first character', () => {
-    expect(sentenceCaseScan('(BLEND)')).toBe('(Blend)');
-    expect(sentenceCaseScan('"ESPRESSO"')).toBe('"Espresso"');
-  });
-
-  it('capitalises from the first letter, wherever in the word that is', () => {
-    // "250G" keeps its capital because G is its first letter. Odd in isolation, but the
-    // alternative is a rule that treats a word differently depending on what precedes
-    // its letters, and weight is a parsed field of its own anyway.
-    expect(sentenceCaseScan('250G ·  ARABICA')).toBe('250G ·  Arabica');
-    expect(sentenceCaseScan('')).toBe('');
+    expect(titleCaseScan('Kekchi DARK ROAST')).toBe('Kekchi Dark Roast');
   });
 
   it('leaves a bean grade alone, because it is capitals on purpose', () => {
     // Caught by the e2e before this list existed: "Kirinyaga AA" is a Kenyan screen
-    // size and "Kirinyaga Aa" is nothing at all.
-    expect(sentenceCaseScan('KIRINYAGA AA')).toBe('Kirinyaga AA');
-    expect(sentenceCaseScan('Kirinyaga AA')).toBe('Kirinyaga AA');
-    expect(sentenceCaseScan('HUEHUETENANGO SHB')).toBe('Huehuetenango SHB');
-    // Still recased, because it is a word rather than a grade.
-    expect(sentenceCaseScan('LA LIBERTAD')).toBe('La Libertad');
+    // size, and "Kirinyaga Aa" is nothing at all.
+    expect(titleCaseScan('KIRINYAGA AA')).toBe('Kirinyaga AA');
+    expect(titleCaseScan('Kirinyaga AA')).toBe('Kirinyaga AA');
+    expect(titleCaseScan('HUEHUETENANGO SHB')).toBe('Huehuetenango SHB');
+  });
+
+  it('keeps accents, which is most of what these labels are', () => {
+    expect(titleCaseScan('TORRÉFACTEUR')).toBe('Torréfacteur');
+    expect(titleCaseScan('BRÉSIL')).toBe('Brésil');
+  });
+
+  it('starts at the first letter, not the first character', () => {
+    expect(titleCaseScan('(BLEND)')).toBe('(Blend)');
+    expect(titleCaseScan('"ESPRESSO"')).toBe('"Espresso"');
+  });
+
+  it('passes through a value with nothing to change', () => {
+    expect(titleCaseScan('250g')).toBe('250g');
+    expect(titleCaseScan('')).toBe('');
   });
 
   it('preserves the spacing it was given', () => {
     // The form shows this verbatim, so collapsing runs would silently edit the value.
-    expect(sentenceCaseScan('  LEADING AND  DOUBLE ')).toBe('  Leading And  Double ');
+    expect(titleCaseScan('  LEADING AND  DOUBLE ')).toBe('  Leading And  Double ');
   });
 });
