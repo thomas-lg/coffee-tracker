@@ -51,8 +51,9 @@ about when anything lands.
   ASP.NET Core Identity + JWT.
 - **Frontend:** Angular 22 (standalone components, signals, Signal Forms),
   shipped as an installable PWA.
-- **Snap-to-fill:** photograph a coffee bag, and open-source OCR (Tesseract first,
-  behind a swappable `IOcrService`) pre-fills the Add Coffee form.
+- **Snap-to-fill:** photograph a coffee bag, and open-source OCR (RapidOCR by default,
+  Tesseract one setting away, both behind `IOcrService`) pre-fills the Add Coffee form.
+  An administrator picks the engine in **Admin -> Scanning**.
 - **Deploy:** GitHub Actions builds a `linux/amd64` + `linux/arm64` image and
   publishes it to GHCR; you install/update it manually from your NAS's Docker GUI.
 
@@ -151,7 +152,7 @@ never face the internet directly.
 | `Ocr__TessdataPath`               | no       | system path      | Override the tessdata directory; defaults to the `TESSDATA_PREFIX` system path (the image ships English data). |
 | `Ocr__Language`                   | no       | `eng`            | Tesseract language code. |
 | `Ocr__TimeoutSeconds`             | no       | `30`             | Hard ceiling on a single OCR run; a slower/stuck scan is terminated and returns `503` so it can't pin a worker. |
-| `Ocr__MaxConcurrency`             | no       | `0` (≈ 2× CPUs)  | Max OCR processes running at once; extra scans queue instead of spawning unbounded `tesseract` processes. `0` resolves to twice the processor count. |
+| `Ocr__MaxConcurrency`             | no       | `0` (per engine) | Max OCR processes running at once; extra scans queue instead of spawning unbounded ones. `0` lets each engine pick its own: twice the processor count for `tesseract`, but **2** for `rapidocr`, which loads two models per process and would get the container OOM-killed at sixteen. Setting this applies the same number to both. |
 | `PUID`                            | no       | `99`             | User ID the app runs as. Set to match your host volume owner so `/config`/`/photos` are writable (Unraid default `99` = `nobody`). |
 | `PGID`                            | no       | `100`            | Group ID the app runs as (Unraid default `100` = `users`). |
 
@@ -254,9 +255,6 @@ Nothing committed, just a parking lot for when the mood strikes:
 - **Brew log** for per-cup extraction notes (grind, dose, yield, time) beyond a rating.
 - **Wishlist & "finished bag"** states; optional low-stock nudges.
 - **Stats & charts**: rating trends over time, favourite roasters/origins.
-- **Export / import** (JSON/CSV) and a one-click backup endpoint.
-- **OCR upgrade** to PaddleOCR or RapidOCR behind `IOcrService`, if Tesseract turns out
-  weak on real bags.
 - **i18n**. The UI is English-only today.
 
 ## Contributing
