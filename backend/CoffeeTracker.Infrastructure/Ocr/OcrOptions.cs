@@ -5,8 +5,37 @@ public class OcrOptions
 {
     public const string SectionName = "Ocr";
 
-    /// <summary>Which OCR adapter to use: <c>tesseract</c> (default) or <c>none</c> (disabled).</summary>
-    public string Engine { get; set; } = "tesseract";
+    /// <summary>
+    /// Which OCR adapter to use: <c>rapidocr</c> (default), <c>tesseract</c>, or
+    /// <c>none</c> to disable scanning on a host carrying neither.
+    /// </summary>
+    public string Engine { get; set; } = "rapidocr";
+
+    /// <summary>
+    /// Mean per-line confidence (0-100) below which the label parser treats a line as
+    /// background noise. Left unset it takes the default for the selected engine, which
+    /// is what you want: the number is a property of how that engine scores, not of the
+    /// bag.
+    /// </summary>
+    /// <remarks>
+    /// Tesseract's default is 55, measured from a photograph where its noise lines scored
+    /// 15.6 to 48.8 and its printed lines 58.8 to 96.6. RapidOCR scores far more
+    /// confidently: on the same corpus real text lands at 94 to 100 and the little noise
+    /// it produces around 81. Swept, 55 and 70 both score 82.8%, 80 scores 81.8% and 90
+    /// upward falls away as genuine lines start being dropped. 70 is the middle of that
+    /// plateau, which leaves margin against noise on a bag this corpus has never seen
+    /// without costing anything on the ones it has.
+    /// </remarks>
+    public double? MinConfidence { get; set; }
+
+    /// <summary>Python interpreter that runs the RapidOCR reader. Resolved from PATH when unset.</summary>
+    public string? PythonPath { get; set; }
+
+    /// <summary>
+    /// The RapidOCR reader script (<c>deploy/rapidocr/read.py</c>), which the image
+    /// installs at <c>/opt/rapidocr/read.py</c>. Only read when the engine is rapidocr.
+    /// </summary>
+    public string? RapidOcrScriptPath { get; set; }
 
     /// <summary>
     /// Path to the <c>tesseract</c> CLI. When unset, it is resolved from <c>PATH</c>

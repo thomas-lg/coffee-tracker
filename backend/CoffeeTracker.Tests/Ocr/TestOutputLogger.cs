@@ -42,3 +42,23 @@ public sealed class TestOutputLogger<T>(ITestOutputHelper output) : ILogger<T>
         }
     }
 }
+
+/// <summary>
+/// Hands out <see cref="TestOutputLogger{T}"/> for whichever adapter the benchmark is
+/// scoring, so the engine choice does not have to reach into the logger's type argument.
+/// </summary>
+public sealed class TestOutputLoggerFactory(ITestOutputHelper output) : ILoggerFactory
+{
+    public ILogger CreateLogger(string categoryName) => new TestOutputLogger<object>(output);
+
+    public void AddProvider(ILoggerProvider provider)
+    {
+        // Nothing is routed anywhere but the test output.
+    }
+
+    public void Dispose()
+    {
+        // Nothing owned.
+    }
+}
+
