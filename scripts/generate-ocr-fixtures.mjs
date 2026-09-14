@@ -3,16 +3,15 @@
 //
 //   node scripts/generate-ocr-fixtures.mjs
 //
-// Why rendered rather than photographed: a benchmark has to be reproducible and has to
-// ship in the repo, and neither is true of a folder of real photos of my own shelf. What
-// these DO give is a fixed target that moves only when the pipeline moves, so a change to
-// the adapter can be scored instead of argued about.
+// These are rendered so the corpus stays reproducible and cheap to carry: a fixed target
+// that moves only when the pipeline moves, so a change to the adapter can be scored
+// instead of argued about.
 //
-// What they do NOT give is real-world accuracy. Rendered text is too clean, so every
+// What they do not give is real-world accuracy. Rendered text is too clean, so every
 // fixture is degraded through CSS the way a phone camera degrades a bag: rotation,
 // perspective, glare, blur, low contrast on dark packaging, and JPEG artefacts from the
 // screenshot encoder. `backend/CoffeeTracker.Tests/Ocr/Fixtures/real/` is where real
-// photos go, and the benchmark scores them alongside these; see its README.
+// photographs live, and the benchmark scores them as their own corpus; see its README.
 //
 // Playwright rather than an image library: the degradations that matter here are
 // perspective, gradients and blur, which a browser already does well, and the repo
@@ -32,8 +31,8 @@ const OUT = process.env.OUT_DIR ?? 'backend/CoffeeTracker.Tests/Ocr/Fixtures/syn
  * unit), so both spellings are written out rather than one being re-derived here.
  *
  * `expectRoaster: false` marks a bag whose roaster the parser is *expected to leave
- * null*. It requires positive evidence — a line actually saying "Roasters", "Roastery"
- * or "Coffee Co" — and "Onyx Coffee Lab" carries none. That is the parser's stated
+ * null*. It requires positive evidence, a line actually saying "Roasters", "Roastery"
+ * or "Coffee Co", and "Onyx Coffee Lab" carries none. That is the parser's stated
  * contract (a null the user fills in beats a confident wrong value), so the benchmark
  * scores it as a pass and would flag an invented roaster as a failure.
  *

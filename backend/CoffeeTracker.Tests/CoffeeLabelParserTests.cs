@@ -196,7 +196,7 @@ public class CoffeeLabelParserTests
     public void Parse_IgnoresAWeightTheConfidenceGateRejected()
     {
         var scan = OcrResult.Read(
-            // RawText carries everything the engine read, noise included — which is
+            // RawText carries everything the engine read, noise included, which is
             // exactly why the weight must not be taken from it.
             "1509 g\nGUATEMALA\n250 g",
             [
@@ -300,7 +300,7 @@ public class CoffeeLabelParserTests
 
     // Line merging, driven with geometry rather than through the engine, so the rule is
     // pinned exactly and runs on a host with no Tesseract. The numbers are lifted from a
-    // real TSV dump of `antigua-flat.jpg` — a bag whose name and roaster both wrap.
+    // real TSV dump of `antigua-flat.jpg`, a bag whose name and roaster both wrap.
     private static OcrLine Line(string text, int height, int top, double confidence = 95) =>
         new(text, confidence, height, top);
 

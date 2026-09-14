@@ -40,6 +40,12 @@ public partial class CoffeeLabelParser : ICoffeeLabelParser
     /// genuinely printed lines between 58.8 and 96.6 - a wide, unambiguous gap. 55 sits
     /// inside it with margin either side. The words the engine is unsure of are exactly
     /// the ones that used to end up as the coffee's name.
+    ///
+    /// Re-swept later against the whole benchmark corpus, photographs included: 45, 50,
+    /// 55 and 60 all score the same, and only 40 and below (noise gets in) or 65 and above
+    /// (real lines get dropped) cost anything. 55 sits in the middle of that plateau, so
+    /// the number chosen from one photograph turned out to be right for the wrong reason:
+    /// there was never a sharp optimum to find.
     /// </remarks>
     public const double DefaultMinConfidence = 55;
 
@@ -69,16 +75,16 @@ public partial class CoffeeLabelParser : ICoffeeLabelParser
             // Read from the lines the confidence gate kept, not from RawText: the
             // engine rebuilds RawText from every word it recognised, including the
             // background noise the gate exists to drop. A digit run in a table grain or
-            // a reflection would otherwise land as the bag's weight — confidently wrong,
+            // a reflection would otherwise land as the bag's weight, confidently wrong,
             // which is worse than absent.
             Weight: FindWeight(ConfidentText(ocr?.Lines ?? [])));
     }
 
     // Picks the keyword that looks most like a *label* rather than prose: it prefers
-    // a match on the shortest line (fewest words — a labelled "Ethiopia" / "Medium
+    // a match on the shortest line (fewest words, a labelled "Ethiopia" / "Medium
     // Roast" line beats a country/roast word buried in a tasting-note sentence like
     // "notes of brazil nut, dark chocolate"). Ties break by earliest line, then
-    // earliest position, then array order — so a longer canonical roast
+    // earliest position, then array order, so a longer canonical roast
     // ("Medium-Dark") still beats its substring ("Medium") at the same spot.
     // Whole-word matching is plain index scanning (no per-keyword regex compile).
     private static string? FindKeyword(List<string> lines, string[] keywords)
@@ -161,7 +167,7 @@ public partial class CoffeeLabelParser : ICoffeeLabelParser
     //    a different line to be the name → that line is the roaster, the name comes
     //    from another line (handles roaster-first bags like "Stumptown … / Hair Bender").
     //  - Otherwise the first prominent line is the name and the roaster is a later
-    //    roaster-keyword line (or null) — never the same line, and never a weight line,
+    //    roaster-keyword line (or null), never the same line, and never a weight line,
     //    so a lone "Blue Bottle Coffee" is a name, not a duplicated/junk roaster.
     private static (string? Name, string? Roaster) FindNameAndRoaster(IReadOnlyList<string> lines)
     {
@@ -318,7 +324,7 @@ public partial class CoffeeLabelParser : ICoffeeLabelParser
     /// <summary>
     /// Whether <paramref name="below"/> is the next line of the same wrapped value: it
     /// starts under the other, and the white band between them is small against the type
-    /// size. Lines of a different size sitting between the two are ignored — a speck the
+    /// size. Lines of a different size sitting between the two are ignored: a speck the
     /// engine read as "e" should not break a name in half.
     /// </summary>
     private static bool DirectlyBelow(OcrLine above, OcrLine below)
@@ -367,7 +373,8 @@ public partial class CoffeeLabelParser : ICoffeeLabelParser
     [GeneratedRegex(@"(?<amount>\d+(?:[.,]\d+)?)\s*(?<unit>kg|g|gr|grams|oz|lbs|lb)\b", RegexOptions.IgnoreCase)]
     private static partial Regex WeightRegex();
 
-    // Roaster-indicating phrases. Deliberately NOT bare "coffee" — that over-triggers
+    // Roaster-indicating phrases. Deliberately NOT bare "coffee", because that
+    // over-triggers
     // on ordinary product lines like "Ethiopia Coffee" and inverts name/roaster.
     [GeneratedRegex(@"\b(roasters?|roastery|coffee\s*co\.?|coffee\s*roasters?|roasting\s*co\.?)\b", RegexOptions.IgnoreCase)]
     private static partial Regex RoasterKeywordRegex();

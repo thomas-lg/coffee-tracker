@@ -15,8 +15,8 @@ namespace CoffeeTracker.Tests.Ocr;
 ///
 /// A phone does not rotate the pixels when you turn it: it stores them in sensor order
 /// and writes an EXIF orientation tag saying which way is up. Every viewer honours that
-/// tag, so the photo looks right everywhere the user has seen it — and Leptonica, which
-/// is what Tesseract decodes JPEG with, does not. The engine is handed the sideways
+/// tag, so the photo looks right everywhere the user has seen it. Leptonica, which is
+/// what Tesseract decodes JPEG with, does not. The engine is handed the sideways
 /// pixels, which is the single most likely reason a scan of a perfectly readable bag
 /// comes back with nothing.
 /// </summary>
@@ -29,7 +29,7 @@ public sealed class TesseractOrientationTests(ITestOutputHelper output)
     /// <summary>
     /// Takes an upright fixture and stores it the way a phone held sideways would: the
     /// pixels turned, and an EXIF tag saying to turn them back. Nothing about how the
-    /// image *looks* changes — only how it is encoded.
+    /// image *looks* changes, only how it is encoded.
     /// </summary>
     private static async Task<MemoryStream> AsPhoneWouldStoreIt(string fixture)
     {

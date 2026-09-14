@@ -1,6 +1,6 @@
 # Working on this repo
 
-Conventions and hard-won context. The README is the user-facing documentation —
+Conventions and hard-won context. The README is the user-facing documentation;
 this file is what someone (or some agent) needs to *change* the code without
 rediscovering the same things.
 
@@ -12,10 +12,10 @@ Hexagonal, and enforced in that direction: **Domain ← Application ← {Infrast
 - Adapters live behind driven ports (`Ports/Driven`): `IUserDirectory`, `IPhotoStorage`,
   `IOcrService`, `IRefreshTokenStore`, `ITokenIssuer`…
 - DTOs at the boundary. Domain types don't cross the HTTP edge.
-- Business rules that an adapter cannot hold belong in the application layer — which
+- Business rules that an adapter cannot hold belong in the application layer, which
   account an assertion resolves to, who is an administrator, who may edit what.
 
-Two carve-outs, both deliberate, both documented where they happen — if you are about
+Two carve-outs, both deliberate, both documented where they happen. If you are about
 to "fix" one, read the comment first:
 
 - **`RoastLevel` does cross the edge.** It is a closed three-value enum with a
@@ -33,12 +33,12 @@ NuGet lock files.
 ## Comment style
 
 **Write the simplest code you can, then comment the parts that still look complex.**
-A comment earns its place by decoding a line that will make a reader stop — never by
+A comment earns its place by decoding a line that will make a reader stop, never by
 narrating how the code is organised.
 
 If a reader can answer *"why is this here, and why this way?"* from the code alone, a
 comment adds nothing and starts rotting the moment the code moves. If they cannot, the
-comment is required — not a nicety.
+comment is required, not a nicety.
 
 The trap is the plausible-sounding comment that decodes nothing. A class header saying
 *"everything stateful lives in the store and the template reads it directly"* reads well
@@ -52,28 +52,28 @@ Belongs in a comment, because the code cannot express it:
 - why the obvious approach was rejected (the CLI instead of the P/Invoke Tesseract
   binding)
 - what breaks if the line is removed
-- a constraint that lives somewhere else entirely — a provider's behaviour, a GitHub
+- a constraint that lives somewhere else entirely: a provider's behaviour, a GitHub
   Actions rule, a library's quirk, a Tesseract 5 path convention
 
 Does not, because the code already says it:
 
 - what the next line does
 - a name, type or signature restated in prose
-- **where things live** — which layer owns what, what moved to a store, what a screen
+- **where things live**, which layer owns what, what moved to a store, what a screen
   keeps. That is the file's shape, and the shape is readable
 - the comment justifying its own existence
 
 Density follows from the rule; it is not the rule. This codebase lands around 25-35%
-comment lines as a *result* — don't pad to reach it, and never delete a comment the
+comment lines as a *result*; don't pad to reach it, and never delete a comment the
 code genuinely needs to stay under it. But a diff running far above it is usually
 restating rather than explaining, and worth a second look.
 
 ## Commits & PRs
 
 - Feature branch → PR → CI green → **squash-merge**. `main` is protected.
-- PR titles follow **Conventional Commits** — `.github/workflows/pr-title-check.yml`
+- PR titles follow **Conventional Commits**; `.github/workflows/pr-title-check.yml`
   enforces it against `.github/conventional-commit-types.json`.
-- Commit with your personal (not work) git identity — check `git config user.email`
+- Commit with your personal (not work) git identity; check `git config user.email`
   in this clone before the first commit.
 - `GH_TOKEN` in this environment lacks the `workflow` scope, so for any PR touching
   `.github/workflows/`, use `env -u GH_TOKEN gh ...` and let `gh` use its own auth.
@@ -91,7 +91,7 @@ See the README's *Running the tests* for the commands. What matters when writing
 - `/api/auth` is rate-limited to **10/min**, so e2e specs seed sessions into
   `localStorage` via `injectSession()` rather than logging in repeatedly.
 - The e2e OpenID Connect provider (`e2e/support/fake-oidc-provider.ts`) is a real
-  minimal server — discovery, JWKS, PKCE, nonce and RSA signatures all genuinely
+  minimal server: discovery, JWKS, PKCE, nonce and RSA signatures all genuinely
   happen. A test account on a real provider would be unreachable from CI and would
   make the suite depend on someone else's uptime.
 - `provider-sign-in.spec.ts` documents which guards were verified by *reintroducing
@@ -101,7 +101,7 @@ See the README's *Running the tests* for the commands. What matters when writing
 ## OCR
 
 The adapter **shells out to the `tesseract` CLI**; it is not a P/Invoke NuGet. The
-binding proved too brittle on Linux — it probes version-pinned `lib*.dll.so` names and
+binding proved too brittle on Linux: it probes version-pinned `lib*.dll.so` names and
 needs a `libdl` shim.
 
 - `appsettings.Development.json` sets `Ocr:Engine=none` so a bare host without
@@ -110,7 +110,7 @@ needs a `libdl` shim.
 - The adapter passes `--tessdata-dir` explicitly: Tesseract 5's CLI treats
   `TESSDATA_PREFIX` as the directory itself, not its parent.
 - Arguments go through `ArgumentList` with `UseShellExecute = false`, the image is
-  piped over **stdin**, and the language is allowlisted. Keep it that way — no
+  piped over **stdin**, and the language is allowlisted. Keep it that way: no
   caller-controlled value may become an argument.
 
 ### Measuring it
@@ -122,40 +122,58 @@ backend suite (the `backend` CI job already installs Tesseract) and prints a sco
 per field, per shooting condition, and every wrong answer as `wanted X, got Y`. CI copies
 it into the run summary.
 
-On a host without Tesseract the benchmark **skips with a reason** rather than passing —
-so on a bare Windows host you have measured nothing, and the number to quote is CI's.
+On a host without Tesseract the benchmark **skips with a reason**, so on a bare Windows
+host you have measured nothing and the number to quote is CI's.
 
-The corpus is rendered, not photographed: `node scripts/generate-ocr-fixtures.mjs` draws
-six labels under five bad-photo conditions (angle, glare, dark packaging, blur, flat) and
-writes the manifest from the same objects that drew them, so expectations cannot drift
-from the images. Rendered type is cleaner than a real bag, so treat the score as a
-**regression signal, not an accuracy figure** — `Ocr/Fixtures/real/README.md` explains
-how to add real photographs, which is what settles an engine question.
+There are two corpora, scored separately and never averaged into one number.
+`synthetic/` is rendered: `node scripts/generate-ocr-fixtures.mjs` draws six labels under
+five bad-photo conditions and writes the manifest from the same objects that drew them,
+so expectations cannot drift from the images. `real/` is nine photographs of actual bags,
+six of them pulled off a live instance's own photo volume.
 
-Three things have been swept against it, and each result is recorded next to the constant
+**Weight the photographs.** The rendered corpus scores the pipeline at about 85% and the
+photographs at about 50%, and the photographs are what overturned two decisions the
+rendered fixtures had "proved". Read a rendered score as a regression signal and a real
+one as the accuracy figure.
+
+Four things have been swept against it, and each result is recorded next to the constant
 it set:
 
 - **Preprocessing bought nothing.** Grayscale was worth +0.3, and upscaling *cost* two to
   four points. Don't re-add a pipeline without a scorecard showing it pays.
+- **The page segmentation mode was swept three times and reversed twice.** Mode 6 looked
+  worth five points over the default; then the parser was fixed and every mode tied; then
+  real photographs arrived and mode 6 turned out to be the *worst* of the five on them
+  (32% on a handheld shot where mode 11 scores 54%), because it reads the kitchen table as
+  part of the text block. It ships as 11. Two lessons, and both were expensive: a sweep is
+  only true of the code it was run against, and a corpus scores highest on the images it
+  most resembles.
 - **Line merging** (`BandTolerance`, `MaxLineGap` in the parser) is where the points
-  actually were: 65.7% to 76.7%.
-- **The confidence gate stayed at 55 against the corpus's advice.** 45 scores 1.3 points
-  better here, but the 55 was set from a real photograph where background noise reached
-  48.8, and this corpus photographs bags on a plain table. A rendered corpus does not get
-  to overrule a real measurement about noise, so revisit it with real photos.
+  actually were: 70.7% → 82.0% on the rendered corpus.
+- **The confidence gate sits on a plateau.** The rendered fixtures alone argued for
+  dropping it from 55 to 45; the photographs then showed 45, 50, 55 and 60 all scoring
+  identically, with only ≤40 (noise gets in) and ≥65 (real lines dropped) costing
+  anything. It stays at 55, and holding it against rendered-only evidence turned out to be
+  right for a better reason than the one available at the time.
+
+One more finding sets no constant and is now most of the remaining gap:
+**the real photographs are French and Italian, and every list in the parser is English.**
+`RoasterKeywordRegex` knows "Roasters" and "Roastery", not "Torréfacteur" or
+"Torrefazione"; `Origins` knows "Brazil", not "Brésil". Closing it is parser work, which
+is worth saying because an OCR complaint reads like an engine problem.
 
 What preprocessing *is* there is EXIF auto-orientation, and it earns its place on a
 different argument: Leptonica ignores the orientation tag, so a bag photographed in
 portrait reaches the engine sideways and comes back as mirrored nonsense. The rendered
-corpus cannot see that — it has no EXIF — so `TesseractOrientationTests` covers it
+corpus cannot see that (it has no EXIF), so `TesseractOrientationTests` covers it
 instead, and it was written red first.
 
 Two scoring rules are deliberate and worth knowing before reading a scorecard:
 
 - A `null` expectation is a real assertion: it says the parser should leave the field
-  alone. Inventing a value there scores as **wrong**, not as a pass.
+  alone. Inventing a value there scores as **wrong**.
 - Origin, roast level and weight are closed vocabularies, so they are scored
-  exact-or-nothing. "Kenyq" is not a near miss; it is a value no filter will match.
+  exact-or-nothing. "Kenyq" scores zero, because it is a value no filter will match.
 
 ## Backend dependency bumps
 
@@ -175,7 +193,7 @@ otherwise, so it works on a bare host.
 
 Dependabot hits this on every backend PR. Without a local toolchain,
 `gh workflow run refresh-lockfiles.yml -f pr=<number>` does the restore and pushes the
-lock files — but it cannot make the checks pass on its own: GitHub parks any run
+lock files, but it cannot make the checks pass on its own: GitHub parks any run
 triggered by `github-actions[bot]` as `action_required`, and `GITHUB_TOKEN` can neither
 start nor approve its own runs. The job summary prints the one command that finishes it:
 
@@ -183,7 +201,7 @@ start nor approve its own runs. The job summary prints the one command that fini
 gh pr close <number> && gh pr reopen <number>
 ```
 
-That workflow refuses a pull request from a fork by design — it checks out the head it
+That workflow refuses a pull request from a fork by design: it checks out the head it
 is given with a writable token.
 
 ## OpenSpec
@@ -195,22 +213,22 @@ squash-merge → a separate PR archiving the change into `openspec/specs/`.
 ## Deployment context
 
 Self-hosted on a NAS, internet-exposed behind a TLS-terminating reverse proxy with
-forward auth. The app keeps **its own** login — every endpoint requires a token; the
+forward auth. The app keeps **its own** login: every endpoint requires a token; the
 reverse proxy is not the authentication. The production container starts as root,
 `chown`s `/config` and `/photos` to `PUID:PGID`, then drops privileges via `gosu`.
 
-## Frontend upgrades — current state
+## Frontend upgrades: current state
 
-- **`@ngrx/signals`** — *unblocked*. 22.0.1 peers on `@angular/core@^22.0.0` and the
+- **`@ngrx/signals`**: *unblocked*. 22.0.1 peers on `@angular/core@^22.0.0` and the
   project runs 22.1.5. The three stores (`AuthStore`, `CoffeesStore`,
   `PhotoCleanupStore`) ship as native-signals stores with the same surface, so the swap
   is a deliberate refactor, not a required update.
-- **`@lucide/angular`** — *adopted*. An earlier note here called `lucide-angular`
+- **`@lucide/angular`**: *adopted*. An earlier note here called `lucide-angular`
   blocked on `13.x - 21.x`; that package is **deprecated** in favour of the scoped
   `@lucide/angular`, which peers on `@angular/core: >=17.0.0`. Check the scoped name
   before repeating a claim about a lucide package. Icons are now per-icon standalone
   components on an `svg` attribute selector (`<svg lucideSearch [size]="16">`), each
-  imported by the component that uses it — so a missing import is a template error, and
+  imported by the component that uses it, so a missing import is a template error, and
   there is no central icon map to keep in step. It costs ~26 kB raw (~1.7 kB over the
   wire) against the old hand-rolled `ct-icon`, which is why the initial bundle warning
   moved to 600 kB.
@@ -221,7 +239,7 @@ reverse proxy is not the authentication. The production container starts as root
 ## Regenerating the screenshots
 
 `docs/screenshots/*.png` are captured by `scripts/capture-screenshots.mjs`, not grabbed
-by hand — so a layout change is a re-run, not a reason to leave them stale. They need a
+by hand, so a layout change is a re-run, not a reason to leave them stale. They need a
 running, seeded instance. Nothing on the host but Docker:
 
 ```bash
@@ -237,7 +255,7 @@ docker run --rm -v "$PWD:/work" -w /work \
 ```
 
 Keep the Playwright image tag in step with `@playwright/test` in `frontend/package.json`.
-Review timestamps are server-set, so demo reviews all land on today — back-date them
+Review timestamps are server-set, so demo reviews all land on today; back-date them
 directly in SQLite (stop the container first; WAL keeps the file open) or the
 "ratings over time" shot shows the same date twice and sells nothing.
 
@@ -245,6 +263,6 @@ directly in SQLite (stop the container first; WAL keeps the file open) or the
 
 - **macOS: port 5000 is squatted by AirPlay Receiver.** Either disable it or run the
   API elsewhere (`ASPNETCORE_URLS=http://localhost:5099`) and remap `proxy.conf.json`.
-  Stale backgrounded `dotnet run` processes also serve old binaries — kill them first.
+  Stale backgrounded `dotnet run` processes also serve old binaries; kill them first.
 - Development happens **in the dev container**; the host is not expected to carry the
   .NET SDK, Node or Tesseract.

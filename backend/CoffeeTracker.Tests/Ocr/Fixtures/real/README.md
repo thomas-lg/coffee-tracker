@@ -1,56 +1,65 @@
 # Real bag photos
 
-This folder is empty on purpose, and the benchmark runs without it.
+Nine photographs of actual bags, scored as their own corpus alongside `../synthetic/`.
 
-The `synthetic/` corpus next door is rendered, so it is reproducible and small enough to
-commit. What it cannot tell you is how the pipeline does on an actual bag: rendered type
-is too even, the lighting is a CSS gradient rather than a kitchen, and no amount of blur
-turns a screenshot into a photograph. Treat a synthetic score as a **regression signal**,
-not as an accuracy figure.
+They are here because the rendered corpus turned out to flatter the pipeline by roughly
+a factor of two. Rendered type is too even, the lighting is a CSS gradient rather than a
+kitchen, and the bag fills the frame on a plain ground. These do not:
 
-Real photographs are what settles an engine question. To add some:
+| corpus | score when they were added |
+| --- | --: |
+| synthetic | ~82% |
+| real, handheld | 54% |
+| real, matte-black packaging | 60% |
+| real, kraft paper | 20% |
 
-1. Photograph bags the way you actually would — handheld, whatever light is there. A
-   dozen is enough to be informative; thirty is better. Include the awkward ones: matte
-   black packaging, foil type, a bag that is mostly illustration.
-2. Drop the images in this folder.
-3. Write a `manifest.json` beside them in the same shape as
-   `../synthetic/manifest.json`:
+Six came out of a live instance's own `photos/` volume, so they are what the scan
+endpoint was handed in production. Three were taken for the corpus. Between them
+they carry the cases the rendered fixtures cannot: French and Italian labels, a bag that
+is mostly illustration, foil type on matte black, and one photograph whose EXIF says it
+is rotated.
 
-   ```json
-   {
-     "fixtures": [
-       {
-         "file": "la-cabra-kirinyaga.jpg",
-         "condition": "handheld",
-         "expected": {
-           "name": "Kirinyaga AA",
-           "roaster": "La Cabra Coffee Roasters",
-           "origin": "Kenya",
-           "roastLevel": "Light",
-           "weight": "250g"
-         }
-       }
-     ]
-   }
-   ```
+## They are downscaled, and that was measured
 
-   `condition` is a free label you choose; scores are grouped by it, so it is worth
-   making it mean something (`handheld`, `shelf`, `dark-bag`).
+The originals are 12 MP and about 2.5 MB each, or 23 MB for the nine, which is not a
+thing to carry in a repository forever. At 1600px on the long edge they come to 1.9 MB,
+and the
+score moves from **72.6% to 72.3%**: one field on one fixture. The orientation tag is
+carried across the re-encode by hand, because it is the whole point of one of them.
 
-   A `null` expectation is a real assertion, not a blank: it says the parser should leave
-   that field alone rather than invent a value. Use it where the bag genuinely does not
-   print the field — and note that `roaster` needs positive evidence on the label
-   ("Roasters", "Roastery", "Coffee Co"), so a bag that just says "Onyx Coffee Lab"
-   should expect `null`.
+## Adding more
 
-   `weight` is the **parsed** form, not what is printed: `CoffeeLabelParser` normalises
-   the unit, so a bag printed `500 g` expects `"500g"` and one printed `12 oz` expects
-   `"12oz"`.
+Photograph bags the way you actually would, drop the images here, and add an entry to
+`manifest.json`:
 
-4. Run the benchmark. The scorecard reports `real/*` rows separately from `synthetic/*`,
-   so the two never get averaged into one misleading number.
+```json
+{
+  "file": "some-roaster-some-coffee.jpg",
+  "condition": "handheld",
+  "expected": {
+    "name": "Some Coffee",
+    "roaster": "Some Roaster",
+    "origin": "Kenya",
+    "roastLevel": "Medium",
+    "weight": "250g"
+  }
+}
+```
 
-Whether to commit the photos is your call: they are yours, they are not personal data,
-and committing them makes the score reproducible for anyone else. If you would rather
-not, the folder is already listed in `.gitignore` except for this README.
+Three rules for the expectations, and they matter more than they look:
+
+- **Write what the bag prints, not what the code can currently find.** The point is to
+  measure the gap to the truth. Several entries here expect a roaster the parser has no
+  chance at today, because `RoasterKeywordRegex` only knows English words and these are
+  French and Italian bags. Those score as *missing*, which is the honest reading.
+- **`null` is a real assertion**, not a blank: it says the bag does not print that field
+  and the parser should leave it alone. Inventing a value there scores as **wrong**.
+- **`weight` is the parsed form, not the printed one.** `CoffeeLabelParser` normalises the
+  unit, so a bag printed `250g ℮ / 8.8 oz` expects `"250g"`.
+
+`condition` is a free label you choose, and scores are grouped by it, so make it mean
+something: it is how you tell preprocessing that helps dark packaging and hurts glare
+from preprocessing that does nothing.
+
+Adding fixtures changes the total, so re-measure `Floor` in `OcrBenchmarkTests` when you
+do; it is a property of this corpus, not a constant of the pipeline.

@@ -6,8 +6,8 @@ namespace CoffeeTracker.Tests.Ocr;
 /// <summary>
 /// Routes an adapter's own logging into the test output.
 ///
-/// The OCR adapter never throws: every failure — a process that would not start, a
-/// non-zero exit, a run past the timeout — is logged and degraded to
+/// The OCR adapter never throws: every failure (a process that would not start, a
+/// non-zero exit, a run past the timeout) is logged and degraded to
 /// <c>OcrResult.Unavailable</c>, which is right for a web request and blinding for a
 /// test. With <c>NullLogger</c> the benchmark could only report *that* the engine went
 /// unavailable, which is the half of the message nobody can act on.

@@ -19,7 +19,7 @@ public sealed record OcrFixture(string File, string Condition, OcrExpectation Ex
     /// <summary>Absolute path, filled in when the manifest is loaded.</summary>
     public string Path { get; init; } = string.Empty;
 
-    /// <summary>Which corpus it came from — <c>synthetic</c> or <c>real</c>.</summary>
+    /// <summary>Which corpus it came from: <c>synthetic</c> or <c>real</c>.</summary>
     public string Corpus { get; init; } = string.Empty;
 }
 
@@ -61,9 +61,9 @@ public static class OcrFixtures
             NullLogger<TesseractCliOcrService>.Instance).IsAvailable;
 
     /// <summary>
-    /// Every fixture across both corpora, synthetic first. A corpus with no manifest is
-    /// simply absent — `real/` ships empty, because a folder of photographs of my own
-    /// shelf is not something to commit, and the benchmark has to run without it.
+    /// Every fixture across both corpora, synthetic first. A corpus whose manifest is
+    /// missing is skipped rather than failing the run, so a checkout carrying only one of
+    /// the two still scores that one.
     /// </summary>
     public static IReadOnlyList<OcrFixture> All()
     {
@@ -117,8 +117,8 @@ public static class OcrFixtures
 
 /// <summary>
 /// A <see cref="FactAttribute"/> for the benchmark, skipped with a reason when the host
-/// carries no Tesseract — the bare Windows host this repo is often driven from, per
-/// CLAUDE.md § Gotchas. Skipped rather than quietly passing: a benchmark that reports
+/// carries no Tesseract, which is the bare Windows host this repo is often driven from
+/// (CLAUDE.md § Gotchas). Skipped rather than quietly passing: a benchmark that reports
 /// green having measured nothing is worse than one that says it did not run.
 /// </summary>
 public sealed class OcrBenchmarkFactAttribute : FactAttribute

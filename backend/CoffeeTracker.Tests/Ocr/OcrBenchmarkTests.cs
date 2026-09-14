@@ -10,7 +10,7 @@ using Xunit.Abstractions;
 namespace CoffeeTracker.Tests.Ocr;
 
 /// <summary>
-/// Scores the whole snap-to-fill pipeline — engine, then parser — against a fixed corpus,
+/// Scores the whole snap-to-fill pipeline (engine, then parser) against a fixed corpus,
 /// so a change to either can be measured instead of argued about.
 ///
 /// This exists because "the OCR isn't great" was, for the life of the feature, a feeling.
@@ -26,15 +26,20 @@ namespace CoffeeTracker.Tests.Ocr;
 public sealed class OcrBenchmarkTests(ITestOutputHelper output)
 {
     /// <summary>
-    /// Minimum overall score, measured at 76.7% on tesseract 5.3.4, up from 65.7% before
-    /// the parser stopped truncating values the bag printed across two lines. The floor
-    /// sits below that so a patch release of the engine scoring a point differently does
-    /// not fail the build, while a real regression does.
+    /// Minimum overall score, currently 72.3% on tesseract 5.3.4. The floor sits below
+    /// that so a patch release of the engine scoring a point differently does not fail
+    /// the build, while a real regression does.
+    ///
+    /// It is a property of *this corpus*, not a constant of the pipeline: it read 82.0%
+    /// over the rendered fixtures alone and dropped when nine photographs joined them,
+    /// because the photographs score around 50% and the rendered ones around 85%. So
+    /// adding fixtures means re-measuring this number, and a change in it is only
+    /// meaningful against an unchanged corpus.
     ///
     /// Raise it when a change earns it (that is the point of having it), but never to
     /// paper over a corpus that got easier.
     /// </summary>
-    private const double Floor = 0.72;
+    private const double Floor = 0.68;
 
     /// <summary>
     /// How close two free-text values have to be to count as a half credit. OCR drops a
@@ -70,7 +75,7 @@ public sealed class OcrBenchmarkTests(ITestOutputHelper output)
             // and send the next reader hunting for a parser bug.
             Assert.True(
                 read.Available,
-                $"the engine went unavailable on {fixture.File} — the adapter's own log is "
+                $"the engine went unavailable on {fixture.File}. The adapter's own log is "
                 + "in this test's output, and says which of start, exit code or timeout it was");
 
             var parsed = parser.Parse(read);
@@ -216,7 +221,7 @@ public sealed class OcrBenchmarkTests(ITestOutputHelper output)
         var report = new StringBuilder();
 
         var total = scored.Average(s => s.Fields.Average(f => f.Value.Credit()));
-        report.AppendLine(CultureInfo.InvariantCulture, $"# OCR benchmark — {total:P1} over {scored.Count} fixtures");
+        report.AppendLine(CultureInfo.InvariantCulture, $"# OCR benchmark: {total:P1} over {scored.Count} fixtures");
         report.AppendLine();
 
         report.AppendLine("| field | exact | near | missing | wrong | score |");
@@ -240,7 +245,7 @@ public sealed class OcrBenchmarkTests(ITestOutputHelper output)
         }
 
         // The wrong answers by name, because those are the ones a user has to notice and
-        // undo — a missing field costs a keystroke, a confident wrong one costs trust.
+        // undo: a missing field costs a keystroke, a confident wrong one costs trust.
         var invented = scored
             .SelectMany(s => s.Fields
                 .Where(f => f.Value == Outcome.Wrong)
@@ -249,7 +254,7 @@ public sealed class OcrBenchmarkTests(ITestOutputHelper output)
                     var (want, got) = Values(s, f.Key);
                     // Both sides, verbatim: "name was wrong" sends you to re-run the
                     // engine by hand, whereas "wanted X, got Y" usually names the bug.
-                    return $"`{s.Fixture.File}` **{f.Key}** — wanted `{want}`, got `{got}`";
+                    return $"`{s.Fixture.File}` **{f.Key}**: wanted `{want}`, got `{got}`";
                 }))
             .ToList();
         if (invented.Count > 0)
