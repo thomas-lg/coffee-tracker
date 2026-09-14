@@ -52,3 +52,9 @@ apm_modules/
 
 # Scratch output from local test runs
 .tmp-*
+
+# Real bag photos for the OCR benchmark are the developer's own pictures, and whether
+# to publish them is their call. The README explaining how to add them stays tracked;
+# a manifest they choose to commit can be force-added.
+backend/CoffeeTracker.Tests/Ocr/Fixtures/real/*
+!backend/CoffeeTracker.Tests/Ocr/Fixtures/real/README.md

@@ -15,6 +15,13 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- The OCR benchmark corpus, next to the test assembly so the run needs no repo
+         layout. PreserveNewest rather than Always: 30 JPEGs is not much, but copying
+         them on every incremental build for nothing is still waste. -->
+    <Content Include="Ocr\Fixtures\**\*" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
     <!-- Unit tests target the inner hexagon (Application + Domain) plus
          Infrastructure adapters that are unit-testable in isolation (e.g.
          TokenService). The Api reference enables WebApplicationFactory<Program>. -->

@@ -51,6 +51,20 @@ jobs:
         env:
           TESSDATA_PREFIX: /usr/share/tesseract-ocr/5
         run: dotnet test CoffeeTracker.sln --no-build --configuration Release --verbosity normal
+      # The OCR benchmark runs as part of the suite above (this job already installs
+      # Tesseract) and writes its scorecard beside the test assembly. Surfacing it here
+      # is what makes a score change reviewable: the number moves in the run summary of
+      # the PR that moved it, instead of inside collapsed log output nobody expands.
+      # if: always() — a run that fell under the floor is precisely the one worth reading.
+      - name: OCR benchmark scorecard
+        if: ${{ !cancelled() }}
+        run: |
+          card=backend/CoffeeTracker.Tests/bin/Release/net10.0/ocr-benchmark.md
+          if [ -f "$card" ]; then
+            cat "$card" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "OCR benchmark did not run (no scorecard produced)." >> "$GITHUB_STEP_SUMMARY"
+          fi
 
   frontend:
     runs-on: ubuntu-latest
