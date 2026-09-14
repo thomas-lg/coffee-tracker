@@ -183,8 +183,10 @@ RapidOCR is insensitive to the line gap and the letter minimum that Tesseract ne
 Nothing guarantees that stays true, so scoring one engine would let a tuning pass for it
 quietly cost the other.
 
-On a host without Tesseract the benchmark **skips with a reason**, so on a bare Windows
-host you have measured nothing and the number to quote is CI's.
+The dev container carries **both** engines and defaults to `rapidocr`, so both halves
+run there and reproduce CI's numbers exactly (82.8% and 74.4%). On a host missing an
+engine that half **skips with a reason**, so on a bare Windows host you have measured
+nothing and the number to quote is CI's.
 
 There are two corpora, scored separately and never averaged into one number.
 `synthetic/` is rendered: `node scripts/generate-ocr-fixtures.mjs` draws six labels under
