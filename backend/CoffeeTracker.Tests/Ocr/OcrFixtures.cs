@@ -59,14 +59,6 @@ public static class OcrFixtures
     public static string Engine =>
         Environment.GetEnvironmentVariable("OCR_BENCH_ENGINE") ?? new OcrOptions().Engine;
 
-    /// <summary>
-    /// The confidence gate the selected engine calls for, mirroring what
-    /// <c>AddOcr</c> registers. Mirrored rather than shared because the benchmark builds
-    /// its adapter by hand instead of resolving one out of the container.
-    /// </summary>
-    public static double Gate =>
-        string.Equals(Engine, "tesseract", StringComparison.OrdinalIgnoreCase) ? 55 : 70;
-
     /// <summary>Builds the adapter named by <see cref="Engine"/>.</summary>
     public static IOcrService NewEngine(OcrOptions options, ILoggerFactory logs) =>
         string.Equals(Engine, "tesseract", StringComparison.OrdinalIgnoreCase)

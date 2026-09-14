@@ -184,8 +184,17 @@ public class RapidOcrService(IOptions<OcrOptions> options, ILogger<RapidOcrServi
         // RawText is what the scan response shows the user, so it carries every line the
         // engine read. Filtering is the parser's job; hiding text here would make a bad
         // scan impossible to diagnose from the response.
-        return OcrResult.Read(string.Join('\n', lines.Select(l => l.Text)), lines);
+        return OcrResult.Read(string.Join('\n', lines.Select(l => l.Text)), lines, NoiseFloor);
     }
+
+    /// <summary>
+    /// Confidence below which this engine's output is noise. Swept over the benchmark:
+    /// 55 and 70 both score 82.8%, 80 scores 81.8%, and 90 upward falls away as genuine
+    /// lines start being dropped. 70 sits in the middle of that plateau, so it leaves
+    /// margin against clutter on a bag the corpus has never seen without costing
+    /// anything on the ones it has.
+    /// </summary>
+    private const double NoiseFloor = 70;
 
     private static readonly JsonSerializerOptions ReaderJson = new() { PropertyNameCaseInsensitive = true };
 

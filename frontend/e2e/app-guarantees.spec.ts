@@ -115,6 +115,10 @@ test.describe('admin screens', () => {
     await expect(page).toHaveURL(/\/admin\/settings/);
     await expect(page.getByRole('heading', { name: /account settings/i })).toBeVisible();
 
+    await page.getByRole('link', { name: /^scanning$/i }).click();
+    await expect(page).toHaveURL(/\/admin\/scanning/);
+    await expect(page.getByRole('heading', { name: /^scanning$/i })).toBeVisible();
+
     await page.getByRole('link', { name: /^backup$/i }).click();
     await expect(page).toHaveURL(/\/admin\/backup/);
     await expect(page.getByRole('heading', { name: /^backup$/i })).toBeVisible();

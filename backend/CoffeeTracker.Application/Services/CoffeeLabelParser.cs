@@ -101,7 +101,11 @@ public partial class CoffeeLabelParser : ICoffeeLabelParser
 
     public ScannedCoffeeDto Parse(OcrResult ocr)
     {
-        var lines = RankLines(ocr?.Lines ?? []);
+        // The engine's own floor when it has one: Tesseract and RapidOCR score the same
+        // clutter 26 points apart, so a single gate would either let one engine's noise
+        // through or drop the other's real lines.
+        var gate = ocr?.MinConfidence ?? _minConfidence;
+        var lines = RankLines(ocr?.Lines ?? [], gate);
 
         var (name, roaster) = FindNameAndRoaster(lines);
         return new ScannedCoffeeDto(
@@ -116,7 +120,7 @@ public partial class CoffeeLabelParser : ICoffeeLabelParser
             // background noise the gate exists to drop. A digit run in a table grain or
             // a reflection would otherwise land as the bag's weight, confidently wrong,
             // which is worse than absent.
-            Weight: FindWeight(ConfidentText(ocr?.Lines ?? [])));
+            Weight: FindWeight(ConfidentText(ocr?.Lines ?? [], gate)));
     }
 
     // Picks the keyword that looks most like a *label* rather than prose: it prefers
@@ -262,19 +266,19 @@ public partial class CoffeeLabelParser : ICoffeeLabelParser
     /// the first match, and on a label that prints two of them the one printed first is
     /// the meaningful answer, not the one set in the largest type.
     /// </summary>
-    private string ConfidentText(IReadOnlyList<OcrLine> lines) =>
+    private static string ConfidentText(IReadOnlyList<OcrLine> lines, double gate) =>
         string.Join(
             '\n',
             lines
                 .Where(l => !string.IsNullOrWhiteSpace(l.Text))
-                .Where(l => l.Confidence is null || l.Confidence >= _minConfidence)
+                .Where(l => l.Confidence is null || l.Confidence >= gate)
                 .Select(l => l.Text.Trim()));
 
-    private List<string> RankLines(IReadOnlyList<OcrLine> lines)
+    private static List<string> RankLines(IReadOnlyList<OcrLine> lines, double gate)
     {
         var confident = lines
             .Where(l => !string.IsNullOrWhiteSpace(l.Text))
-            .Where(l => l.Confidence is null || l.Confidence >= _minConfidence)
+            .Where(l => l.Confidence is null || l.Confidence >= gate)
             .Select(l => l with { Text = l.Text.Trim() })
             .Where(l => l.Text.Length > 0)
             .ToList();

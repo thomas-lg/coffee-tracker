@@ -100,7 +100,18 @@ See the README's *Running the tests* for the commands. What matters when writing
 
 ## OCR
 
-Two engines behind `IOcrService`, selected by `Ocr:Engine`.
+Two engines behind `IOcrService`, chosen **at runtime from the admin view** and stored
+in the settings row. `Ocr:Engine` is only the default an instance starts from, which is
+what an upgraded instance keeps: the column is nullable, and null means "whatever the
+deployment configured", so adding this could not change how an existing instance scans.
+
+`SwitchingOcrService` is the `IOcrService` the app resolves. Both engines stay singletons
+because each caps its own concurrency with a semaphore that a per-request copy would not
+cap; the wrapper is scoped because reading the policy needs the request's DbContext. Its
+`IsAvailable` answers "some engine could run", deliberately weaker than "the chosen one
+can", because the port's check is synchronous and the choice lives in the database.
+`ReadAsync` returns `Unavailable` when the chosen engine cannot run, and the endpoint
+maps both to the same 503.
 
 **`rapidocr` is the default.** PP-OCRv6 detection and recognition on onnxruntime,
 driven through `deploy/rapidocr/read.py`. It reads photographs, which is what the app
@@ -136,7 +147,10 @@ whose native loading proved too brittle on Linux (it probes version-pinned `lib*
 names and needs a `libdl` shim), and it passes `--tessdata-dir` explicitly because
 Tesseract 5 treats `TESSDATA_PREFIX` as the directory itself, not its parent.
 
-**The confidence gate is per engine**, and that is the subtle part. Tesseract's noise
+**The confidence gate is per engine**, and it travels with the read: `OcrResult` carries
+the floor the engine that produced it calls for, so nothing downstream has to know which
+engine is plugged in. That matters more now that the engine changes at runtime, and it is
+why there is no gate in DI any more. Tesseract's noise
 lines score under 50 and its real text above 58, so its gate is 55. RapidOCR scores the
 the same text at 94 to 100 and the little noise it produces around 81, so its gate is 70,
 in the middle of a plateau rather than at a cliff. `AddOcr` registers the gate alongside

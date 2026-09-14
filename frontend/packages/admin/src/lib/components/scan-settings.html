@@ -1,0 +1,77 @@
+<header class="mb-6">
+  <h1 class="font-display text-2xl font-semibold text-ink">Scanning</h1>
+  <p class="mt-1 text-sm text-muted">
+    Which engine reads a coffee bag when you photograph it. The change takes effect on the
+    next scan; nothing restarts, and nothing already saved is affected.
+  </p>
+</header>
+
+@if (loading()) {
+  <div class="space-y-4" aria-busy="true">
+    <span class="sr-only" role="status">Loading the scanning settings…</span>
+    @for (i of [1, 2, 3]; track i) {
+      <div class="h-28 animate-pulse rounded-2xl bg-line/60" aria-hidden="true"></div>
+    }
+  </div>
+} @else if (!settings()) {
+  <div class="rounded-2xl border border-line bg-foam p-8 text-center">
+    <p class="text-sm text-muted">Could not load the scanning settings.</p>
+  </div>
+} @else {
+  <!-- A radio group rather than buttons: this is one choice among three, and a screen
+       reader should hear it as such. -->
+  <fieldset [disabled]="saving()">
+    <legend class="sr-only">Scanning engine</legend>
+    <div class="space-y-4">
+      @for (option of copy; track option.engine) {
+        @let chosen = current() === option.engine;
+        @let usable = available(option.engine);
+        <label
+          class="block cursor-pointer rounded-2xl border-2 bg-foam p-5 transition"
+          [class]="chosen ? 'border-crema' : 'border-line hover:border-crema/50'"
+          [class.opacity-60]="!usable"
+          [class.cursor-not-allowed]="!usable"
+        >
+          <div class="flex items-start gap-3">
+            <input
+              type="radio"
+              name="engine"
+              class="mt-1 size-4 shrink-0 accent-crema"
+              [checked]="chosen"
+              [disabled]="!usable"
+              (change)="choose(option.engine)"
+            />
+            <div class="min-w-0">
+              <div class="flex flex-wrap items-center gap-2">
+                <span class="font-display text-lg font-semibold text-ink">{{ option.name }}</span>
+                @if (chosen) {
+                  <span class="rounded-full bg-crema/30 px-2 py-0.5 text-xs font-semibold text-ink"
+                    >In use</span
+                  >
+                }
+                @if (!usable) {
+                  <span class="rounded-full bg-amber-400/20 px-2 py-0.5 text-xs font-semibold text-amber-700"
+                    >Not installed on this host</span
+                  >
+                }
+              </div>
+              <p class="mt-1 text-sm font-semibold text-ink">{{ option.summary }}</p>
+              <p class="mt-2 text-sm text-muted"><span class="font-semibold text-ink">Best at:</span> {{ option.goodAt }}</p>
+              <p class="mt-1 text-sm text-muted"><span class="font-semibold text-ink">Costs:</span> {{ option.costs }}</p>
+            </div>
+          </div>
+        </label>
+      }
+    </div>
+  </fieldset>
+
+  <p class="mt-5 text-sm text-muted" aria-live="polite">
+    @if (saving()) {
+      Saving…
+    } @else {
+      Both engines ship in the image, so switching costs nothing but this click. If a scan
+      comes back empty, try the other one on the same bag before assuming the photo is at
+      fault.
+    }
+  </p>
+}

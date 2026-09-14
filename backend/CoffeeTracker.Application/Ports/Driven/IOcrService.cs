@@ -50,7 +50,19 @@ public interface IOcrService
 /// </param>
 public sealed record OcrLine(string Text, double? Confidence, int? Height, int? Top = null);
 
-public sealed record OcrResult(bool Available, string RawText, IReadOnlyList<OcrLine> Lines)
+/// <param name="MinConfidence">
+/// The confidence below which *this engine* calls a line noise, or null when it has no
+/// opinion. It travels with the read because it is a property of how the engine scores
+/// rather than of the bag: Tesseract puts background clutter under 50 and printed text
+/// above 58, while RapidOCR scores the same clutter around 81 and the same text at 94 to
+/// 100. One gate cannot serve both, and the parser has no business knowing which engine
+/// produced the lines it is reading.
+/// </param>
+public sealed record OcrResult(
+    bool Available,
+    string RawText,
+    IReadOnlyList<OcrLine> Lines,
+    double? MinConfidence = null)
 {
     public static OcrResult Unavailable { get; } = new(false, string.Empty, []);
 
@@ -62,8 +74,8 @@ public sealed record OcrResult(bool Available, string RawText, IReadOnlyList<Ocr
         new(true, rawText, SplitLines(rawText));
 
     /// <summary>A read from an engine that reports per-line quality signals.</summary>
-    public static OcrResult Read(string rawText, IReadOnlyList<OcrLine> lines) =>
-        new(true, rawText, lines);
+    public static OcrResult Read(string rawText, IReadOnlyList<OcrLine> lines, double? minConfidence = null) =>
+        new(true, rawText, lines, minConfidence);
 
     private static List<OcrLine> SplitLines(string rawText) =>
         [.. (rawText ?? string.Empty)

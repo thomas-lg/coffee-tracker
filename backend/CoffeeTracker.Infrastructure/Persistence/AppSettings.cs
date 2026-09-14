@@ -23,4 +23,16 @@ public class AppSettings
     /// closes itself once the first account exists.
     /// </summary>
     public bool RegistrationOpenedForBootstrap { get; set; }
+
+    /// <summary>
+    /// The OCR engine an administrator chose, or null while they never have.
+    /// </summary>
+    /// <remarks>
+    /// Null is meaningful and is the value an upgraded instance carries: it means "use
+    /// whatever the deployment configured", so adding this column cannot change how an
+    /// existing instance scans. Stored as the enum's name rather than its number, so the
+    /// row stays readable in a SQLite browser and reordering the enum cannot silently
+    /// repoint every instance at a different engine.
+    /// </remarks>
+    public string? OcrEngine { get; set; }
 }

@@ -71,7 +71,8 @@ public sealed class OcrBenchmarkTests(ITestOutputHelper output)
                 RapidOcrScriptPath = OcrFixtures.RapidOcrScript,
             },
             new TestOutputLoggerFactory(output));
-        var parser = new CoffeeLabelParser(OcrFixtures.Gate);
+        // No gate passed: each engine reports its own with every read.
+        var parser = new CoffeeLabelParser();
 
         List<Scored> scored = [];
         foreach (var fixture in fixtures)

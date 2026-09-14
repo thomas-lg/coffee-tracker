@@ -21,6 +21,15 @@ public class TesseractCliOcrService(IOptions<OcrOptions> options, ILogger<Tesser
     private readonly string _language = ResolveLanguage(options.Value.Language, logger);
     private readonly int _psm = options.Value.Psm;
 
+    /// <summary>
+    /// Confidence below which this engine's output is noise. Measured from a photograph
+    /// of a bag on a wooden table, where its background lines scored 15.6 to 48.8 and the
+    /// four printed ones 58.8 to 96.6. Re-swept later against the whole corpus: 45
+    /// through 60 score identically, so 55 sits in the middle of a plateau rather than on
+    /// a cliff.
+    /// </summary>
+    private const double NoiseFloor = 55;
+
     // Hard per-run ceiling so a hung/pathological process can't pin a worker forever.
     private readonly TimeSpan _timeout =
         TimeSpan.FromSeconds(options.Value.TimeoutSeconds > 0 ? options.Value.TimeoutSeconds : 30);
@@ -199,14 +208,14 @@ public class TesseractCliOcrService(IOptions<OcrOptions> options, ILogger<Tesser
         var lines = ParseTsv(stdout);
         if (lines is null)
         {
-            return OcrResult.Read(stdout);
+            return OcrResult.Read(stdout, [], NoiseFloor);
         }
 
         // RawText is what the user sees in the UI, so rebuild it from every recognised
         // word, unfiltered. Filtering is the parser's job; hiding text here would make
         // a bad scan impossible to diagnose from the response.
         var rawText = string.Join('\n', lines.Select(l => l.Text));
-        return OcrResult.Read(rawText, lines);
+        return OcrResult.Read(rawText, lines, NoiseFloor);
     }
 
     private static List<OcrLine>? ParseTsv(string stdout)

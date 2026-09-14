@@ -29,6 +29,15 @@ import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
             >Accounts</a
           >
           <a
+            routerLink="scanning"
+            routerLinkActive
+            #scanning="routerLinkActive"
+            [attr.aria-current]="scanning.isActive ? 'page' : null"
+            class="-mb-px border-b-2 px-4 pb-3 text-sm font-semibold transition-colors"
+            [class]="scanning.isActive ? active : idle"
+            >Scanning</a
+          >
+          <a
             routerLink="backup"
             routerLinkActive
             #backup="routerLinkActive"

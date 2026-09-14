@@ -191,6 +191,82 @@
         }
       }
     },
+    "/api/admin/scan-settings": {
+      "get": {
+        "tags": [
+          "AdminScanSettings"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScanSettingsDto"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScanSettingsDto"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScanSettingsDto"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "AdminScanSettings"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateScanSettingsDto"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateScanSettingsDto"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateScanSettingsDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScanSettingsDto"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScanSettingsDto"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScanSettingsDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/admin/settings": {
       "get": {
         "tags": [
@@ -1666,6 +1742,13 @@
           }
         }
       },
+      "OcrEngine": {
+        "enum": [
+          "RapidOcr",
+          "Tesseract",
+          "Disabled"
+        ]
+      },
       "OidcClientConfigDto": {
         "required": [
           "authority",
@@ -2021,6 +2104,21 @@
           "Dark"
         ]
       },
+      "ScanEngineOptionDto": {
+        "required": [
+          "engine",
+          "available"
+        ],
+        "type": "object",
+        "properties": {
+          "engine": {
+            "$ref": "#/components/schemas/OcrEngine"
+          },
+          "available": {
+            "type": "boolean"
+          }
+        }
+      },
       "ScannedCoffeeDto": {
         "required": [
           "name",
@@ -2078,6 +2176,24 @@
           }
         }
       },
+      "ScanSettingsDto": {
+        "required": [
+          "engine",
+          "options"
+        ],
+        "type": "object",
+        "properties": {
+          "engine": {
+            "$ref": "#/components/schemas/OcrEngine"
+          },
+          "options": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ScanEngineOptionDto"
+            }
+          }
+        }
+      },
       "UpdateAccountSettingsDto": {
         "required": [
           "localLoginEnabled",
@@ -2098,6 +2214,24 @@
             ]
           }
         }
+      },
+      "UpdateScanSettingsDto": {
+        "required": [
+          "engine"
+        ],
+        "type": "object",
+        "properties": {
+          "engine": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/OcrEngine"
+              }
+            ]
+          }
+        }
       }
     }
   },
@@ -2107,6 +2241,9 @@
     },
     {
       "name": "AdminPhotos"
+    },
+    {
+      "name": "AdminScanSettings"
     },
     {
       "name": "AdminSettings"

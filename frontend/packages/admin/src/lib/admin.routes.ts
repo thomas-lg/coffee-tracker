@@ -19,6 +19,11 @@ export const ADMIN_ROUTES: Routes = [
           import('./components/account-settings').then((m) => m.AccountSettingsScreen),
       },
       {
+        path: 'scanning',
+        loadComponent: () =>
+          import('./components/scan-settings').then((m) => m.ScanSettingsScreen),
+      },
+      {
         path: 'backup',
         loadComponent: () => import('./components/backup').then((m) => m.BackupScreen),
       },
