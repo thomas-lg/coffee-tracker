@@ -177,6 +177,28 @@ jobs:
           path: frontend/playwright-report/
           retention-days: 7
 
+  # The image ships for arm64 too, so a PR that breaks that build has to fail here rather
+  # than at release. Its own job on a native arm64 runner, not a second step on the amd64
+  # one: built under QEMU it took 366 seconds against 116 for amd64, three quarters of the
+  # whole job, and emulating a pip install of onnxruntime and numpy is most of that. Free
+  # for public repositories. It is also not scanned, because both images install the same
+  # packages from the same base and scanning one covers the CVEs of both.
+  docker-build-arm64:
+    runs-on: ubuntu-24.04-arm
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: docker/setup-buildx-action@37fe631027851001ddb9b187196cc803df7f5f0e # v4.3.0
+      - name: Verify the arm64 image builds
+        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7
+        with:
+          context: .
+          platforms: linux/arm64
+          push: false
+          # A separate cache scope: sharing one with the amd64 job would have each
+          # eviction take the other's layers with it.
+          cache-from: type=gha,scope=arm64
+          cache-to: type=gha,mode=max,scope=arm64
+
   docker-build:
     runs-on: ubuntu-latest
     # Job-level permissions REPLACE the top-level set, so re-state contents: read
@@ -221,18 +243,6 @@ jobs:
           category: trivy-image
       # Hard gate: fail only on a FIXABLE CRITICAL vulnerability (vuln scanner only, so a
       # false-positive secret match can't block). Reuses the Trivy DB cached above.
-      # The image ships for arm64 too, so a PR that breaks that build has to fail here
-      # rather than at release. Not loaded and not scanned: the two images install the
-      # same packages from the same base, so scanning one covers the CVEs of both.
-      - name: Verify the arm64 image builds
-        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7
-        with:
-          context: .
-          platforms: linux/arm64
-          push: false
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
       - name: Fail on fixable CRITICAL vulnerabilities (Trivy, gate)
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
