@@ -99,7 +99,7 @@ rm -f backend/CoffeeTracker.Api/coffee.db
 ASPNETCORE_ENVIRONMENT=Development dotnet run --project backend/CoffeeTracker.Api --urls http://localhost:5000
 ```
 
-`Development` opens registration and sets `Ocr__Engine=none`, so no Tesseract is needed.
+`Development` opens registration and sets `Ocr__Engine=none`, so no OCR engine is needed.
 Provider sign-in is exercised against a minimal OpenID Connect provider the suite starts
 in-process, with real discovery, JWKS, PKCE and nonce, so no external provider is involved.
 
@@ -146,7 +146,8 @@ never face the internet directly.
 | `Oidc__AdminClaim`                | no       | none            | Claim carrying the admin assertion (e.g. `groups`). Set with `Oidc__AdminClaimValue`; both or neither. Unset, the first user to sign in through the provider becomes admin. |
 | `Oidc__AdminClaimValue`           | no       | none            | Value `Oidc__AdminClaim` must carry to grant admin. Re-evaluated on every sign-in, so removing someone from the group revokes their rights at their next sign-in. |
 | `ForwardedHeaders__KnownProxies`  | recommended | none         | Comma-separated host names or IPs of your reverse proxy, so the app trusts its `X-Forwarded-For`/`-Proto`. **Set this** behind a proxy, otherwise auth rate-limiting keys off the proxy's single IP and throttles every client together, and HSTS is not emitted. Prefer a name (`swag`, a service name, a DNS record) over an address, because an orchestrator assigns the address and a pinned IP holds only until the proxy restarts onto another one. Names are resolved at startup; one that cannot be resolved is ignored rather than guessed. |
-| `Ocr__Engine`                     | no       | `tesseract`      | OCR engine for `/api/coffees/scan`: `tesseract` (uses the bundled native libs) or `none` (disables scanning → 503). |
+| `Ocr__Engine`                     | no       | `rapidocr`       | OCR engine for `/api/coffees/scan`: `rapidocr` (default, reads photographs of bags markedly better), `tesseract` (lighter, better on flat scans), or `none` (disables scanning → 503). |
+| `Ocr__MinConfidence`              | no       | per engine       | Confidence below which a recognised line is treated as background noise. Defaults to 80 for `rapidocr` and 55 for `tesseract`, which is where each engine separates text from clutter. Only worth setting if you are tuning against your own bags. |
 | `Ocr__TessdataPath`               | no       | system path      | Override the tessdata directory; defaults to the `TESSDATA_PREFIX` system path (the image ships English data). |
 | `Ocr__Language`                   | no       | `eng`            | Tesseract language code. |
 | `Ocr__TimeoutSeconds`             | no       | `30`             | Hard ceiling on a single OCR run; a slower/stuck scan is terminated and returns `503` so it can't pin a worker. |

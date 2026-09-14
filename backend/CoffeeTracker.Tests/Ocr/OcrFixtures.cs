@@ -1,6 +1,8 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using CoffeeTracker.Infrastructure.Ocr;
+using CoffeeTracker.Application.Ports.Driven;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Xunit;
@@ -50,15 +52,57 @@ public static class OcrFixtures
     public static string Root => System.IO.Path.Combine(AppContext.BaseDirectory, "Ocr", "Fixtures");
 
     /// <summary>
-    /// Whether a benchmark run is possible: the CLI on PATH *and* the language data the
-    /// adapter resolves. Both are asked through the adapter's own logic rather than
-    /// re-derived, so a change to how tessdata is located cannot leave this lying.
+    /// Which engine the benchmark scores. Defaults to the one the app ships with, so the
+    /// number in CI is the number users get; set <c>OCR_BENCH_ENGINE=tesseract</c> to
+    /// score the other one and compare them on the same images.
+    /// </summary>
+    public static string Engine =>
+        Environment.GetEnvironmentVariable("OCR_BENCH_ENGINE") ?? new OcrOptions().Engine;
+
+    /// <summary>
+    /// The confidence gate the selected engine calls for, mirroring what
+    /// <c>AddOcr</c> registers. Mirrored rather than shared because the benchmark builds
+    /// its adapter by hand instead of resolving one out of the container.
+    /// </summary>
+    public static double Gate =>
+        string.Equals(Engine, "tesseract", StringComparison.OrdinalIgnoreCase) ? 55 : 80;
+
+    /// <summary>Builds the adapter named by <see cref="Engine"/>.</summary>
+    public static IOcrService NewEngine(OcrOptions options, ILoggerFactory logs) =>
+        string.Equals(Engine, "tesseract", StringComparison.OrdinalIgnoreCase)
+            ? new TesseractCliOcrService(Options.Create(options), logs.CreateLogger<TesseractCliOcrService>())
+            : new RapidOcrService(Options.Create(options), logs.CreateLogger<RapidOcrService>());
+
+    /// <summary>
+    /// Whether a benchmark run is possible here. Asked through the adapter's own
+    /// availability check rather than re-derived, so a change to how either engine
+    /// locates its files cannot leave this lying.
     /// </summary>
     public static bool EngineAvailable =>
-        ExecutableOnPath("tesseract")
-        && new TesseractCliOcrService(
-            Options.Create(new OcrOptions()),
-            NullLogger<TesseractCliOcrService>.Instance).IsAvailable;
+        string.Equals(Engine, "tesseract", StringComparison.OrdinalIgnoreCase)
+            ? ExecutableOnPath("tesseract")
+                && new TesseractCliOcrService(
+                    Options.Create(new OcrOptions()),
+                    NullLogger<TesseractCliOcrService>.Instance).IsAvailable
+            : ExecutableOnPath("python3")
+                && new RapidOcrService(
+                    Options.Create(new OcrOptions { RapidOcrScriptPath = RapidOcrScript }),
+                    NullLogger<RapidOcrService>.Instance).IsAvailable;
+
+    /// <summary>
+    /// The reader script, found in the repo when running from a checkout and at its
+    /// installed path in the container. A developer should not have to install the app
+    /// to score it.
+    /// </summary>
+    public static string RapidOcrScript
+    {
+        get
+        {
+            var repo = System.IO.Path.GetFullPath(
+                System.IO.Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "..", "deploy", "rapidocr", "read.py"));
+            return System.IO.File.Exists(repo) ? repo : "/opt/rapidocr/read.py";
+        }
+    }
 
     /// <summary>
     /// Every fixture across both corpora, synthetic first. A corpus whose manifest is

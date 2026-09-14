@@ -3,10 +3,6 @@ using System.Globalization;
 using CoffeeTracker.Application.Ports.Driven;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.Formats.Png;
-using SixLabors.ImageSharp.Metadata.Profiles.Exif;
-using SixLabors.ImageSharp.Processing;
 
 namespace CoffeeTracker.Infrastructure.Ocr;
 
@@ -103,7 +99,7 @@ public class TesseractCliOcrService(IOptions<OcrOptions> options, ILogger<Tesser
             stdoutTask = process.StandardOutput.ReadToEndAsync(token);
             stderrTask = process.StandardError.ReadToEndAsync(token);
 
-            await WriteUprightAsync(image, process.StandardInput.BaseStream, token);
+            await UprightImage.WriteToAsync(image, process.StandardInput.BaseStream, token);
             process.StandardInput.Close();
 
             await process.WaitForExitAsync(token);
@@ -169,73 +165,6 @@ public class TesseractCliOcrService(IOptions<OcrOptions> options, ILogger<Tesser
         }
     }
 
-
-    /// <summary>
-    /// Pipes the image to the engine, turning it the right way up first when the camera
-    /// said to.
-    ///
-    /// A phone does not rotate pixels when you turn it: it writes them in sensor order
-    /// and records an EXIF orientation tag. Every viewer honours that tag, so the photo
-    /// looks upright everywhere the user has seen it, and Leptonica, which is what
-    /// Tesseract decodes JPEG with, does not. Without this, a bag photographed in
-    /// portrait reaches the engine on its side and comes back as mirrored nonsense.
-    /// </summary>
-    private static async Task WriteUprightAsync(Stream image, Stream destination, CancellationToken ct)
-    {
-        // The header has to be read and then the same bytes replayed. The one caller
-        // hands over a MemoryStream, but the port promises only a Stream.
-        Stream source = image;
-        MemoryStream? buffered = null;
-        if (!image.CanSeek)
-        {
-            buffered = new MemoryStream();
-            await image.CopyToAsync(buffered, ct);
-            buffered.Position = 0;
-            source = buffered;
-        }
-
-        try
-        {
-            var start = source.Position;
-            if (!await IsRotatedAsync(source, ct))
-            {
-                // The overwhelmingly common case, and it stays free: no decode, no
-                // re-encode, the upload's own bytes straight down the pipe.
-                source.Position = start;
-                await source.CopyToAsync(destination, ct);
-                return;
-            }
-
-            source.Position = start;
-            using var picture = await Image.LoadAsync(source, ct);
-            picture.Mutate(x => x.AutoOrient());
-            // PNG, not JPEG: re-encoding would lay a second generation of block artefacts
-            // over the camera's own, right on the glyph edges the engine reads.
-            await picture.SaveAsync(destination, new PngEncoder(), ct);
-        }
-        finally
-        {
-            buffered?.Dispose();
-        }
-    }
-
-    /// <summary>Reads only the header, so an upright photo is never decoded twice.</summary>
-    private static async Task<bool> IsRotatedAsync(Stream source, CancellationToken ct)
-    {
-        try
-        {
-            var info = await Image.IdentifyAsync(source, ct);
-            return info.Metadata.ExifProfile?.TryGetValue(ExifTag.Orientation, out var orientation) == true
-                && orientation?.Value is > 1;
-        }
-        catch (Exception ex) when (ex is UnknownImageFormatException or InvalidImageContentException)
-        {
-            // Undecodable here is not this method's call to make: the application layer
-            // already validated the bytes, so hand them over and let the engine refuse
-            // them if it disagrees.
-            return false;
-        }
-    }
 
     // Awaits a pipe-read to completion and discards any fault/cancellation, so a
     // read abandoned on the error path can't resurface as an unobserved-task exception.

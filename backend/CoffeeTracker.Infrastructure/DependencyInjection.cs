@@ -1,4 +1,5 @@
 using CoffeeTracker.Application.Ports.Driven;
+using CoffeeTracker.Application.Services;
 using CoffeeTracker.Application.Ports.Driving;
 using CoffeeTracker.Infrastructure.Identity;
 using CoffeeTracker.Infrastructure.Ocr;
@@ -38,24 +39,36 @@ public static class DependencyInjection
     }
 
     /// <summary>
-    /// Registers the OCR adapter selected by <c>Ocr:Engine</c>: <c>tesseract</c>
-    /// (default, shells out to the system <c>tesseract</c> CLI) or <c>none</c>
-    /// (disabled, for hosts without it).
+    /// Registers the OCR adapter selected by <c>Ocr:Engine</c>: <c>rapidocr</c> (default),
+    /// <c>tesseract</c>, or <c>none</c> for a host carrying neither.
     /// </summary>
     private static void AddOcr(IServiceCollection services, IConfiguration configuration)
     {
         services.Configure<OcrOptions>(configuration.GetSection(OcrOptions.SectionName));
 
         var engine = configuration.GetValue<string>($"{OcrOptions.SectionName}:{nameof(OcrOptions.Engine)}");
-        if (string.Equals(engine, "none", StringComparison.OrdinalIgnoreCase))
+        var configured = configuration.GetValue<double?>(
+            $"{OcrOptions.SectionName}:{nameof(OcrOptions.MinConfidence)}");
+
+        switch (engine?.ToLowerInvariant())
         {
-            services.AddSingleton<IOcrService, DisabledOcrService>();
-        }
-        else
-        {
-            services.AddSingleton<IOcrService, TesseractCliOcrService>();
+            case "none":
+                services.AddSingleton<IOcrService, DisabledOcrService>();
+                break;
+            case "tesseract":
+                services.AddSingleton<IOcrService, TesseractCliOcrService>();
+                services.AddSingleton(new LabelParserConfidence(configured ?? TesseractConfidence));
+                break;
+            default:
+                services.AddSingleton<IOcrService, RapidOcrService>();
+                services.AddSingleton(new LabelParserConfidence(configured ?? RapidOcrConfidence));
+                break;
         }
     }
+
+    /// <summary>See <see cref="OcrOptions.MinConfidence"/>; both were measured, not picked.</summary>
+    private const double TesseractConfidence = 55;
+    private const double RapidOcrConfidence = 80;
 
     /// <summary>
     /// Registers ASP.NET Identity (UserManager only, this API authenticates with

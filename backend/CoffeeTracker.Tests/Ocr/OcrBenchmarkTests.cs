@@ -26,20 +26,22 @@ namespace CoffeeTracker.Tests.Ocr;
 public sealed class OcrBenchmarkTests(ITestOutputHelper output)
 {
     /// <summary>
-    /// Minimum overall score, currently 74.4% on tesseract 5.3.4. The floor sits below
-    /// that so a patch release of the engine scoring a point differently does not fail
-    /// the build, while a real regression does.
+    /// Minimum overall score, currently 77.9% on RapidOCR (the shipping default) and
+    /// 74.4% on Tesseract, each with the confidence gate its own scoring calls for. The
+    /// floor sits below both, so scoring the other engine with
+    /// <c>OCR_BENCH_ENGINE=tesseract</c> does not fail the build and a real regression in
+    /// either still does.
     ///
     /// It is a property of *this corpus*, not a constant of the pipeline: it read 82.0%
     /// over the rendered fixtures alone and dropped when nine photographs joined them,
-    /// because the photographs score around 60% and the rendered ones around 85%. So
-    /// adding fixtures means re-measuring this number, and a change in it is only
-    /// meaningful against an unchanged corpus.
+    /// because the photographs are much harder than the renders. So adding fixtures means
+    /// re-measuring this number, and a change in it is only meaningful against an
+    /// unchanged corpus.
     ///
     /// Raise it when a change earns it (that is the point of having it), but never to
     /// paper over a corpus that got easier.
     /// </summary>
-    private const double Floor = 0.70;
+    private const double Floor = 0.72;
 
     /// <summary>
     /// How close two free-text values have to be to count as a half credit. OCR drops a
@@ -59,12 +61,17 @@ public sealed class OcrBenchmarkTests(ITestOutputHelper output)
         // bounds a *user's* scan against a hung engine; this loop runs 30 images while
         // the rest of the suite competes for the same cores on a CI runner, and one slow
         // run timing out would degrade to "unavailable" and read as a pipeline failure.
-        var ocr = new TesseractCliOcrService(
-            Options.Create(new OcrOptions { TimeoutSeconds = 120, MaxConcurrency = 1 }),
-            // Not NullLogger: the adapter never throws, so its log is the only place that
-            // says *why* a fixture came back unavailable.
-            new TestOutputLogger<TesseractCliOcrService>(output));
-        var parser = new CoffeeLabelParser();
+        // Not NullLogger: the adapters never throw, so their log is the only place that
+        // says *why* a fixture came back unavailable.
+        var ocr = OcrFixtures.NewEngine(
+            new OcrOptions
+            {
+                TimeoutSeconds = 120,
+                MaxConcurrency = 1,
+                RapidOcrScriptPath = OcrFixtures.RapidOcrScript,
+            },
+            new TestOutputLoggerFactory(output));
+        var parser = new CoffeeLabelParser(OcrFixtures.Gate);
 
         List<Scored> scored = [];
         foreach (var fixture in fixtures)

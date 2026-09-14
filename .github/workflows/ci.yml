@@ -38,11 +38,17 @@ jobs:
             ${{ runner.os }}-nuget-
       # Native OCR deps so the Tesseract-backed tests can run on the runner.
       # Mirror the dev/prod package set; TESSDATA_PREFIX is the PARENT of tessdata.
-      - name: Install Tesseract
+      # Both engines, because the benchmark scores whichever one ships as the default
+      # and a number measured against an engine nobody runs is worth nothing.
+      - name: Install the OCR engines
         run: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
-            tesseract-ocr tesseract-ocr-eng libtesseract-dev libleptonica-dev
+            tesseract-ocr tesseract-ocr-eng libtesseract-dev libleptonica-dev \
+            libgl1 libglib2.0-0
+          pip install --no-cache-dir opencv-python-headless rapidocr-onnxruntime
+          # Fetch the models now, so the benchmark's first fixture is not also a download.
+          python3 -c "from rapidocr_onnxruntime import RapidOCR; RapidOCR()"
       # --locked-mode fails the restore if packages.lock.json is out of date, so a
       # dependency bump can't sneak in without an updated, reviewed lock file.
       - run: dotnet restore CoffeeTracker.sln --locked-mode

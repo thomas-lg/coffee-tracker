@@ -100,18 +100,43 @@ See the README's *Running the tests* for the commands. What matters when writing
 
 ## OCR
 
-The adapter **shells out to the `tesseract` CLI**; it is not a P/Invoke NuGet. The
-binding proved too brittle on Linux: it probes version-pinned `lib*.dll.so` names and
-needs a `libdl` shim.
+Two engines behind `IOcrService`, selected by `Ocr:Engine`.
 
-- `appsettings.Development.json` sets `Ocr:Engine=none` so a bare host without
-  `tesseract` doesn't 503-loop; the dev container overrides to `tesseract` via
-  `devcontainer.json` `containerEnv`; production uses `appsettings.json`.
-- The adapter passes `--tessdata-dir` explicitly: Tesseract 5's CLI treats
-  `TESSDATA_PREFIX` as the directory itself, not its parent.
-- Arguments go through `ArgumentList` with `UseShellExecute = false`, the image is
-  piped over **stdin**, and the language is allowlisted. Keep it that way: no
-  caller-controlled value may become an argument.
+**`rapidocr` is the default.** PP-OCR detection and recognition models on onnxruntime,
+driven through `deploy/rapidocr/read.py`. It reads photographs, which is what the app
+actually gets: on the benchmark's real bags Tesseract returns "lam" where the label says
+"LA LIBERTAD" and nothing at all for "INTENSO BLEND", while RapidOCR reads both and even
+a script-font logo Tesseract never sees. It scores 77.9% against Tesseract's 74.4%, and
+72% against 58% on the name field alone. It costs the image 351 MB to 763 MB, which is
+the whole argument against it.
+
+**`tesseract` is still there**, a tenth of the size and one setting away, for anyone who
+would rather not carry that. `none` disables scanning; `appsettings.Development.json`
+uses it so a bare host doesn't 503-loop.
+
+Both adapters follow the same rules, and they are not negotiable:
+
+- The image is piped over **stdin**. No caller-controlled value becomes a path or an
+  argument. RapidOCR's own CLI only accepts `-img <path>`, which is why the repo ships a
+  reader that takes stdin instead of calling it.
+- Arguments go through `ArgumentList` with `UseShellExecute = false`.
+- Neither adapter throws: a process that will not start, a non-zero exit and a run past
+  the timeout all degrade to `OcrResult.Unavailable`, so a scan fails as a 503 rather
+  than a 500. That also means a failure is invisible without the log, which is why the
+  benchmark routes it into the test output.
+- EXIF orientation is honoured in `UprightImage`, shared because it is a property of
+  cameras rather than of an engine. Both Leptonica and OpenCV ignore the tag.
+
+Tesseract specifics worth keeping: it shells out to the CLI rather than a P/Invoke NuGet,
+whose native loading proved too brittle on Linux (it probes version-pinned `lib*.dll.so`
+names and needs a `libdl` shim), and it passes `--tessdata-dir` explicitly because
+Tesseract 5 treats `TESSDATA_PREFIX` as the directory itself, not its parent.
+
+**The confidence gate is per engine**, and that is the subtle part. Tesseract's noise
+lines score under 50 and its real text above 58, so its gate is 55. RapidOCR scores the
+same noise around 55 and the same text above 87, so 55 lets the noise straight through
+and its gate is 80. `AddOcr` registers the gate alongside the engine, and the number for
+each was swept, not picked.
 
 ### Measuring it
 

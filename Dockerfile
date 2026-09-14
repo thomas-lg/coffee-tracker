@@ -67,15 +67,39 @@ RUN dotnet publish backend/CoffeeTracker.Api/CoffeeTracker.Api.csproj -c Release
 # The only stage that follows the target platform, and the only one that needs to: the
 # apt packages below (tesseract, gosu, curl) are the image's native dependencies.
 FROM mcr.microsoft.com/dotnet/aspnet:10.0@sha256:6a94333d37514e385650a3c81a55e5350b67253dbe136e9cf17e499c35606a8c AS runtime
-# OCR via the tesseract CLI (the app shells out to it). The tesseract-ocr package
-# pulls its own runtime libs; tesseract-ocr-eng ships eng.traineddata. gosu drops
-# privileges in the entrypoint. curl is only for the HEALTHCHECK (the aspnet image
-# ships neither curl nor wget). TESSDATA_PREFIX is the parent of the tessdata dir.
+# Two OCR engines, both driven by shelling out and piping the image over stdin.
+#
+# RapidOCR (PP-OCR on onnxruntime) is the default, and it is what costs the size here:
+# the image goes from 351 MB to 763 MB, all of it Python, numpy and onnxruntime. It buys reading a photograph rather
+# than a scanned page. On the benchmark's real bags Tesseract returns "lam" where the
+# label says "LA LIBERTAD" and nothing at all for "INTENSO BLEND"; RapidOCR reads both.
+# rapidocr-onnxruntime depends on opencv-python, whose GUI build carries ~116 MB of X11
+# libraries to draw windows a server will never open, so it is swapped for the headless
+# build afterwards. Installing headless alongside does not help: pip honours the
+# dependency and ships both.
+#
+# Tesseract stays installed and one setting away (Ocr:Engine=tesseract), because it is a
+# tenth of the size and a fair answer for anyone who would rather not carry the rest.
+# gosu drops privileges in the entrypoint; curl is only for the HEALTHCHECK (the aspnet
+# image ships neither curl nor wget). TESSDATA_PREFIX is the parent of the tessdata dir.
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
         tesseract-ocr tesseract-ocr-eng \
+        python3 python3-pip libglib2.0-0 \
         gosu curl \
+    && pip3 install --no-cache-dir --break-system-packages rapidocr-onnxruntime \
+    && pip3 uninstall -y --break-system-packages opencv-python \
+    && pip3 install --no-cache-dir --break-system-packages opencv-python-headless \
     && rm -rf /var/lib/apt/lists/*
+
+# The reader the RapidOCR adapter pipes into. RapidOCR's own CLI only takes a file path,
+# which would mean writing a temp file for every scan; this takes stdin and prints one
+# JSON line per recognised line, with the confidence and geometry the parser needs.
+COPY deploy/rapidocr/read.py /opt/rapidocr/read.py
+
+# Fetch the models at build time rather than on the first user's scan, which would
+# otherwise pay a download on a machine that may have no route out.
+RUN python3 -c "from rapidocr_onnxruntime import RapidOCR; RapidOCR()"
 
 # PUID/PGID default to Unraid's nobody:users. Override at runtime to match whoever
 # owns the host appdata dirs, so the bind-mounted volumes are writable. HOME points
