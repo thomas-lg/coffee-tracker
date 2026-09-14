@@ -210,7 +210,9 @@ public class TesseractCliOcrService(IOptions<OcrOptions> options, ILogger<Tesser
         var lines = ParseTsv(stdout);
         if (lines is null)
         {
-            return OcrResult.Read(stdout, [], NoiseFloor);
+            // Read(string) is the overload that splits the text; handing the other one
+            // an empty list would leave the parser nothing to rank.
+            return OcrResult.Read(stdout) with { MinConfidence = NoiseFloor };
         }
 
         // RawText is what the user sees in the UI, so rebuild it from every recognised

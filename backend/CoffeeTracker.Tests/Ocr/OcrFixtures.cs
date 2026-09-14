@@ -52,12 +52,18 @@ public static class OcrFixtures
     public static string Root => System.IO.Path.Combine(AppContext.BaseDirectory, "Ocr", "Fixtures");
 
     /// <summary>
-    /// Which engine the benchmark scores. Defaults to the one the app ships with, so the
-    /// number in CI is the number users get; set <c>OCR_BENCH_ENGINE=tesseract</c> to
-    /// score the other one and compare them on the same images.
+    /// Which engine the benchmark scores: <c>OCR_BENCH_ENGINE</c> to compare the two on
+    /// the same images, else whatever this host is configured to scan with, else the
+    /// shipping default so the number in CI is the number users get.
+    ///
+    /// The middle step matters in the dev container, which carries Tesseract and sets
+    /// <c>Ocr__Engine</c> accordingly. Without it the benchmark would reach for an engine
+    /// that is not installed there and give a developer no signal at all.
     /// </summary>
     public static string Engine =>
-        Environment.GetEnvironmentVariable("OCR_BENCH_ENGINE") ?? new OcrOptions().Engine;
+        Environment.GetEnvironmentVariable("OCR_BENCH_ENGINE")
+        ?? Environment.GetEnvironmentVariable("Ocr__Engine")
+        ?? new OcrOptions().Engine;
 
     /// <summary>Builds the adapter named by <see cref="Engine"/>.</summary>
     public static IOcrService NewEngine(OcrOptions options, ILoggerFactory logs) =>
@@ -79,7 +85,42 @@ public static class OcrFixtures
             : ExecutableOnPath("python3")
                 && new RapidOcrService(
                     Options.Create(new OcrOptions { RapidOcrScriptPath = RapidOcrScript }),
-                    NullLogger<RapidOcrService>.Instance).IsAvailable;
+                    NullLogger<RapidOcrService>.Instance).IsAvailable
+                && RapidOcrImportable.Value;
+
+    /// <summary>
+    /// Whether the reader's Python package is actually installed, paid for once.
+    ///
+    /// The script being on disk is not enough, and the difference is not academic: a
+    /// checkout on a host with python3 but no rapidocr passes every cheaper check, then
+    /// every fixture comes back unavailable and the benchmark fails its floor with a
+    /// score of zero instead of saying it could not run.
+    /// </summary>
+    private static readonly Lazy<bool> RapidOcrImportable = new(() =>
+    {
+        try
+        {
+            using var probe = System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo("python3")
+            {
+                ArgumentList = { "-c", "import rapidocr" },
+                RedirectStandardError = true,
+                RedirectStandardOutput = true,
+                UseShellExecute = false,
+            });
+
+            if (probe is null)
+            {
+                return false;
+            }
+
+            return probe.WaitForExit(TimeSpan.FromSeconds(30)) && probe.ExitCode == 0;
+        }
+        catch (Exception)
+        {
+            // Any failure to even ask is an answer: the engine cannot run here.
+            return false;
+        }
+    });
 
     /// <summary>
     /// The reader script, found in the repo when running from a checkout and at its
@@ -163,8 +204,9 @@ public sealed class OcrBenchmarkFactAttribute : FactAttribute
     {
         if (!OcrFixtures.EngineAvailable)
         {
-            Skip = "tesseract (or its eng.traineddata) is not installed here; "
-                + "run the benchmark in the dev container or in the ocr-bench CI job.";
+            Skip = $"the '{OcrFixtures.Engine}' engine is not installed here; run the "
+                + "benchmark in the dev container or in CI, or set OCR_BENCH_ENGINE to one "
+                + "this host carries.";
         }
     }
 }

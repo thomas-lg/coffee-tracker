@@ -150,11 +150,14 @@ Tesseract 5 treats `TESSDATA_PREFIX` as the directory itself, not its parent.
 **The confidence gate is per engine**, and it travels with the read: `OcrResult` carries
 the floor the engine that produced it calls for, so nothing downstream has to know which
 engine is plugged in. That matters more now that the engine changes at runtime, and it is
-why there is no gate in DI any more. Tesseract's noise
-lines score under 50 and its real text above 58, so its gate is 55. RapidOCR scores the
-the same text at 94 to 100 and the little noise it produces around 81, so its gate is 70,
-in the middle of a plateau rather than at a cliff. `AddOcr` registers the gate alongside
-the engine, and the number for each was swept, not picked.
+why there is no gate in DI any more.
+
+The two floors are not the same kind of number, which is worth knowing before tuning
+either. Tesseract's 55 sits in a real gap: its clutter scores under 50 and its printed
+lines above 58. RapidOCR's 70 does not, because it reads small print confidently too, and
+a barcode caption came back at 81. It was chosen by sweeping (55 and 70 both score 82.8%,
+80 scores 81.8%, 90 upward drops real lines), and what actually keeps that caption out of
+the fields is the rest of the parser: the four-letter minimum and the height ranking.
 
 ### Measuring it
 

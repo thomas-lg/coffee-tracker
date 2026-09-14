@@ -83,7 +83,7 @@ describe('ScanSettingsScreen', () => {
   it('sends the chosen engine and keeps what came back', async () => {
     await load();
 
-    radios()[1]?.dispatchEvent(new Event('change'));
+    radios()[1]?.click();
     const req = http.expectOne({ method: 'PUT', url: '/api/admin/scan-settings' });
     expect(req.request.body).toEqual({ engine: 'Tesseract' });
     req.flush({ ...SETTINGS, engine: 'Tesseract' });
@@ -106,14 +106,21 @@ describe('ScanSettingsScreen', () => {
     expect(fixture.nativeElement.textContent).toContain('Not installed on this host');
   });
 
-  it('reports a refused change rather than showing the wrong engine as active', async () => {
+  it('reports a refused change and puts the selection back', async () => {
     await load();
 
-    radios()[1]?.dispatchEvent(new Event('change'));
+    radios()[1]?.click();
+    // The browser has already moved the selection; nothing has confirmed it yet.
+    expect(radios()[1]?.checked).toBe(true);
+
     http.expectOne('/api/admin/scan-settings').flush('nope', { status: 500, statusText: 'Error' });
     await settle();
 
     expect(toast.show).toHaveBeenCalledWith(expect.stringContaining('Could not'), 'error');
+    // Back on the engine actually in force. Without the pending signal the DOM stayed
+    // where the click left it, showing Tesseract selected on an instance still scanning
+    // with RapidOCR.
     expect(radios()[0]?.checked).toBe(true);
+    expect(radios()[1]?.checked).toBe(false);
   });
 });

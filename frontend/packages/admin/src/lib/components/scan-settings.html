@@ -34,8 +34,10 @@
         >
           <div class="flex items-start gap-3">
             <input
+              #radio
               type="radio"
               name="engine"
+              [value]="option.engine"
               class="mt-1 size-4 shrink-0 accent-crema"
               [checked]="chosen"
               [disabled]="!usable"

@@ -1,4 +1,12 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  ElementRef,
+  computed,
+  inject,
+  signal,
+  viewChildren,
+} from '@angular/core';
 import { rxResource } from '@angular/core/rxjs-interop';
 import { firstValueFrom } from 'rxjs';
 import { AdminScanSettingsApi, type OcrEngine, type ScanSettings } from '@coffee-tracker/data';
@@ -74,6 +82,24 @@ export class ScanSettingsScreen {
 
   protected readonly current = computed(() => this.settings()?.engine);
 
+  private readonly inputs = viewChildren<ElementRef<HTMLInputElement>>('radio');
+
+  /**
+   * Writes the radios back from state.
+   *
+   * A radio the user clicks is checked by the browser, not by Angular, and `[checked]`
+   * is a property binding that is only written when the bound *value* changes. When a
+   * change is refused the value ends up exactly where it started, so Angular writes
+   * nothing and the DOM keeps the click: the administrator is left looking at Tesseract
+   * selected on an instance still scanning with RapidOCR. Nothing about binding order
+   * fixes that, so the element is set directly.
+   */
+  private restoreSelection(): void {
+    for (const input of this.inputs()) {
+      input.nativeElement.checked = input.nativeElement.value === this.current();
+    }
+  }
+
   /** Whether an engine can run here; a build may ship without one. */
   protected available(engine: OcrEngine): boolean {
     return this.settings()?.options.find((o) => o.engine === engine)?.available ?? false;
@@ -93,6 +119,9 @@ export class ScanSettingsScreen {
       this.toast.show('Could not change the scanning engine.', 'error');
     } finally {
       this.saving.set(false);
+      // After either outcome, because a success re-renders from the new settings and a
+      // refusal has to undo the browser's optimistic move.
+      this.restoreSelection();
     }
   }
 }

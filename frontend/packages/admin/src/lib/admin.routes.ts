@@ -30,6 +30,9 @@ export const ADMIN_ROUTES: Routes = [
         loadComponent: () => import('./components/backup').then((m) => m.BackupScreen),
       },
       { path: '', pathMatch: 'full', redirectTo: 'accounts' },
+      // Accounts lived here until the paths were made to match their labels. A bookmark
+      // costs nothing to honour.
+      { path: 'settings', pathMatch: 'full', redirectTo: 'accounts' },
     ],
   },
 ];

@@ -61,4 +61,11 @@ describe('AdminShell', () => {
 
     expect(children.find((r) => r.path === '')?.redirectTo).toBe(AdminShell.Sections[0]?.path);
   });
+
+  it('still answers the URL Accounts used to live at', () => {
+    // The paths were renamed to match their labels; a bookmark should not pay for that.
+    const children = ADMIN_ROUTES[0]?.children ?? [];
+
+    expect(children.find((r) => r.path === 'settings')?.redirectTo).toBe('accounts');
+  });
 });
