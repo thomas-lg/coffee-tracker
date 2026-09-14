@@ -10,6 +10,7 @@ import { today } from '@coffee-tracker/util';
 import { CoffeesApi, ScanApi, type CoffeeCreate, type RoastLevel } from '@coffee-tracker/data';
 import { CoffeesStore } from './coffees.store';
 import { roastBucket } from '../utils/coffee-visual';
+import { sentenceCaseScan } from '../utils/scan-text';
 
 /** Flat, all-required editable shape (Signal Forms binds cleanly to non-optional fields). */
 export interface CoffeeFormModel {
@@ -118,8 +119,10 @@ export const CoffeeFormStore = signalStore(
               next: ({ parsed }) => {
                 store.model.update((m) => ({
                   ...m,
-                  name: parsed.name ?? m.name,
-                  roaster: parsed.roaster ?? m.roaster,
+                  // Bags are printed in capitals, so the free-text fields are recased;
+                  // origin is a closed vocabulary the parser has already canonicalised.
+                  name: parsed.name ? sentenceCaseScan(parsed.name) : m.name,
+                  roaster: parsed.roaster ? sentenceCaseScan(parsed.roaster) : m.roaster,
                   origin: parsed.origin ?? m.origin,
                   // OCR returns free text (e.g. "medium-dark"); map it onto the enum.
                   roastLevel: parsed.roastLevel ? roastBucket(parsed.roastLevel) : m.roastLevel,
