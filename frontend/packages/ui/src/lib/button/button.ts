@@ -55,7 +55,7 @@ export type ButtonVariant = 'primary' | 'crema' | 'ghost' | 'danger';
           class="size-3.5 shrink-0 animate-spin rounded-full border-2 border-current border-t-transparent motion-reduce:animate-none"
           aria-hidden="true"
         ></span>
-      } @else if (done()) {
+      } @else if (done() && !disabled()) {
         <!-- Decorative: the outcome is already announced by the action's toast, and the
              state returns to rest on its own, so nothing here schedules the tick away. -->
         <svg lucideCheck [size]="16" class="shrink-0" aria-hidden="true"></svg>

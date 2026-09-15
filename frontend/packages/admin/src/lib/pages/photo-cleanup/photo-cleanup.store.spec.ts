@@ -73,7 +73,7 @@ describe('PhotoCleanupStore', () => {
   it('deletes the selection, then clears it and refetches', () => {
     store.selectAllUnused();
     store.deleteSelected();
-    expect(store.pending()).toBe(true);
+    expect(store.deleteAction.running()).toBe(true);
 
     const del = http.expectOne('/api/admin/photos');
     expect(del.request.method).toBe('DELETE');
@@ -89,7 +89,7 @@ describe('PhotoCleanupStore', () => {
 
     expect(toast.show).toHaveBeenCalledWith('Deleted 2, skipped 0', 'success');
     expect(store.selectedCount()).toBe(0);
-    expect(store.pending()).toBe(false);
+    expect(store.deleteAction.running()).toBe(false);
   });
 
   it('reports a failed delete without clearing the selection', () => {
@@ -101,8 +101,8 @@ describe('PhotoCleanupStore', () => {
       .flush('boom', { status: 500, statusText: 'Server Error' });
 
     expect(toast.show).toHaveBeenCalledWith('Delete failed. Please retry.', 'error');
-    expect(store.requestError()).toBe('Delete failed. Please retry.');
-    expect(store.pending()).toBe(false);
+    expect(store.deleteAction.failed()).toBe(true);
+    expect(store.deleteAction.running()).toBe(false);
     // The selection survives, so the operator can retry without re-picking.
     expect(store.selectedCount()).toBe(2);
   });

@@ -4,13 +4,8 @@ import { patchState, signalStore, withComputed, withMethods, withProps, withStat
 import { rxMethod } from '@ngrx/signals/rxjs-interop';
 import { extendResource, withValueOnError } from '@ngrx/signals/resource';
 import { tapResponse } from '@ngrx/operators';
-import { pipe, switchMap, tap } from 'rxjs';
-import {
-  setFulfilled,
-  setPending,
-  setRequestError,
-  withRequestStatus,
-} from '@coffee-tracker/util';
+import { pipe, switchMap } from 'rxjs';
+import { createActionState, trackAction } from '@coffee-tracker/util';
 import { ToastService } from '@coffee-tracker/ui';
 import { AdminPhotosApi, type PhotoListItem } from '@coffee-tracker/data';
 
@@ -29,10 +24,13 @@ type PhotoCleanupState = {
  */
 export const PhotoCleanupStore = signalStore(
   withState<PhotoCleanupState>({ filter: 'all', selection: [] }),
-  withRequestStatus(),
   withProps(() => {
     const api = inject(AdminPhotosApi);
     return {
+      // Its own state rather than a store-wide status: this one feeds a control, and a
+      // status that never fades would still read as "done" on the next confirm row.
+      deleteAction: createActionState(),
+
       _api: api,
       _toast: inject(ToastService),
       // See CoffeesStore: a resource's value() throws while errored, and withValueOnError
@@ -88,28 +86,24 @@ export const PhotoCleanupStore = signalStore(
 
     /**
      * switchMap rather than concatMap: ct-confirm-action makes this a confirmed action
-     * and stops responding while `pending()`, so a second delete cannot overlap, and if
-     * one somehow did, abandoning the stale request is the right answer.
+     * and stops responding while it runs, so a second delete cannot overlap, and if one
+     * somehow did, abandoning the stale request is the right answer.
      */
     deleteSelected: rxMethod<void>(
       pipe(
-        tap(() => patchState(store, setPending())),
         switchMap(() =>
           store._api.delete([...store.selection()]).pipe(
+            trackAction(store.deleteAction),
             tapResponse({
               next: (result) => {
-                patchState(store, setFulfilled(), { selection: [] });
+                patchState(store, { selection: [] });
                 store._list.reload();
                 store._toast.show(
                   `Deleted ${result.deleted}, skipped ${result.skipped}`,
                   'success',
                 );
               },
-              error: () => {
-                const message = 'Delete failed. Please retry.';
-                patchState(store, setRequestError(message));
-                store._toast.show(message, 'error');
-              },
+              error: () => store._toast.show('Delete failed. Please retry.', 'error'),
             }),
           ),
         ),

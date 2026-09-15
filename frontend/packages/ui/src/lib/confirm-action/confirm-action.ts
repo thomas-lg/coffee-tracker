@@ -50,12 +50,17 @@ import { Button, type ButtonVariant } from '../button/button';
         </ct-button>
       } @else {
         <span class="text-sm font-semibold text-ink">{{ prompt() }}</span>
+        <!-- aria-disabled rather than the attribute: arming parks focus on this button,
+             and a click on Confirm does not move focus in every engine, so disabling it
+             would drop focus to <body> exactly as the arm/cancel swap used to. The
+             handler refuses while busy. -->
         <button
           #cancelBtn
           type="button"
-          [disabled]="busy()"
+          [attr.aria-disabled]="busy() ? 'true' : null"
+          [class.opacity-60]="busy()"
           (click)="cancel()"
-          class="rounded-full px-3 py-3 text-sm font-semibold text-muted hover:text-ink disabled:opacity-60"
+          class="rounded-full px-3 py-3 text-sm font-semibold text-muted hover:text-ink"
         >
           {{ cancelLabel() }}
         </button>

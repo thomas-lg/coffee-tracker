@@ -166,7 +166,6 @@ export const CoffeeFormStore = signalStore(
               : store._api.create(dto).pipe(map((c) => c.id));
 
           return saved$.pipe(
-            trackAction(store.submitAction),
             switchMap((savedId) =>
               file
                 ? store._api.uploadPhoto(savedId, file).pipe(
@@ -175,6 +174,9 @@ export const CoffeeFormStore = signalStore(
                   )
                 : of({ savedId, photoFailed: false }),
             ),
+            // After the switchMap, not before it: the photo upload is part of the save,
+            // and the button must stay busy until the slow leg is done too.
+            trackAction(store.submitAction),
             tapResponse({
               next: ({ savedId, photoFailed }) => {
                 store._catalog.reload(); // keep the grid in sync with the new/edited coffee

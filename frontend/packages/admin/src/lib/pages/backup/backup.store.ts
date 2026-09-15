@@ -70,7 +70,11 @@ export const BackupStore = signalStore(
       }
     },
 
-    cancel: () => patchState(store, { staged: null }),
+    /** Refuses while the restore runs: the button stays focusable, so it stays clickable. */
+    cancel: () => {
+      if (store.importAction.running()) return;
+      patchState(store, { staged: null });
+    },
 
     /** Replaces the catalog. Only reachable once the user has confirmed. */
     confirmImport: rxMethod<void>(

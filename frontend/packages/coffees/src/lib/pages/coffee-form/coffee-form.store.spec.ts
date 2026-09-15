@@ -142,6 +142,10 @@ describe('CoffeeFormStore', () => {
     http.expectOne({ method: 'POST', url: '/api/coffees' }).flush({ id: 7 });
     await settle();
 
+    // The coffee is saved but the command is not done: the upload is the slow leg, and a
+    // button that goes idle here invites a second submit with no feedback.
+    expect(store.submitAction.running()).toBe(true);
+
     http
       .expectOne({ method: 'POST', url: '/api/coffees/7/photo' })
       .flush('nope', { status: 500, statusText: 'Error' });

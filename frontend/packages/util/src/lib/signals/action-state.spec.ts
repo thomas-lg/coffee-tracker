@@ -64,25 +64,35 @@ describe('onActionSettled', () => {
     expect(outcomes).toEqual(['failed']);
   });
 
-  it('fires once per run, not on every later change', () => {
+  it('says nothing more when the outcome fades back to rest', () => {
     const { state, outcomes } = watch('running');
 
-    state.set('idle');
-    TestBed.tick();
-    state.set('idle');
     state.set('done');
     TestBed.tick();
+    state.set('idle');
+    TestBed.tick();
 
-    // The second run never started, so nothing settled: 'idle' -> 'done' is not an edge
-    // out of 'running'.
-    expect(outcomes).toEqual(['idle']);
+    expect(outcomes).toEqual(['done']);
   });
 
-  it('does not fire for a state that was never running', () => {
+  it('settles a run that starts and finishes inside one turn', () => {
+    // Signal writes are coalesced, so the effect only ever sees the outcome. Waiting for
+    // a `running` that no pass rendered would drop the event entirely.
     const { state, outcomes } = watch('idle');
 
+    state.set('running');
     state.set('done');
-    state.set('failed');
+    TestBed.tick();
+
+    expect(outcomes).toEqual(['done']);
+  });
+
+  it('ignores a state that was already holding an outcome when it began', () => {
+    // What a store-wide status looks like to the next screen that reads it: settled by
+    // someone else's command, and nothing to report here.
+    const { state, outcomes } = watch('done');
+
+    state.set('idle');
     TestBed.tick();
 
     expect(outcomes).toEqual([]);

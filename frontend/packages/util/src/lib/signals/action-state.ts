@@ -48,6 +48,12 @@ export function toActionState(value: ActionStateLike): ActionState {
  *
  * The edge, not the level: "not running" is also true before anything started and forever
  * after, so reacting to the value alone fires on load instead of on the event.
+ *
+ * Two edges, because signal writes are coalesced: a command that starts and finishes
+ * inside one turn is only ever seen holding its outcome, and waiting for a `running` that
+ * no pass ever rendered would drop it. Reaching an outcome from a state that was not one
+ * is the same event. Neither fires for a state that was already settled when this began,
+ * which is what a store-wide status looks like on the next screen that reads it.
  */
 export function onActionSettled(
   state: Signal<ActionState>,
@@ -56,12 +62,16 @@ export function onActionSettled(
 ): void {
   if (!options?.injector) assertInInjectionContext(onActionSettled);
 
+  const holdsOutcome = (s: ActionState): boolean => s === 'done' || s === 'failed';
+
   let previous = untracked(state);
   effect(() => {
     const current = state();
-    const settled = previous === 'running' && current !== 'running';
+    const stoppedRunning = previous === 'running' && current !== 'running';
+    const reachedOutcome = !holdsOutcome(previous) && holdsOutcome(current);
     previous = current;
-    if (settled) action(current);
+    // Both edges land on a state that is not running; the check is what narrows it.
+    if (current !== 'running' && (stoppedRunning || reachedOutcome)) action(current);
   }, options);
 }
 

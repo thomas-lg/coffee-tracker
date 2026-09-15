@@ -118,6 +118,29 @@ describe('ConfirmAction', () => {
     expect(focused()).toBe('Delete');
   });
 
+  it('keeps Cancel focusable while the action runs, and refuses its clicks', async () => {
+    // Arming parks focus here, and a click on Confirm does not move focus in every
+    // engine, so a `disabled` attribute would drop focus to <body> mid-request.
+    const fixture = create();
+    click(fixture, 'Delete');
+    await settle(fixture);
+
+    const cancel = Array.from(el(fixture).querySelectorAll('button')).find(
+      (b) => b.textContent?.trim() === 'Cancel',
+    ) as HTMLButtonElement;
+
+    fixture.componentRef.setInput('state', 'pending');
+    await settle(fixture);
+
+    expect(cancel.disabled).toBe(false);
+    expect(cancel.getAttribute('aria-disabled')).toBe('true');
+    expect(document.activeElement).toBe(cancel);
+
+    cancel.click();
+    await settle(fixture);
+    expect(el(fixture).textContent).toContain('Delete “Ethiopia”?');
+  });
+
   it('cannot be armed while disabled', async () => {
     const fixture = create();
     fixture.componentRef.setInput('disabled', true);

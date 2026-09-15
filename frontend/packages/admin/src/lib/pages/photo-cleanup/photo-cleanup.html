@@ -45,7 +45,7 @@
       class="ml-auto"
       [label]="'Delete ' + store.selectedCount()"
       [prompt]="'Delete ' + store.selectedCount() + ' photo(s)?'"
-      [state]="store.requestStatus()"
+      [state]="store.deleteAction.state()"
       busyLabel="Deleting…"
       (confirmed)="store.deleteSelected()"
     >

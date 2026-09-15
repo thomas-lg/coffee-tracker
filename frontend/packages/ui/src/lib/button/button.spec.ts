@@ -103,6 +103,17 @@ describe('Button', () => {
     expect(control(fixture).querySelector('svg')).toBe(null);
   });
 
+  it('does not mark an outcome on a control that became unavailable with it', () => {
+    // A save that empties the form it was saving lands both in one pass; the base styles
+    // render a disabled control at half opacity, which is no place for a confirmation.
+    const fixture = create();
+    fixture.componentInstance.state.set('done');
+    fixture.componentInstance.disabled.set(true);
+    fixture.detectChanges();
+
+    expect(control(fixture).querySelector('svg')).toBe(null);
+  });
+
   it('really disables a control that has nothing to act on', () => {
     const fixture = create();
     fixture.componentInstance.disabled.set(true);
