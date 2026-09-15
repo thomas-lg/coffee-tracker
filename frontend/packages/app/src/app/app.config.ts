@@ -18,7 +18,7 @@ import { authInterceptor, ProviderSignIn, provideProviderSignIn } from '@coffee-
 
 import { routes } from './app.routes';
 import { provideServiceWorker } from '@angular/service-worker';
-import { provideAppUpdates } from './app-updates';
+import { provideAppUpdates } from './services/app-updates';
 
 export const appConfig: ApplicationConfig = {
   providers: [

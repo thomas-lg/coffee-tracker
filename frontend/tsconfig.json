@@ -10,7 +10,19 @@
       "@coffee-tracker/auth": ["./packages/auth/src/public-api.ts"],
       "@coffee-tracker/data": ["./packages/data/src/public-api.ts"],
       "@coffee-tracker/coffees": ["./packages/coffees/src/public-api.ts"],
-      "@coffee-tracker/admin": ["./packages/admin/src/public-api.ts"]
+      "@coffee-tracker/admin": ["./packages/admin/src/public-api.ts"],
+
+      // A second namespace, and the difference is the point: `@coffee-tracker/x` is another
+      // package's public surface, `@x/…` is your own package's inside. Lint rejects a file
+      // reaching for an internal alias that is not its own, so these cannot become a way
+      // around a public-api.ts.
+      "@app/*": ["./packages/app/src/app/*"],
+      "@ui/*": ["./packages/ui/src/lib/*"],
+      "@util/*": ["./packages/util/src/lib/*"],
+      "@data/*": ["./packages/data/src/lib/*"],
+      "@auth/*": ["./packages/auth/src/lib/*"],
+      "@coffees/*": ["./packages/coffees/src/lib/*"],
+      "@admin/*": ["./packages/admin/src/lib/*"]
     },
     "noImplicitOverride": true,
     "noUncheckedIndexedAccess": true,

@@ -287,6 +287,26 @@ forward auth. The app keeps **its own** login: every endpoint requires a token; 
 reverse proxy is not the authentication. The production container starts as root,
 `chown`s `/config` and `/photos` to `PUID:PGID`, then drops privileges via `gosu`.
 
+## Frontend layout
+
+`frontend/` is an npm workspace of Angular packages: `app` (the shell) plus `ui`, `util`,
+`data`, `auth`, `coffees`, `admin`. Inside every package:
+
+- **`pages/` holds what a router loads, `components/` what a page renders.** One folder per
+  unit, holding its `.ts`, its `.html` and its `.spec.ts`. A component may not import a page.
+- **A store with one consumer lives in that consumer's folder** (`pages/backup/backup.store.ts`);
+  a store with several lives in `services/` (`coffees.store.ts`, `auth.store.ts`). Which it is
+  can change, and moving it is the whole edit.
+- `Home` is a page of `coffees`, not of `app`, because it is a coffee dashboard and reaches
+  into that package for everything it renders. It is the only page any barrel exports, since
+  `app.routes.ts` owns the landing route.
+
+Two alias namespaces, and the difference is the point: **`@coffee-tracker/x` is another
+package's public surface; `@x/…` is your own package's inside.** `eslint.config.js` expands one
+`MAY_IMPORT` map into both directions of that — which packages a package may reach, and the ban
+on borrowing anyone else's internal alias or walking a relative path past a `public-api.ts`.
+Adding an edge to the graph means editing that map, which is the point of it being a map.
+
 ## Frontend upgrades: current state
 
 - **`@ngrx/signals`**: *unblocked*. 22.0.1 peers on `@angular/core@^22.0.0` and the

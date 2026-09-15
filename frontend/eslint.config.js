@@ -3,6 +3,69 @@ const eslint = require('@eslint/js');
 const tseslint = require('typescript-eslint');
 const angular = require('angular-eslint');
 
+/**
+ * Each package may import the *public* surface of the packages below it, and nothing else.
+ * Anything absent from a list is an error, so adding an edge is a deliberate edit here.
+ */
+const MAY_IMPORT = {
+  util: [],
+  data: [],
+  ui: ['util'],
+  auth: ['ui', 'util', 'data'],
+  coffees: ['auth', 'ui', 'util', 'data'],
+  admin: ['coffees', 'auth', 'ui', 'util', 'data'],
+  app: ['admin', 'coffees', 'auth', 'ui', 'util', 'data'],
+};
+
+/** Packages that route: only these have a `pages/` to protect from their `components/`. */
+const HAS_PAGES = ['app', 'auth', 'coffees', 'admin'];
+
+const PACKAGES = Object.keys(MAY_IMPORT);
+
+function restrictedImports(pkg, extra = []) {
+  const foreign = PACKAGES.filter((p) => p !== pkg && !MAY_IMPORT[pkg].includes(p));
+  return {
+    '@typescript-eslint/no-restricted-imports': [
+      'error',
+      {
+        patterns: [
+          {
+            group: [...foreign.map((p) => `@coffee-tracker/${p}`), `@coffee-tracker/${pkg}`],
+            message:
+              `packages/${pkg} may import only ${MAY_IMPORT[pkg].join(', ') || 'nothing'}. ` +
+              'Its own package is reached through the @' +
+              pkg +
+              '/ alias, not through its own barrel.',
+          },
+          {
+            group: PACKAGES.filter((p) => p !== pkg).map((p) => `@${p}/*`),
+            message:
+              "The @x/ aliases are one package's own inside. Another package is reached through " +
+              'its @coffee-tracker/x barrel, which is what decides what it exposes.',
+          },
+          {
+            group: ['**/packages/*/src/**'],
+            message:
+              'A relative path into another package walks past its public-api.ts. Import the ' +
+              '@coffee-tracker/x barrel instead.',
+          },
+          ...extra,
+        ],
+      },
+    ],
+  };
+}
+
+/**
+ * Pages compose components. The reverse makes the two indistinguishable again, which is the
+ * thing the split exists to prevent.
+ */
+const NO_PAGE_FROM_COMPONENT = {
+  group: ['**/pages/**', '@*/pages/*'],
+  message: 'A component must not import a page; pages compose components, never the reverse.',
+};
+
+
 module.exports = tseslint.config(
   {
     // Build outputs, generated code, and tooling scripts aren't linted.
@@ -70,6 +133,16 @@ module.exports = tseslint.config(
       '@typescript-eslint/await-thenable': 'off',
     },
   },
+  ...PACKAGES.map((pkg) => ({
+    files: [`packages/${pkg}/**/*.ts`],
+    rules: restrictedImports(pkg),
+  })),
+  // Repeats each package's patterns rather than adding to them: in flat config a later block
+  // setting the same rule replaces it outright for the files it matches.
+  ...HAS_PAGES.map((pkg) => ({
+    files: [`packages/${pkg}/**/components/**/*.ts`],
+    rules: restrictedImports(pkg, [NO_PAGE_FROM_COMPONENT]),
+  })),
   {
     files: ['**/*.html'],
     extends: [...angular.configs.templateRecommended, ...angular.configs.templateAccessibility],

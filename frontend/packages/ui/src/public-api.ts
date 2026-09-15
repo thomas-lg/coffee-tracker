@@ -2,12 +2,12 @@
  * Public API surface of @coffee-tracker/ui
  */
 
-export * from './lib/components/button';
-export * from './lib/components/card';
-export * from './lib/components/rating';
-export * from './lib/components/select';
-export * from './lib/components/tag-chip';
-export * from './lib/components/skeleton';
-export * from './lib/components/toast';
-export * from './lib/components/count-up';
-export * from './lib/components/image-lightbox';
+export * from './lib/button/button';
+export * from './lib/card/card';
+export * from './lib/rating/rating';
+export * from './lib/select/select';
+export * from './lib/tag-chip/tag-chip';
+export * from './lib/skeleton/skeleton';
+export * from './lib/toast/toast';
+export * from './lib/count-up/count-up';
+export * from './lib/image-lightbox/image-lightbox';
