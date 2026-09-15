@@ -37,8 +37,9 @@
           type="checkbox"
           class="mt-1 h-5 w-5 shrink-0 accent-crema"
           [checked]="s.localLoginEnabled"
-          [disabled]="saving()"
-          (change)="toggleLocalLogin(localLoginEl.checked)"
+          [attr.aria-disabled]="saving() ? 'true' : null"
+          [class.opacity-60]="saving()"
+          (change)="toggleLocalLogin(localLoginEl)"
         />
       </label>
 
@@ -57,8 +58,9 @@
           type="checkbox"
           class="mt-1 h-5 w-5 shrink-0 accent-crema"
           [checked]="s.localRegistrationEnabled"
-          [disabled]="saving()"
-          (change)="toggleRegistration(registrationEl.checked)"
+          [attr.aria-disabled]="saving() ? 'true' : null"
+          [class.opacity-60]="saving()"
+          (change)="toggleRegistration(registrationEl)"
         />
       </label>
     </div>

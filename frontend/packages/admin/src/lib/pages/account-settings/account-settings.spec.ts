@@ -107,6 +107,56 @@ describe('AccountSettingsScreen', () => {
     expect(show).toHaveBeenCalledWith('Account settings saved.', 'success');
   });
 
+  it('keeps focus on the switch it was pressed on while the change saves', async () => {
+    // A `disabled` attribute blurs the element it lands on, and that is the switch the
+    // administrator just pressed.
+    const el = await render();
+    const registration = toggle(el, 1);
+
+    registration.focus();
+    registration.click();
+    await settle();
+
+    expect(document.activeElement).toBe(registration);
+    expect(registration.disabled).toBe(false);
+    expect(registration.getAttribute('aria-disabled')).toBe('true');
+
+    httpCtrl
+      .expectOne((r) => r.method === 'PUT')
+      .flush({ localLoginEnabled: true, localRegistrationEnabled: true });
+    await settle();
+    httpCtrl
+      .expectOne('/api/admin/settings')
+      .flush({ localLoginEnabled: true, localRegistrationEnabled: true });
+    await settle();
+  });
+
+  it('refuses a second toggle mid-save, and puts the switch it moved back', async () => {
+    const el = await render();
+
+    toggle(el, 1).click();
+    await settle();
+
+    // Still interactive, which is the point: a `disabled` attribute would have blurred
+    // it. So the click lands, and `[checked]` is only rewritten when its bound value
+    // changes — nothing has changed yet, so a refusal that left the box alone would
+    // strand it out of step.
+    expect(toggle(el, 0).disabled).toBe(false);
+    toggle(el, 0).click();
+    await settle();
+
+    expect(toggle(el, 0).checked).toBe(true);
+
+    httpCtrl
+      .expectOne((r) => r.method === 'PUT')
+      .flush({ localLoginEnabled: true, localRegistrationEnabled: true });
+    await settle();
+    httpCtrl
+      .expectOne('/api/admin/settings')
+      .flush({ localLoginEnabled: true, localRegistrationEnabled: true });
+    await settle();
+  });
+
   it('explains a refused sign-in change inline and leaves the switch on', async () => {
     const el = await render();
 

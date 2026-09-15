@@ -120,6 +120,44 @@ describe('ScanSettingsScreen', () => {
     expect(fixture.nativeElement.textContent).toContain('Not installed on this host');
   });
 
+  it('reports the group as busy rather than disabling it while a change saves', async () => {
+    // A browser blurs everything inside a fieldset that becomes disabled, and that is
+    // the radio the administrator just pressed. This asserts the markup rather than the
+    // focus, because jsdom propagates neither the disabled state of a fieldset nor the
+    // blur that comes with it: `document.activeElement` here reads the same either way,
+    // so a focus assertion would pass just as well with the bug back in place.
+    await load();
+
+    const group = (fixture.nativeElement as HTMLElement).querySelector('fieldset')!;
+    radios()[1]?.click();
+    await settle();
+
+    expect(group.hasAttribute('disabled')).toBe(false);
+    expect(group.getAttribute('aria-busy')).toBe('true');
+    expect(radios()[1]?.getAttribute('aria-disabled')).toBe('true');
+
+    http.expectOne('/api/admin/scan-settings').flush({ ...SETTINGS, engine: 'Tesseract' });
+    await settle();
+  });
+
+  it('refuses a pick that lands mid-save, and stays on the one being saved', async () => {
+    await load();
+
+    radios()[1]?.click();
+    await settle();
+    radios()[2]?.click();
+    await settle();
+
+    // One request, and the group shows the engine in flight rather than snapping back to
+    // the one still in force or forward to the refused click. The revert has to wait for
+    // a render for the same reason the refused-request path does.
+    expect(radios()[1]?.checked).toBe(true);
+    expect(radios()[2]?.checked).toBe(false);
+
+    http.expectOne('/api/admin/scan-settings').flush({ ...SETTINGS, engine: 'Tesseract' });
+    await settle();
+  });
+
   it('reports a refused change and puts the selection back', async () => {
     await load();
 
