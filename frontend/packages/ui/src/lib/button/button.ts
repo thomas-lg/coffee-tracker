@@ -41,12 +41,7 @@ export type ButtonVariant = 'primary' | 'crema' | 'ghost' | 'danger';
   selector: 'ct-button',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [RouterLink, NgTemplateOutlet, LucideCheck],
-  host: {
-    '[class.block]': 'fullWidth()',
-    // For a caller that needs to style or assert on the state without this component
-    // guessing what each one wants shown.
-    '[attr.data-state]': "state() === 'idle' ? null : state()",
-  },
+  host: { '[class.block]': 'fullWidth()' },
   template: `
     <ng-template #content>
       @if (running()) {

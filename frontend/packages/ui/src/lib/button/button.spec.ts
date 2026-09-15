@@ -33,8 +33,6 @@ describe('Button', () => {
     return fixture;
   }
 
-  const host = (fixture: ReturnType<typeof create>): HTMLElement =>
-    (fixture.nativeElement as HTMLElement).querySelector('ct-button')!;
   const control = (fixture: ReturnType<typeof create>): HTMLButtonElement =>
     (fixture.nativeElement as HTMLElement).querySelector('button')!;
 
@@ -122,18 +120,15 @@ describe('Button', () => {
     expect(control(fixture).disabled).toBe(true);
   });
 
-  it('takes a request status as readily as a boolean, and carries it on the element', () => {
+  it('takes a request status as readily as a boolean', () => {
     const fixture = create();
-    expect(host(fixture).hasAttribute('data-state')).toBe(false);
 
     fixture.componentInstance.state.set('pending');
     fixture.detectChanges();
-    expect(host(fixture).getAttribute('data-state')).toBe('running');
     expect(control(fixture).textContent?.trim()).toBe('Saving…');
 
     fixture.componentInstance.state.set({ error: 'nope' });
     fixture.detectChanges();
-    expect(host(fixture).getAttribute('data-state')).toBe('failed');
     // Failed is not busy: the control has to work again for a retry to be possible.
     expect(control(fixture).getAttribute('aria-disabled')).toBe(null);
     expect(control(fixture).textContent?.trim()).toBe('Save');
