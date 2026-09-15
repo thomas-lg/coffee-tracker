@@ -86,7 +86,7 @@ export class ConfirmAction {
   readonly cancelLabel = input('Cancel');
   readonly busyLabel = input('Working…');
 
-  readonly armVariant = input<ButtonVariant>('ghost');
+  readonly armVariant = input<ButtonVariant>('danger-ghost');
   readonly confirmVariant = input<ButtonVariant>('danger');
 
   /** Blocks arming, for an action with nothing to act on yet. */

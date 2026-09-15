@@ -13,7 +13,7 @@ import { LucideCheck } from '@lucide/angular';
 import { type ActionState, type ActionStateLike, toActionState } from '@coffee-tracker/util';
 
 /** Variant names, shared with the components that wrap a button of their own. */
-export type ButtonVariant = 'primary' | 'crema' | 'ghost' | 'danger';
+export type ButtonVariant = 'primary' | 'crema' | 'ghost' | 'danger' | 'danger-ghost';
 
 /**
  * Primary action button in the coffee theme. Variant maps to a token combo;
@@ -120,6 +120,10 @@ export class Button {
     // never the quieter-looking control.
     danger:
       'bg-transparent text-red-700 ring-1 ring-red-300 hover:bg-red-50 dark:text-red-400 dark:ring-red-900 dark:hover:bg-red-950',
+    // The step *before* a confirmation: quiet until pointed at, because it is sitting
+    // next to ordinary actions and must not read as the thing to press.
+    'danger-ghost':
+      'bg-transparent text-muted ring-1 ring-line hover:text-red-700 hover:ring-red-300 dark:hover:text-red-400 dark:hover:ring-red-900',
   };
 
   protected readonly cls = computed(
