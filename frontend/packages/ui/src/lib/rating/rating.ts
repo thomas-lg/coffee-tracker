@@ -9,7 +9,12 @@ import { ChangeDetectionStrategy, Component, computed, input, output, signal } f
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (interactive()) {
-      <div class="inline-flex gap-1" role="group" aria-label="Rate this coffee" (mouseleave)="hover.set(0)">
+      <div
+        class="inline-flex gap-1"
+        role="group"
+        aria-label="Rate this coffee"
+        (mouseleave)="hover.set(0)"
+      >
         @for (n of stars; track n) {
           <button
             type="button"
@@ -28,7 +33,11 @@ import { ChangeDetectionStrategy, Component, computed, input, output, signal } f
         }
       </div>
     } @else {
-      <span class="relative inline-block leading-none tracking-[2px]" [class]="sizeClass()" [attr.aria-label]="label()">
+      <span
+        class="relative inline-block leading-none tracking-[2px]"
+        [class]="sizeClass()"
+        [attr.aria-label]="label()"
+      >
         <span class="text-line">★★★★★</span>
         <span
           class="absolute inset-0 overflow-hidden whitespace-nowrap text-crema transition-[width] duration-700 ease-out"

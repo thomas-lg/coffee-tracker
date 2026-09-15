@@ -53,7 +53,9 @@ describe('Login', () => {
 
   const hasPasswordField = (el: HTMLElement) => !!el.querySelector('input[type="password"]');
   const providerButton = (el: HTMLElement) =>
-    [...el.querySelectorAll('ct-button')].find((b) => /identity provider/i.test(b.textContent ?? ''));
+    [...el.querySelectorAll('ct-button')].find((b) =>
+      /identity provider/i.test(b.textContent ?? ''),
+    );
   const registerLink = (el: HTMLElement) => el.querySelector('a[href="/register"]');
 
   it('hides the provider action when no provider is configured', async () => {
@@ -74,10 +76,17 @@ describe('Login', () => {
   it('names the provider when the operator configured a name', async () => {
     const el = await render({
       oidcAvailable: true,
-      oidc: { authority: 'https://id.example.com', clientId: 'c', scopes: 'openid', displayName: 'Authelia' },
+      oidc: {
+        authority: 'https://id.example.com',
+        clientId: 'c',
+        scopes: 'openid',
+        displayName: 'Authelia',
+      },
     });
 
-    const button = [...el.querySelectorAll('ct-button')].find((b) => /Authelia/.test(b.textContent ?? ''));
+    const button = [...el.querySelectorAll('ct-button')].find((b) =>
+      /Authelia/.test(b.textContent ?? ''),
+    );
     expect(button).toBeDefined();
   });
 
@@ -95,7 +104,11 @@ describe('Login', () => {
   });
 
   it('says so when the instance accepts no sign-in method at all', async () => {
-    const el = await render({ localLoginEnabled: false, registrationEnabled: false, oidcAvailable: false });
+    const el = await render({
+      localLoginEnabled: false,
+      registrationEnabled: false,
+      oidcAvailable: false,
+    });
 
     expect(hasPasswordField(el)).toBe(false);
     expect(el.textContent).toContain('no sign-in method');

@@ -1,4 +1,11 @@
-import { ChangeDetectionStrategy, Component, Injectable, computed, inject, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  Injectable,
+  computed,
+  inject,
+  signal,
+} from '@angular/core';
 
 export type ToastTone = 'success' | 'info' | 'error';
 export interface ToastMessage {
@@ -41,13 +48,19 @@ export class ToastService {
   selector: 'ct-toast',
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="pointer-events-none fixed inset-x-0 bottom-5 z-80 flex flex-col items-center gap-2 px-4">
+    <div
+      class="pointer-events-none fixed inset-x-0 bottom-5 z-80 flex flex-col items-center gap-2 px-4"
+    >
       <!-- Empty regions collapse to zero height; the flex gap around one costs 8px of
            dead space, which is cheaper than the announcement this buys. -->
       <div class="flex flex-col items-center gap-2" role="status" aria-live="polite">
         @for (t of polite(); track t.id) {
           <div [class]="pill">
-            <span class="size-2 rounded-full" [class.bg-moss]="t.tone === 'success'" [class.bg-crema]="t.tone === 'info'"></span>
+            <span
+              class="size-2 rounded-full"
+              [class.bg-moss]="t.tone === 'success'"
+              [class.bg-crema]="t.tone === 'info'"
+            ></span>
             {{ t.text }}
           </div>
         }
@@ -66,8 +79,12 @@ export class ToastService {
 export class Toast {
   private readonly toasts = inject(ToastService);
 
-  protected readonly polite = computed(() => this.toasts.toasts().filter((t) => t.tone !== 'error'));
-  protected readonly errors = computed(() => this.toasts.toasts().filter((t) => t.tone === 'error'));
+  protected readonly polite = computed(() =>
+    this.toasts.toasts().filter((t) => t.tone !== 'error'),
+  );
+  protected readonly errors = computed(() =>
+    this.toasts.toasts().filter((t) => t.tone === 'error'),
+  );
 
   protected readonly pill =
     'pointer-events-auto flex items-center gap-2 rounded-full bg-ink px-4 py-2.5 ' +

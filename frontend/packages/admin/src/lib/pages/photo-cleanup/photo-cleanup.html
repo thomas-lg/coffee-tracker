@@ -32,7 +32,8 @@
     </button>
   </div>
 
-  <button type="button"
+  <button
+    type="button"
     (click)="store.selectAllUnused()"
     class="rounded-full px-3 py-1.5 text-sm font-semibold text-muted hover:text-ink"
     [disabled]="store.unusedCount() === 0"
@@ -50,7 +51,11 @@
       (confirmed)="store.deleteSelected()"
     >
       <span class="text-sm text-muted">{{ store.selectedCount() }} selected</span>
-      <button type="button" (click)="store.clearSelection()" class="text-sm font-semibold text-muted hover:text-ink">
+      <button
+        type="button"
+        (click)="store.clearSelection()"
+        class="text-sm font-semibold text-muted hover:text-ink"
+      >
         Clear
       </button>
     </ct-confirm-action>
@@ -73,7 +78,11 @@
   <div class="rounded-2xl border border-line bg-foam p-12 text-center">
     <p class="text-2xl">🎉</p>
     <p class="mt-2 text-sm text-muted">
-      {{ store.filter() === 'unused' ? 'No orphaned photos. Nothing to clean up.' : 'No photos stored yet.' }}
+      {{
+        store.filter() === 'unused'
+          ? 'No orphaned photos. Nothing to clean up.'
+          : 'No photos stored yet.'
+      }}
     </p>
   </div>
 } @else {
@@ -111,7 +120,9 @@
           @if (!p.used) {
             <span
               class="absolute right-2 top-2 grid size-6 place-items-center rounded-full border text-xs font-bold transition"
-              [class]="selected ? 'border-ink bg-ink text-foam' : 'border-line bg-foam/90 text-transparent'"
+              [class]="
+                selected ? 'border-ink bg-ink text-foam' : 'border-line bg-foam/90 text-transparent'
+              "
               aria-hidden="true"
               >✓</span
             >
@@ -123,9 +134,13 @@
             {{ fileName(p.path) }}
           </span>
           @if (p.used) {
-            <span class="shrink-0 rounded-full bg-moss/15 px-2 py-0.5 text-xs font-semibold text-moss">Used</span>
+            <span
+              class="shrink-0 rounded-full bg-moss/15 px-2 py-0.5 text-xs font-semibold text-moss"
+              >Used</span
+            >
           } @else {
-            <span class="shrink-0 rounded-full bg-amber-400/20 px-2 py-0.5 text-xs font-semibold text-amber-700"
+            <span
+              class="shrink-0 rounded-full bg-amber-400/20 px-2 py-0.5 text-xs font-semibold text-amber-700"
               >Unused</span
             >
           }

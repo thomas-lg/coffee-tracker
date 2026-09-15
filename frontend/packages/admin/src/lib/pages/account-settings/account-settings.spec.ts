@@ -50,7 +50,9 @@ describe('AccountSettingsScreen', () => {
     fixture.detectChanges();
   }
 
-  const switches = (el: HTMLElement) => [...el.querySelectorAll<HTMLInputElement>('input[type="checkbox"]')];
+  const switches = (el: HTMLElement) => [
+    ...el.querySelectorAll<HTMLInputElement>('input[type="checkbox"]'),
+  ];
 
   /** The nth switch, failing loudly rather than silently doing nothing if absent. */
   function toggle(el: HTMLElement, index: number): HTMLInputElement {
@@ -89,16 +91,16 @@ describe('AccountSettingsScreen', () => {
     toggle(el, 1).click();
     await settle();
 
-    const put = httpCtrl.expectOne(
-      (r) => r.method === 'PUT' && r.url === '/api/admin/settings',
-    );
+    const put = httpCtrl.expectOne((r) => r.method === 'PUT' && r.url === '/api/admin/settings');
     expect(put.request.body).toEqual({ localLoginEnabled: true, localRegistrationEnabled: false });
     put.flush({ localLoginEnabled: true, localRegistrationEnabled: false });
     await settle();
 
     // The stored value is the truth, so the screen re-reads rather than trusting the
     // switch it just moved.
-    httpCtrl.expectOne('/api/admin/settings').flush({ localLoginEnabled: true, localRegistrationEnabled: false });
+    httpCtrl
+      .expectOne('/api/admin/settings')
+      .flush({ localLoginEnabled: true, localRegistrationEnabled: false });
     await settle();
 
     expect(toggle(fixture.nativeElement as HTMLElement, 1).checked).toBe(false);
@@ -114,7 +116,10 @@ describe('AccountSettingsScreen', () => {
     httpCtrl
       .expectOne((r) => r.method === 'PUT')
       .flush(
-        { detail: 'Sign in through the identity provider at least once with an administrator account first.' },
+        {
+          detail:
+            'Sign in through the identity provider at least once with an administrator account first.',
+        },
         { status: 409, statusText: 'Conflict' },
       );
     await settle();
@@ -135,7 +140,9 @@ describe('AccountSettingsScreen', () => {
     toggle(el, 1).click();
     await settle();
 
-    httpCtrl.expectOne((r) => r.method === 'PUT').flush(null, { status: 500, statusText: 'Server Error' });
+    httpCtrl
+      .expectOne((r) => r.method === 'PUT')
+      .flush(null, { status: 500, statusText: 'Server Error' });
     await settle();
     httpCtrl.expectOne('/api/admin/settings').flush(SETTINGS);
     await settle();

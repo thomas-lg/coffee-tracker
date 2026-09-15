@@ -1,6 +1,13 @@
 import { computed, inject } from '@angular/core';
 import { rxResource } from '@angular/core/rxjs-interop';
-import { patchState, signalStore, withComputed, withMethods, withProps, withState } from '@ngrx/signals';
+import {
+  patchState,
+  signalStore,
+  withComputed,
+  withMethods,
+  withProps,
+  withState,
+} from '@ngrx/signals';
 import { extendResource, withValueOnError } from '@ngrx/signals/resource';
 import { AuthStore } from '@coffee-tracker/auth';
 import { CoffeesApi, type Coffee } from '@coffee-tracker/data';
@@ -62,9 +69,23 @@ export const CoffeesStore = signalStore(
       /** Distinct filter/autocomplete options derived from the loaded shelf. */
       origins: computed(() => [...new Set(coffees().map((c) => c.origin))].sort()),
       flavors: computed(() => [...new Set(coffees().flatMap((c) => c.flavorTags))].sort()),
-      roasters: computed(() => [...new Set(coffees().map((c) => c.roaster).filter(Boolean))].sort()),
+      roasters: computed(() =>
+        [
+          ...new Set(
+            coffees()
+              .map((c) => c.roaster)
+              .filter(Boolean),
+          ),
+        ].sort(),
+      ),
       shops: computed(() =>
-        [...new Set(coffees().map((c) => c.shopName).filter((s): s is string => !!s))].sort(),
+        [
+          ...new Set(
+            coffees()
+              .map((c) => c.shopName)
+              .filter((s): s is string => !!s),
+          ),
+        ].sort(),
       ),
 
       filtered: computed(() => {

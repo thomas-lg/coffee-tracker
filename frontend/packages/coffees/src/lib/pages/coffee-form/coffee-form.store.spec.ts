@@ -70,7 +70,12 @@ describe('CoffeeFormStore', () => {
   }
 
   function fill(store: CoffeeFormStore): void {
-    store.model.update((m) => ({ ...m, name: 'Kirinyaga AA', roaster: 'La Cabra', origin: 'Kenya' }));
+    store.model.update((m) => ({
+      ...m,
+      name: 'Kirinyaga AA',
+      roaster: 'La Cabra',
+      origin: 'Kenya',
+    }));
   }
 
   it('creates a coffee and sends the user to it', async () => {

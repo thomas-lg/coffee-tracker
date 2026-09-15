@@ -15,9 +15,16 @@ import { roastBucket, roastGradient } from '@coffees/utils/coffee-visual';
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [RouterLink, Card, Rating, TagChip],
   template: `
-    <a [routerLink]="['/coffees', coffee().id]" class="ct-rise" [style.animationDelay]="(index() % 12) * 40 + 'ms'">
+    <a
+      [routerLink]="['/coffees', coffee().id]"
+      class="ct-rise"
+      [style.animationDelay]="(index() % 12) * 40 + 'ms'"
+    >
       <ct-card [interactive]="true">
-        <div class="relative h-32 text-foam" [style.background]="roastGradient(coffee().roastLevel)">
+        <div
+          class="relative h-32 text-foam"
+          [style.background]="roastGradient(coffee().roastLevel)"
+        >
           @if (coffee().photoUrl; as photoUrl) {
             <img
               [src]="photoUrl"
@@ -27,10 +34,14 @@ import { roastBucket, roastGradient } from '@coffees/utils/coffee-visual';
               class="absolute inset-0 size-full object-cover"
             />
           }
-          <span class="absolute left-2 top-2 rounded-md bg-black/30 px-2 py-0.5 font-mono text-[10px] uppercase tracking-wide backdrop-blur">
+          <span
+            class="absolute left-2 top-2 rounded-md bg-black/30 px-2 py-0.5 font-mono text-[10px] uppercase tracking-wide backdrop-blur"
+          >
             {{ coffee().origin }}
           </span>
-          <span class="absolute right-2 top-2 rounded-md border border-white/25 bg-white/15 px-2 py-0.5 font-mono text-[10px] uppercase tracking-wide backdrop-blur">
+          <span
+            class="absolute right-2 top-2 rounded-md border border-white/25 bg-white/15 px-2 py-0.5 font-mono text-[10px] uppercase tracking-wide backdrop-blur"
+          >
             {{ roastBucket(coffee().roastLevel) }}
           </span>
         </div>
@@ -39,7 +50,9 @@ import { roastBucket, roastGradient } from '@coffees/utils/coffee-visual';
           <p class="truncate text-xs text-muted">{{ coffee().roaster }}</p>
           <div class="mt-2 flex items-center gap-2">
             <ct-rating [value]="coffee().averageRating ?? 0" size="sm" />
-            <span class="font-mono text-xs font-semibold">{{ formatRating(coffee().averageRating) }}</span>
+            <span class="font-mono text-xs font-semibold">{{
+              formatRating(coffee().averageRating)
+            }}</span>
             <span class="text-xs text-muted">· {{ coffee().reviewCount }}</span>
           </div>
           @if (coffee().flavorTags.length) {

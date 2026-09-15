@@ -7,15 +7,15 @@
 
 /* Coffee palette, light (default). Warm, chosen neutrals. */
 :root {
-  --ink: #241813;        /* deep roasted espresso */
-  --cocoa: #6f4e37;      /* primary brown */
-  --crema: #cc8b43;      /* gold accent, the single bold note */
-  --crema-deep: #8f5419;  /* AA on both grounds, see note below */
-  --latte: #f3e9db;      /* page ground */
-  --foam: #fffcf6;       /* card surface */
-  --line: #e6d6bf;       /* warm hairline */
-  --muted: #736050;      /* warm grey text */
-  --moss: #5c7a52;       /* semantic good (not the accent) */
+  --ink: #241813; /* deep roasted espresso */
+  --cocoa: #6f4e37; /* primary brown */
+  --crema: #cc8b43; /* gold accent, the single bold note */
+  --crema-deep: #8f5419; /* AA on both grounds, see note below */
+  --latte: #f3e9db; /* page ground */
+  --foam: #fffcf6; /* card surface */
+  --line: #e6d6bf; /* warm hairline */
+  --muted: #736050; /* warm grey text */
+  --moss: #5c7a52; /* semantic good (not the accent) */
   color-scheme: light;
 }
 
@@ -131,17 +131,22 @@
     min-height: 100dvh;
     -webkit-font-smoothing: antialiased;
   }
-  h1, h2, h3 {
+  h1,
+  h2,
+  h3 {
     font-family: var(--font-display);
     text-wrap: balance;
   }
   /* Tailwind v4 preflight no longer sets pointer on buttons, restore it. */
-  button:not(:disabled), [role='button'] {
+  button:not(:disabled),
+  [role='button'] {
     cursor: pointer;
   }
   /* Honor reduced-motion globally; component motion opts in on top of this. */
   @media (prefers-reduced-motion: reduce) {
-    *, *::before, *::after {
+    *,
+    *::before,
+    *::after {
       animation-duration: 0.001ms !important;
       animation-iteration-count: 1 !important;
       transition-duration: 0.001ms !important;

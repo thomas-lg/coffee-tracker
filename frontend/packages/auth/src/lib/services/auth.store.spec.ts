@@ -156,7 +156,13 @@ describe('AuthStore', () => {
   it('discards an expired pre-refresh session (no refresh token stored)', () => {
     localStorage.setItem(
       STORAGE_KEY,
-      JSON.stringify({ token: 't', userId: 'u', displayName: null, isAdmin: false, expiresAt: pastIso() }),
+      JSON.stringify({
+        token: 't',
+        userId: 'u',
+        displayName: null,
+        isAdmin: false,
+        expiresAt: pastIso(),
+      }),
     );
 
     const store = TestBed.inject(AuthStore);

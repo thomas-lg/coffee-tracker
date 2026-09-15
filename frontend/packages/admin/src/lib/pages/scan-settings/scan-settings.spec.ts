@@ -23,7 +23,9 @@ describe('ScanSettingsScreen', () => {
 
   const radios = (): HTMLInputElement[] =>
     Array.from(
-      (fixture.nativeElement as HTMLElement).querySelectorAll<HTMLInputElement>('input[type=radio]'),
+      (fixture.nativeElement as HTMLElement).querySelectorAll<HTMLInputElement>(
+        'input[type=radio]',
+      ),
     );
 
   beforeEach(() => {
@@ -105,11 +107,14 @@ describe('ScanSettingsScreen', () => {
   it('cannot select an engine this host does not carry', async () => {
     // A build without one of them must not let an administrator pick it and then meet a
     // 503 on every scan.
-    await load({ ...SETTINGS, options: [
-      { engine: 'RapidOcr', available: true },
-      { engine: 'Tesseract', available: false },
-      { engine: 'Disabled', available: true },
-    ] });
+    await load({
+      ...SETTINGS,
+      options: [
+        { engine: 'RapidOcr', available: true },
+        { engine: 'Tesseract', available: false },
+        { engine: 'Disabled', available: true },
+      ],
+    });
 
     expect(radios()[1]?.disabled).toBe(true);
     expect(fixture.nativeElement.textContent).toContain('Not installed on this host');

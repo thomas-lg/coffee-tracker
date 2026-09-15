@@ -24,7 +24,6 @@ test('golden path: register, add a coffee, see it on the shelf, and rate it', as
     const session = JSON.parse(stored as string);
     expect(session.token).toBeTruthy();
     expect(session.refreshToken).toBeTruthy(); // short-lived access tokens persist via refresh
-
   });
 
   await test.step('add a coffee from the catalog', async () => {
@@ -32,7 +31,10 @@ test('golden path: register, add a coffee, see it on the shelf, and rate it', as
     // Two of these exist on an empty shelf, the page header always offers it, and so
     // does the empty state. The test used to win that race by clicking before the
     // empty state rendered; take the first deliberately rather than depend on timing.
-    await page.getByRole('link', { name: /add a coffee/i }).first().click();
+    await page
+      .getByRole('link', { name: /add a coffee/i })
+      .first()
+      .click();
     await expect(page).toHaveURL(/\/coffees\/new$/);
 
     await page.getByLabel('Name').fill(coffeeName);
@@ -49,7 +51,10 @@ test('golden path: register, add a coffee, see it on the shelf, and rate it', as
   });
 
   await test.step('rate it today (4★) and see the count flip to "1 rating"', async () => {
-    await page.getByRole('group', { name: /rate this coffee/i }).getByRole('button', { name: '4 stars' }).click();
+    await page
+      .getByRole('group', { name: /rate this coffee/i })
+      .getByRole('button', { name: '4 stars' })
+      .click();
     await page.getByRole('button', { name: /save today.s rating/i }).click();
     await expect(page.getByText(/^1 rating$/)).toBeVisible();
   });

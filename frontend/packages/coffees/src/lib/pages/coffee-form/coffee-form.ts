@@ -41,7 +41,9 @@ export class CoffeeForm implements OnDestroy {
     min(p.price, 0);
     required(p.dateBought);
     // ISO date strings compare lexically, block anything after today.
-    validate(p.dateBought, ({ value }) => (value() && value() > today() ? { kind: 'future' } : undefined));
+    validate(p.dateBought, ({ value }) =>
+      value() && value() > today() ? { kind: 'future' } : undefined,
+    );
   });
 
   /** Origin suggestions: curated producing countries merged with what's on the shelf. */

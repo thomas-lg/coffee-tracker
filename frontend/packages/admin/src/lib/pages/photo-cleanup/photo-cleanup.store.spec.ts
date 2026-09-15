@@ -96,9 +96,7 @@ describe('PhotoCleanupStore', () => {
     store.selectAllUnused();
     store.deleteSelected();
 
-    http
-      .expectOne('/api/admin/photos')
-      .flush('boom', { status: 500, statusText: 'Server Error' });
+    http.expectOne('/api/admin/photos').flush('boom', { status: 500, statusText: 'Server Error' });
 
     expect(toast.show).toHaveBeenCalledWith('Delete failed. Please retry.', 'error');
     expect(store.deleteAction.failed()).toBe(true);

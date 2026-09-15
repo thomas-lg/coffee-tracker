@@ -11,9 +11,7 @@ describe('AdminShell', () => {
   let fixture: ReturnType<typeof TestBed.createComponent<AdminShell>>;
 
   const tabs = (): HTMLAnchorElement[] =>
-    Array.from(
-      (fixture.nativeElement as HTMLElement).querySelectorAll<HTMLAnchorElement>('nav a'),
-    );
+    Array.from((fixture.nativeElement as HTMLElement).querySelectorAll<HTMLAnchorElement>('nav a'));
 
   beforeEach(() => {
     TestBed.configureTestingModule({
@@ -38,7 +36,9 @@ describe('AdminShell', () => {
   });
 
   it('divides the two groups once, between them', () => {
-    const dividers = (fixture.nativeElement as HTMLElement).querySelectorAll('nav [aria-hidden="true"]');
+    const dividers = (fixture.nativeElement as HTMLElement).querySelectorAll(
+      'nav [aria-hidden="true"]',
+    );
 
     expect(dividers).toHaveLength(1);
   });

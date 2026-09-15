@@ -10,8 +10,7 @@ const svg = readFileSync(fileURLToPath(new URL('icon.svg', root)));
 
 const SIZES = [72, 96, 128, 144, 152, 192, 384, 512];
 
-const render = (size) =>
-  sharp(svg, { density: 384 }).resize(size, size, { fit: 'contain' }).png();
+const render = (size) => sharp(svg, { density: 384 }).resize(size, size, { fit: 'contain' }).png();
 
 for (const size of SIZES) {
   const out = fileURLToPath(new URL(`icons/icon-${size}x${size}.png`, root));

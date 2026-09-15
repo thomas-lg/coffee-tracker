@@ -111,13 +111,15 @@ describe('CoffeeDetail', () => {
     const second = TestBed.createComponent(CoffeeDetail);
     second.componentRef.setInput('id', '8');
     second.detectChanges();
-    http.expectOne({ method: 'GET', url: '/api/coffees/8' }).flush({ ...COFFEE, id: 8, shopName: null });
+    http
+      .expectOne({ method: 'GET', url: '/api/coffees/8' })
+      .flush({ ...COFFEE, id: 8, shopName: null });
     http.expectOne({ method: 'GET', url: '/api/coffees/8/reviews' }).flush([]);
     await load();
     second.detectChanges();
 
-    const terms = Array.from((second.nativeElement as HTMLElement).querySelectorAll('dt')).map((dt) =>
-      dt.textContent?.trim(),
+    const terms = Array.from((second.nativeElement as HTMLElement).querySelectorAll('dt')).map(
+      (dt) => dt.textContent?.trim(),
     );
     expect(terms).toContain('Roaster');
     expect(terms).not.toContain('Shop');

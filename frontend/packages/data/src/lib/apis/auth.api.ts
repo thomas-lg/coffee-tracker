@@ -20,7 +20,11 @@ export class AuthApi {
 
   /** Exchanges a provider ID token for an app session. */
   oidcSignIn(idToken: string): Observable<AuthResponse> {
-    return this.http.post<AuthResponse>('/api/auth/oidc', { idToken } satisfies OidcSignIn, this.anon);
+    return this.http.post<AuthResponse>(
+      '/api/auth/oidc',
+      { idToken } satisfies OidcSignIn,
+      this.anon,
+    );
   }
 
   /**

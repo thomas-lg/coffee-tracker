@@ -22,7 +22,10 @@ interface AdminTab extends AdminSection {
     <section class="mx-auto max-w-5xl px-5 py-8">
       <header class="mb-8">
         <p class="font-mono text-xs uppercase tracking-widest text-crema-deep">Admin</p>
-        <nav class="mt-3 flex flex-wrap items-center gap-1 border-b border-line" aria-label="Admin sections">
+        <nav
+          class="mt-3 flex flex-wrap items-center gap-1 border-b border-line"
+          aria-label="Admin sections"
+        >
           @for (section of tabs; track section.path) {
             <!-- A hairline where the group changes: the first two decide how the
                  instance behaves, the last two clean up after it. Decoration only, so

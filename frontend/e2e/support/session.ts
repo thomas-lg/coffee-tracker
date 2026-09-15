@@ -37,10 +37,10 @@ export interface StoredSession {
  * re-runs on every full page load, so the session survives reloads.
  */
 export async function injectSession(page: Page, session: StoredSession): Promise<void> {
-  await page.addInitScript(
-    ([key, value]) => window.localStorage.setItem(key, value),
-    [SESSION_KEY, JSON.stringify(session)] as const,
-  );
+  await page.addInitScript(([key, value]) => window.localStorage.setItem(key, value), [
+    SESSION_KEY,
+    JSON.stringify(session),
+  ] as const);
 }
 
 /**
@@ -75,18 +75,26 @@ export async function suiteAdmin(): Promise<ProvisionedUser & { email: string }>
  * Real rather than fabricated because the refresh flow has to be exercised against
  * a token the server actually issued, a made-up one proves nothing about it.
  */
-export async function provisionUser(api: APIRequestContext, prefix: string): Promise<ProvisionedUser> {
+export async function provisionUser(
+  api: APIRequestContext,
+  prefix: string,
+): Promise<ProvisionedUser> {
   const res = await api.post('/api/auth/register', {
     data: { email: uniqueEmail(prefix), password: E2E_PASSWORD, displayName: `E2E ${prefix}` },
   });
   if (!res.ok()) {
-    throw new Error(`could not provision an e2e user (${res.status()}); is registration still open?`);
+    throw new Error(
+      `could not provision an e2e user (${res.status()}); is registration still open?`,
+    );
   }
   return (await res.json()) as ProvisionedUser;
 }
 
 /** Turns a provisioned user into the session shape AuthStore restores. */
-export function sessionFor(user: ProvisionedUser, overrides: Partial<StoredSession> = {}): StoredSession {
+export function sessionFor(
+  user: ProvisionedUser,
+  overrides: Partial<StoredSession> = {},
+): StoredSession {
   return {
     token: user.token,
     userId: user.userId,

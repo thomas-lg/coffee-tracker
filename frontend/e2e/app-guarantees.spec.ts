@@ -59,7 +59,10 @@ test.describe('ownership', () => {
 });
 
 test.describe('session lifetime', () => {
-  test('an expired access token is refreshed instead of bouncing the user out', async ({ page, request }) => {
+  test('an expired access token is refreshed instead of bouncing the user out', async ({
+    page,
+    request,
+  }) => {
     const user = await provisionUser(request, 'refresh');
 
     // A real refresh token, and an access token dated into the past: exactly the
@@ -168,7 +171,12 @@ test.describe('local accounts', () => {
     // asserting here is that the client stops offering a door that no longer opens.
     await page.route('**/api/config', (route) =>
       route.fulfill({
-        json: { localLoginEnabled: true, registrationEnabled: false, oidcAvailable: false, oidc: null },
+        json: {
+          localLoginEnabled: true,
+          registrationEnabled: false,
+          oidcAvailable: false,
+          oidc: null,
+        },
       }),
     );
 
@@ -181,7 +189,12 @@ test.describe('local accounts', () => {
   test('the client offers neither method when the instance accepts none', async ({ page }) => {
     await page.route('**/api/config', (route) =>
       route.fulfill({
-        json: { localLoginEnabled: false, registrationEnabled: false, oidcAvailable: false, oidc: null },
+        json: {
+          localLoginEnabled: false,
+          registrationEnabled: false,
+          oidcAvailable: false,
+          oidc: null,
+        },
       }),
     );
 

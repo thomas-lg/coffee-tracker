@@ -77,7 +77,12 @@ test.describe('provider sign-in', () => {
   test('offers no provider action when none is configured', async ({ page }) => {
     await page.route('**/api/config', (route) =>
       route.fulfill({
-        json: { localLoginEnabled: true, registrationEnabled: false, oidcAvailable: false, oidc: null },
+        json: {
+          localLoginEnabled: true,
+          registrationEnabled: false,
+          oidcAvailable: false,
+          oidc: null,
+        },
       }),
     );
 
