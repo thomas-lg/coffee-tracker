@@ -67,7 +67,9 @@ export async function startFakeProvider(user: FakeProviderUser): Promise<FakePro
     }
 
     if (url.pathname === '/jwks') {
-      return json(res, { keys: [{ kty: 'RSA', use: 'sig', alg: 'RS256', kid, n: jwk.n, e: jwk.e }] });
+      return json(res, {
+        keys: [{ kty: 'RSA', use: 'sig', alg: 'RS256', kid, n: jwk.n, e: jwk.e }],
+      });
     }
 
     // No login screen: a provider that always says yes keeps the test about our
@@ -150,7 +152,8 @@ function signIdToken(o: {
 }
 
 const b64 = (o: unknown) => base64url(Buffer.from(JSON.stringify(o)));
-const base64url = (b: Buffer) => b.toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+const base64url = (b: Buffer) =>
+  b.toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 
 function json(res: import('node:http').ServerResponse, body: unknown, status = 200): void {
   const payload = JSON.stringify(body);

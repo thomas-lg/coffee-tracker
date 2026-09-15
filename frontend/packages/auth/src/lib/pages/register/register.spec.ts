@@ -74,7 +74,9 @@ describe('Register', () => {
     fixture.detectChanges();
 
     expect(field(fixture.nativeElement, 'email')).toBeNull();
-    expect((fixture.nativeElement as HTMLElement).textContent).not.toContain('Registration is closed');
+    expect((fixture.nativeElement as HTMLElement).textContent).not.toContain(
+      'Registration is closed',
+    );
 
     http.expectOne('/api/config').flush(CONFIG);
     await fixture.whenStable();

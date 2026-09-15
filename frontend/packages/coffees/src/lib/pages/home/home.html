@@ -8,29 +8,42 @@
 
   <div class="relative mx-auto max-w-5xl px-5 py-20">
     <p class="font-mono text-xs font-semibold uppercase tracking-widest text-crema-deep">
-      Your coffee shelf@if (store.coffees().length) { · {{ store.coffees().length }} bags catalogued }
+      Your coffee shelf
+      @if (store.coffees().length) {
+        · {{ store.coffees().length }} bags catalogued
+      }
     </p>
     <h1 class="mt-2 max-w-[13ch] font-display text-5xl font-semibold leading-[1.05]">
       Every bag worth <em class="italic text-crema-deep">remembering.</em>
     </h1>
     <p class="mt-4 max-w-prose text-cocoa">
-      Catalogue the coffees you buy, rate them over time, and snap a photo of the bag to
-      fill the rest in for you.
+      Catalogue the coffees you buy, rate them over time, and snap a photo of the bag to fill the
+      rest in for you.
     </p>
     <div class="mt-7 flex flex-wrap gap-3">
       <ct-button link="/coffees">Browse the shelf →</ct-button>
-      <ct-button variant="crema" link="/coffees/new"><svg lucideCamera [size]="16"></svg> Snap a new bag</ct-button>
+      <ct-button variant="crema" link="/coffees/new"
+        ><svg lucideCamera [size]="16"></svg> Snap a new bag</ct-button
+      >
     </div>
 
     @if (store.coffees().length) {
       <div class="mt-10 flex flex-wrap gap-x-10 gap-y-4">
         <div>
-          <div class="font-display text-3xl leading-none"><ct-count-up [value]="stats().bags" /></div>
-          <div class="mt-1 font-mono text-[11px] font-semibold uppercase tracking-wider text-muted">Bags</div>
+          <div class="font-display text-3xl leading-none">
+            <ct-count-up [value]="stats().bags" />
+          </div>
+          <div class="mt-1 font-mono text-[11px] font-semibold uppercase tracking-wider text-muted">
+            Bags
+          </div>
         </div>
         <div>
-          <div class="font-display text-3xl leading-none"><ct-count-up [value]="stats().reviews" /></div>
-          <div class="mt-1 font-mono text-[11px] font-semibold uppercase tracking-wider text-muted">Reviews</div>
+          <div class="font-display text-3xl leading-none">
+            <ct-count-up [value]="stats().reviews" />
+          </div>
+          <div class="mt-1 font-mono text-[11px] font-semibold uppercase tracking-wider text-muted">
+            Reviews
+          </div>
         </div>
         <div>
           <div class="font-display text-3xl leading-none">
@@ -40,11 +53,17 @@
               —
             }
           </div>
-          <div class="mt-1 font-mono text-[11px] font-semibold uppercase tracking-wider text-muted">Avg rating</div>
+          <div class="mt-1 font-mono text-[11px] font-semibold uppercase tracking-wider text-muted">
+            Avg rating
+          </div>
         </div>
         <div>
-          <div class="font-display text-3xl leading-none"><ct-count-up [value]="stats().origins" /></div>
-          <div class="mt-1 font-mono text-[11px] font-semibold uppercase tracking-wider text-muted">Origins</div>
+          <div class="font-display text-3xl leading-none">
+            <ct-count-up [value]="stats().origins" />
+          </div>
+          <div class="mt-1 font-mono text-[11px] font-semibold uppercase tracking-wider text-muted">
+            Origins
+          </div>
         </div>
       </div>
     }
@@ -55,10 +74,14 @@
   @if (store.coffees().length) {
     <div class="mb-5 flex items-end justify-between gap-3">
       <div>
-        <p class="font-mono text-xs font-semibold uppercase tracking-widest text-crema-deep">Recently added</p>
+        <p class="font-mono text-xs font-semibold uppercase tracking-widest text-crema-deep">
+          Recently added
+        </p>
         <h2 class="mt-1 font-display text-2xl font-semibold">Fresh on the shelf</h2>
       </div>
-      <a routerLink="/coffees" class="text-sm font-semibold text-crema-deep hover:underline">View all →</a>
+      <a routerLink="/coffees" class="text-sm font-semibold text-crema-deep hover:underline"
+        >View all →</a
+      >
     </div>
   }
 

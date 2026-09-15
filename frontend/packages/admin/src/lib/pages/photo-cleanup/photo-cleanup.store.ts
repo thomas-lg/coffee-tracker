@@ -1,6 +1,13 @@
 import { computed, inject } from '@angular/core';
 import { rxResource } from '@angular/core/rxjs-interop';
-import { patchState, signalStore, withComputed, withMethods, withProps, withState } from '@ngrx/signals';
+import {
+  patchState,
+  signalStore,
+  withComputed,
+  withMethods,
+  withProps,
+  withState,
+} from '@ngrx/signals';
 import { rxMethod } from '@ngrx/signals/rxjs-interop';
 import { extendResource, withValueOnError } from '@ngrx/signals/resource';
 import { tapResponse } from '@ngrx/operators';
@@ -51,9 +58,7 @@ export const PhotoCleanupStore = signalStore(
       storedCount: computed(() => photos().length),
       unusedCount: computed(() => photos().filter((p) => !p.used).length),
       selectedCount: computed(() => selection().length),
-      visible: computed(() =>
-        filter() === 'unused' ? photos().filter((p) => !p.used) : photos(),
-      ),
+      visible: computed(() => (filter() === 'unused' ? photos().filter((p) => !p.used) : photos())),
     };
   }),
   withMethods((store) => ({
@@ -64,15 +69,16 @@ export const PhotoCleanupStore = signalStore(
     toggle(path: string): void {
       const current = store.selection();
       patchState(store, {
-        selection: current.includes(path)
-          ? current.filter((p) => p !== path)
-          : [...current, path],
+        selection: current.includes(path) ? current.filter((p) => p !== path) : [...current, path],
       });
     },
 
     selectAllUnused(): void {
       patchState(store, {
-        selection: store.photos().filter((p) => !p.used).map((p) => p.path),
+        selection: store
+          .photos()
+          .filter((p) => !p.used)
+          .map((p) => p.path),
       });
     },
 

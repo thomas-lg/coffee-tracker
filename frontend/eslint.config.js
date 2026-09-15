@@ -65,7 +65,6 @@ const NO_PAGE_FROM_COMPONENT = {
   message: 'A component must not import a page; pages compose components, never the reverse.',
 };
 
-
 module.exports = tseslint.config(
   {
     // Build outputs, generated code, and tooling scripts aren't linted.

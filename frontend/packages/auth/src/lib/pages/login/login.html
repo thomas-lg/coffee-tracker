@@ -1,4 +1,6 @@
-<div class="mx-auto flex min-h-[calc(100dvh-4rem)] w-full max-w-md flex-col justify-center px-5 py-12">
+<div
+  class="mx-auto flex min-h-[calc(100dvh-4rem)] w-full max-w-md flex-col justify-center px-5 py-12"
+>
   <div class="ct-rise">
     <div class="flex flex-col items-center text-center">
       <!-- The app's own mark, at entry-point scale, in a warm halo. -->
@@ -46,7 +48,11 @@
         }
 
         @if (localLoginEnabled()) {
-          <form [formRoot]="f" (submit)="$event.preventDefault(); onSubmit()" class="flex flex-col gap-4">
+          <form
+            [formRoot]="f"
+            (submit)="$event.preventDefault(); onSubmit()"
+            class="flex flex-col gap-4"
+          >
             <label class="flex flex-col gap-1.5">
               <span class="text-sm font-semibold">Email</span>
               <input
@@ -54,7 +60,9 @@
                 autocomplete="email"
                 [formField]="f.email"
                 [attr.aria-invalid]="f.email().touched() && f.email().invalid() ? 'true' : null"
-                [attr.aria-describedby]="f.email().touched() && f.email().invalid() ? 'login-email-error' : null"
+                [attr.aria-describedby]="
+                  f.email().touched() && f.email().invalid() ? 'login-email-error' : null
+                "
                 class="input"
               />
               @if (f.email().touched() && f.email().invalid()) {
@@ -70,8 +78,12 @@
                 type="password"
                 autocomplete="current-password"
                 [formField]="f.password"
-                [attr.aria-invalid]="f.password().touched() && f.password().invalid() ? 'true' : null"
-                [attr.aria-describedby]="f.password().touched() && f.password().invalid() ? 'login-password-error' : null"
+                [attr.aria-invalid]="
+                  f.password().touched() && f.password().invalid() ? 'true' : null
+                "
+                [attr.aria-describedby]="
+                  f.password().touched() && f.password().invalid() ? 'login-password-error' : null
+                "
                 class="input"
               />
               @if (f.password().touched() && f.password().invalid()) {
@@ -81,7 +93,10 @@
 
             <!-- Stays enabled while invalid: submitting then marks every field touched so
                  the validation messages explain what's missing. -->
-            <ct-button type="submit" fullWidth class="mt-2"
+            <ct-button
+              type="submit"
+              fullWidth
+              class="mt-2"
               [state]="auth.requestStatus()"
               runningLabel="Signing in…"
             >
@@ -94,7 +109,9 @@
           @if (localLoginEnabled()) {
             <div class="my-6 flex items-center gap-3">
               <span class="h-px flex-1 bg-line"></span>
-              <span class="font-mono text-[11px] font-semibold uppercase tracking-widest text-muted">
+              <span
+                class="font-mono text-[11px] font-semibold uppercase tracking-widest text-muted"
+              >
                 or continue with
               </span>
               <span class="h-px flex-1 bg-line"></span>

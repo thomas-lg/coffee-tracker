@@ -12,12 +12,7 @@ import {
 import { rxMethod } from '@ngrx/signals/rxjs-interop';
 import { tapResponse } from '@ngrx/operators';
 import { exhaustMap, firstValueFrom, fromEvent, pipe, tap } from 'rxjs';
-import {
-  setFulfilled,
-  setPending,
-  setRequestError,
-  withRequestStatus,
-} from '@coffee-tracker/util';
+import { setFulfilled, setPending, setRequestError, withRequestStatus } from '@coffee-tracker/util';
 import { Router } from '@angular/router';
 import { ToastService } from '@coffee-tracker/ui';
 import { AuthApi, type AuthResponse, type Login, type Register } from '@coffee-tracker/data';
@@ -207,8 +202,7 @@ export const AuthStore = signalStore(
                   void store._router.navigateByUrl(afterSignIn());
                 },
                 error: () => {
-                  const message =
-                    'Could not create the account. The email may already be in use.';
+                  const message = 'Could not create the account. The email may already be in use.';
                   patchState(store, setRequestError(message));
                   store._toast.show(message, 'error');
                 },

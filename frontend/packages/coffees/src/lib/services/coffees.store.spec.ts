@@ -26,9 +26,37 @@ function coffee(p: Partial<Coffee> & Pick<Coffee, 'id' | 'name'>): Coffee {
 
 // API order is newest-first; keep it that way in the seed.
 const SEED: Coffee[] = [
-  coffee({ id: 3, name: 'Geisha', roaster: 'Onyx', origin: 'Panama', roastLevel: 'Dark', averageRating: 4.5, reviewCount: 2, flavorTags: ['Citrus', 'Fruity'] }),
-  coffee({ id: 2, name: 'Yirgacheffe', roaster: 'Tim Wendelboe', origin: 'Ethiopia', roastLevel: 'Light', averageRating: 4.8, reviewCount: 3, flavorTags: ['Floral'] }),
-  coffee({ id: 1, name: 'Cerrado', roaster: 'Onyx', origin: 'Brazil', roastLevel: 'Medium', averageRating: 3.9, reviewCount: 1, shopName: 'Local Roast', flavorTags: ['Nutty', 'Chocolatey'] }),
+  coffee({
+    id: 3,
+    name: 'Geisha',
+    roaster: 'Onyx',
+    origin: 'Panama',
+    roastLevel: 'Dark',
+    averageRating: 4.5,
+    reviewCount: 2,
+    flavorTags: ['Citrus', 'Fruity'],
+  }),
+  coffee({
+    id: 2,
+    name: 'Yirgacheffe',
+    roaster: 'Tim Wendelboe',
+    origin: 'Ethiopia',
+    roastLevel: 'Light',
+    averageRating: 4.8,
+    reviewCount: 3,
+    flavorTags: ['Floral'],
+  }),
+  coffee({
+    id: 1,
+    name: 'Cerrado',
+    roaster: 'Onyx',
+    origin: 'Brazil',
+    roastLevel: 'Medium',
+    averageRating: 3.9,
+    reviewCount: 1,
+    shopName: 'Local Roast',
+    flavorTags: ['Nutty', 'Chocolatey'],
+  }),
 ];
 
 // CoffeesStore keys its resource on the signed-in user, so it stays idle until there is
@@ -85,7 +113,12 @@ describe('CoffeesStore', () => {
     store.setSearch('yirga');
     expect(store.filtered().map((c) => c.name)).toEqual(['Yirgacheffe']);
     store.setSearch('onyx');
-    expect(store.filtered().map((c) => c.name).sort()).toEqual(['Cerrado', 'Geisha']);
+    expect(
+      store
+        .filtered()
+        .map((c) => c.name)
+        .sort(),
+    ).toEqual(['Cerrado', 'Geisha']);
   });
 
   it('filters by roast bucket', () => {

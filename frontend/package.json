@@ -9,7 +9,9 @@
     "test": "ng test tests --no-watch",
     "e2e": "playwright test",
     "gen:api": "npx --yes openapi-typescript openapi.json -o packages/data/src/lib/models/api-types.ts",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
   },
   "private": true,
   "workspaces": [

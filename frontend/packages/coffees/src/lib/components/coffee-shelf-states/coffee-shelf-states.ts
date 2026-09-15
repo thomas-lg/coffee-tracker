@@ -23,7 +23,11 @@ import { CoffeeCardSkeleton } from '@coffees/components/coffee-card-skeleton/cof
     } @else if (error(); as message) {
       <div class="rounded-2xl border border-line bg-foam p-8 text-center text-cocoa">
         {{ message }}
-        <button type="button" (click)="retry.emit()" class="mt-3 block w-full font-semibold text-crema-deep">
+        <button
+          type="button"
+          (click)="retry.emit()"
+          class="mt-3 block w-full font-semibold text-crema-deep"
+        >
           Try again
         </button>
       </div>
@@ -31,7 +35,9 @@ import { CoffeeCardSkeleton } from '@coffees/components/coffee-card-skeleton/cof
       <div class="rounded-2xl border border-dashed border-line bg-foam/60 p-10 text-center">
         <p class="font-display text-xl">Nothing on the shelf yet.</p>
         <p class="mt-1 text-sm text-muted">Add your first bag, or snap a photo of one.</p>
-        <ct-button variant="crema" link="/coffees/new" class="mt-4 inline-flex">Add a coffee</ct-button>
+        <ct-button variant="crema" link="/coffees/new" class="mt-4 inline-flex"
+          >Add a coffee</ct-button
+        >
       </div>
     } @else {
       <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4">

@@ -57,7 +57,9 @@ test.describe('backup', () => {
 
     // The response is fetched with the bearer token and turned into a blob, so the only
     // proof the user actually gets a file is the download the anchor starts.
-    expect((await download).suggestedFilename()).toMatch(/^coffee-tracker-\d{4}-\d{2}-\d{2}\.json$/);
+    expect((await download).suggestedFilename()).toMatch(
+      /^coffee-tracker-\d{4}-\d{2}-\d{2}\.json$/,
+    );
   });
 
   test('a file that is not a backup is refused before anything is sent', async ({ page }) => {

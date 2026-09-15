@@ -27,7 +27,9 @@ describe('BackupScreen', () => {
   const el = (): HTMLElement => fixture.nativeElement as HTMLElement;
   const fileInput = (): HTMLInputElement => el().querySelector('input[type=file]')!;
   const buttonSaying = (text: RegExp): HTMLElement | undefined =>
-    Array.from(el().querySelectorAll<HTMLElement>('button')).find((b) => text.test(b.textContent ?? ''));
+    Array.from(el().querySelectorAll<HTMLElement>('button')).find((b) =>
+      text.test(b.textContent ?? ''),
+    );
 
   /** A File whose text() resolves to `content`; jsdom's File does not implement it. */
   function fileOf(content: string, name = 'backup.json'): File {

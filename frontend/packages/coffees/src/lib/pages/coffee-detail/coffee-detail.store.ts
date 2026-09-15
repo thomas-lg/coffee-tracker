@@ -1,7 +1,14 @@
 import { computed, inject } from '@angular/core';
 import { rxResource } from '@angular/core/rxjs-interop';
 import { Router } from '@angular/router';
-import { patchState, signalStore, withComputed, withMethods, withProps, withState } from '@ngrx/signals';
+import {
+  patchState,
+  signalStore,
+  withComputed,
+  withMethods,
+  withProps,
+  withState,
+} from '@ngrx/signals';
 import { rxMethod } from '@ngrx/signals/rxjs-interop';
 import { tapResponse } from '@ngrx/operators';
 import { exhaustMap, pipe, tap } from 'rxjs';
@@ -103,9 +110,7 @@ export const CoffeeDetailStore = signalStore(
        * the screen showing the previous coffee. rxMethod re-emits when the signal does,
        * which is the same shape CoffeeFormStore.load already uses.
        */
-      setCoffeeId: rxMethod<number>(
-        pipe(tap((coffeeId) => patchState(store, { coffeeId }))),
-      ),
+      setCoffeeId: rxMethod<number>(pipe(tap((coffeeId) => patchState(store, { coffeeId })))),
 
       setRating: (rating: number) => patchState(store, { rating }),
       setStage: (stage: string) => patchState(store, { stage }),
@@ -166,10 +171,7 @@ export const CoffeeDetailStore = signalStore(
                   void store._router.navigate(['/coffees']);
                 },
                 error: () => {
-                  store._toast.show(
-                    'Could not delete it (you may not have permission).',
-                    'error',
-                  );
+                  store._toast.show('Could not delete it (you may not have permission).', 'error');
                 },
               }),
             ),

@@ -1,8 +1,8 @@
 <header class="mb-6">
   <h1 class="font-display text-2xl font-semibold text-ink">Scanning</h1>
   <p class="mt-1 text-sm text-muted">
-    Which engine reads a coffee bag when you photograph it. The change takes effect on the
-    next scan; nothing restarts, and nothing already saved is affected.
+    Which engine reads a coffee bag when you photograph it. The change takes effect on the next
+    scan; nothing restarts, and nothing already saved is affected.
   </p>
 </header>
 
@@ -72,14 +72,19 @@
                   >
                 }
                 @if (!usable) {
-                  <span class="rounded-full bg-amber-400/20 px-2 py-0.5 text-xs font-semibold text-amber-700"
+                  <span
+                    class="rounded-full bg-amber-400/20 px-2 py-0.5 text-xs font-semibold text-amber-700"
                     >Not installed on this host</span
                   >
                 }
               </div>
               <p class="mt-1 text-sm font-semibold text-ink">{{ option.summary }}</p>
-              <p class="mt-2 text-sm text-muted"><span class="font-semibold text-ink">Best at:</span> {{ option.goodAt }}</p>
-              <p class="mt-1 text-sm text-muted"><span class="font-semibold text-ink">Costs:</span> {{ option.costs }}</p>
+              <p class="mt-2 text-sm text-muted">
+                <span class="font-semibold text-ink">Best at:</span> {{ option.goodAt }}
+              </p>
+              <p class="mt-1 text-sm text-muted">
+                <span class="font-semibold text-ink">Costs:</span> {{ option.costs }}
+              </p>
             </div>
           </div>
         </label>
@@ -91,9 +96,8 @@
     @if (saving()) {
       Saving…
     } @else {
-      Both engines ship in the image, so switching costs nothing but this click. If a scan
-      comes back empty, try the other one on the same bag before assuming the photo is at
-      fault.
+      Both engines ship in the image, so switching costs nothing but this click. If a scan comes
+      back empty, try the other one on the same bag before assuming the photo is at fault.
     }
   </p>
 }

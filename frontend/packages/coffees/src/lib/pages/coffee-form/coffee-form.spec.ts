@@ -10,9 +10,19 @@ import { CoffeeForm } from './coffee-form';
 
 function coffee(p: Partial<Coffee> & Pick<Coffee, 'id' | 'name'>): Coffee {
   return {
-    roaster: 'R', origin: 'Origin', roastLevel: 'Medium', price: 10, dateBought: '2026-06-01',
-    photoUrl: null, shopName: null, purchaseUrl: null, createdAt: '2026-06-01T00:00:00Z',
-    averageRating: null, reviewCount: 0, flavorTags: [], ...p,
+    roaster: 'R',
+    origin: 'Origin',
+    roastLevel: 'Medium',
+    price: 10,
+    dateBought: '2026-06-01',
+    photoUrl: null,
+    shopName: null,
+    purchaseUrl: null,
+    createdAt: '2026-06-01T00:00:00Z',
+    averageRating: null,
+    reviewCount: 0,
+    flavorTags: [],
+    ...p,
   };
 }
 

@@ -15,7 +15,9 @@ describe('Rating', () => {
     fixture.detectChanges();
 
     // The rendered width is the user-visible fact; fillPct() is how it is computed.
-    const fill = (fixture.nativeElement as HTMLElement).querySelector<HTMLElement>('[style*="width"]');
+    const fill = (fixture.nativeElement as HTMLElement).querySelector<HTMLElement>(
+      '[style*="width"]',
+    );
     expect(fill?.style.width).toBe('60%');
   });
 

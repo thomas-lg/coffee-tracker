@@ -37,7 +37,7 @@ export default async function globalSetup(): Promise<void> {
     // this means a previous run's data is still there.
     throw new Error(
       'e2e expects an empty database. The account it just created is not the administrator, ' +
-        'so one already existed. Delete the API\'s database file and start it again.',
+        "so one already existed. Delete the API's database file and start it again.",
     );
   }
 

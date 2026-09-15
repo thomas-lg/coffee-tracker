@@ -63,5 +63,7 @@ export function setupAppUpdates(updates: SwUpdate, router: Router, reload: () =>
  * "I'm still on the old version".
  */
 export function provideAppUpdates(): EnvironmentProviders {
-  return provideAppInitializer(() => setupAppUpdates(inject(SwUpdate), inject(Router), inject(RELOAD)));
+  return provideAppInitializer(() =>
+    setupAppUpdates(inject(SwUpdate), inject(Router), inject(RELOAD)),
+  );
 }

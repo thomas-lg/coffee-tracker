@@ -155,10 +155,12 @@ describe('BackupStore', () => {
       await stage({ ...VALID, formatVersion: 2 });
 
       store.confirmImport();
-      http.expectOne('/api/admin/backup').flush(
-        { detail: 'This backup is version 2; this instance reads version 1.' },
-        { status: 400, statusText: 'Bad Request' },
-      );
+      http
+        .expectOne('/api/admin/backup')
+        .flush(
+          { detail: 'This backup is version 2; this instance reads version 1.' },
+          { status: 400, statusText: 'Bad Request' },
+        );
 
       expect(toast.show).toHaveBeenCalledWith(expect.stringContaining('version 2'), 'error');
       expect(store.lastResult()).toBeNull();

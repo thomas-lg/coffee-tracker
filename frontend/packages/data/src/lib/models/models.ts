@@ -252,7 +252,6 @@ export interface ImportResult {
   warnings: string[];
 }
 
-
 type _GCoffee = Assert<SameKeys<Coffee, Schemas['CoffeeResponseDto']>>;
 type _GCoffeeCreate = Assert<SameKeys<CoffeeCreate, Schemas['CoffeeCreateDto']>>;
 type _GReview = Assert<SameKeys<Review, Schemas['ReviewResponseDto']>>;

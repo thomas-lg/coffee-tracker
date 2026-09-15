@@ -12,7 +12,12 @@ function harness(isEnabled = true) {
   const checkForUpdate = vi.fn(() => Promise.resolve(false));
   const reload = vi.fn();
 
-  const updates = { isEnabled, versionUpdates, unrecoverable, checkForUpdate } as unknown as SwUpdate;
+  const updates = {
+    isEnabled,
+    versionUpdates,
+    unrecoverable,
+    checkForUpdate,
+  } as unknown as SwUpdate;
   const router = { events } as unknown as Router;
 
   setupAppUpdates(updates, router, reload);

@@ -42,9 +42,7 @@ export class AccountSettingsScreen {
   }
 
   private current(): AccountSettings {
-    return (
-      this.settings() ?? { localLoginEnabled: true, localRegistrationEnabled: false }
-    );
+    return this.settings() ?? { localLoginEnabled: true, localRegistrationEnabled: false };
   }
 
   private async save(next: AccountSettings): Promise<void> {

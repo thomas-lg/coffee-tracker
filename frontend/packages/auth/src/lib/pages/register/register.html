@@ -23,12 +23,20 @@
           type="text"
           autocomplete="nickname"
           [formField]="f.displayName"
-          [attr.aria-invalid]="f.displayName().touched() && f.displayName().invalid() ? 'true' : null"
-          [attr.aria-describedby]="f.displayName().touched() && f.displayName().invalid() ? 'register-displayname-error' : null"
+          [attr.aria-invalid]="
+            f.displayName().touched() && f.displayName().invalid() ? 'true' : null
+          "
+          [attr.aria-describedby]="
+            f.displayName().touched() && f.displayName().invalid()
+              ? 'register-displayname-error'
+              : null
+          "
           class="input"
         />
         @if (f.displayName().touched() && f.displayName().invalid()) {
-          <span id="register-displayname-error" class="field-error">A display name is required.</span>
+          <span id="register-displayname-error" class="field-error"
+            >A display name is required.</span
+          >
         }
       </label>
 
@@ -39,7 +47,9 @@
           autocomplete="email"
           [formField]="f.email"
           [attr.aria-invalid]="f.email().touched() && f.email().invalid() ? 'true' : null"
-          [attr.aria-describedby]="f.email().touched() && f.email().invalid() ? 'register-email-error' : null"
+          [attr.aria-describedby]="
+            f.email().touched() && f.email().invalid() ? 'register-email-error' : null
+          "
           class="input"
         />
         @if (f.email().touched() && f.email().invalid()) {
@@ -54,7 +64,9 @@
           autocomplete="new-password"
           [formField]="f.password"
           [attr.aria-invalid]="f.password().touched() && f.password().invalid() ? 'true' : null"
-          [attr.aria-describedby]="f.password().touched() && f.password().invalid() ? 'register-password-error' : null"
+          [attr.aria-describedby]="
+            f.password().touched() && f.password().invalid() ? 'register-password-error' : null
+          "
           class="input"
         />
         @if (f.password().touched() && f.password().invalid()) {

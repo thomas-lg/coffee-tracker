@@ -23,7 +23,8 @@ export const ADMIN_ROUTES: Routes = [
       },
       {
         path: 'photos',
-        loadComponent: () => import('./pages/photo-cleanup/photo-cleanup').then((m) => m.PhotoCleanup),
+        loadComponent: () =>
+          import('./pages/photo-cleanup/photo-cleanup').then((m) => m.PhotoCleanup),
       },
       {
         path: 'backup',

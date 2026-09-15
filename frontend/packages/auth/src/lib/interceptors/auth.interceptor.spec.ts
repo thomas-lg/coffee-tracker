@@ -180,7 +180,9 @@ describe('authInterceptor', () => {
   it('does not redirect, refresh, or reload on a 401 that opted out via SKIP_AUTH_REDIRECT', () => {
     const context = new HttpContext().set(SKIP_AUTH_REDIRECT, true);
     http.post('/api/auth/refresh', {}, { context }).subscribe({ next: () => {}, error: () => {} });
-    httpCtrl.expectOne('/api/auth/refresh').flush('dead token', { status: 401, statusText: 'Unauthorized' });
+    httpCtrl
+      .expectOne('/api/auth/refresh')
+      .flush('dead token', { status: 401, statusText: 'Unauthorized' });
 
     expect(logout).not.toHaveBeenCalled();
     expect(refresh).not.toHaveBeenCalled();
