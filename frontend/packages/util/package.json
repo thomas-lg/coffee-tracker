@@ -4,7 +4,8 @@
   "peerDependencies": {
     "@angular/common": "^22.0.0",
     "@angular/core": "^22.0.0",
-    "@ngrx/signals": "^22.0.1"
+    "@ngrx/signals": "^22.0.1",
+    "rxjs": "~7.8.0"
   },
   "dependencies": {
     "tslib": "^2.3.0"
