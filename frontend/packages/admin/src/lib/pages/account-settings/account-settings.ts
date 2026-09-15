@@ -33,12 +33,25 @@ export class AccountSettingsScreen {
    */
   protected readonly refusal = signal<string | null>(null);
 
-  protected async toggleLocalLogin(enabled: boolean): Promise<void> {
-    await this.save({ ...this.current(), localLoginEnabled: enabled });
+  protected async toggleLocalLogin(box: HTMLInputElement): Promise<void> {
+    if (this.putBack(box)) return;
+    await this.save({ ...this.current(), localLoginEnabled: box.checked });
   }
 
-  protected async toggleRegistration(enabled: boolean): Promise<void> {
-    await this.save({ ...this.current(), localRegistrationEnabled: enabled });
+  protected async toggleRegistration(box: HTMLInputElement): Promise<void> {
+    if (this.putBack(box)) return;
+    await this.save({ ...this.current(), localRegistrationEnabled: box.checked });
+  }
+
+  /**
+   * A click arriving mid-save is refused, and the box has already moved: `[checked]` is
+   * only written back when its bound value changes, and a save in flight has not changed
+   * anything yet, so nothing else would put it right.
+   */
+  private putBack(box: HTMLInputElement): boolean {
+    if (!this.saving()) return false;
+    box.checked = !box.checked;
+    return true;
   }
 
   private current(): AccountSettings {

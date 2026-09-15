@@ -45,7 +45,14 @@ export class ScanSettingsScreen {
     this.settingsRes.error() ? undefined : this.settingsRes.value(),
   );
   protected readonly loading = this.settingsRes.isLoading;
-  protected readonly saving = signal(false);
+
+  /**
+   * The engine whose change is in flight. Not a bare boolean, because it is also what a
+   * click arriving mid-save has to be snapped back to: the group is showing the pick
+   * being saved, not the one still in force.
+   */
+  private readonly pending = signal<OcrEngine | null>(null);
+  protected readonly saving = computed(() => this.pending() !== null);
 
   /**
    * The numbers come from the benchmark in this repo, scored over nine photographs of
@@ -104,24 +111,39 @@ export class ScanSettingsScreen {
     return this.settings()?.options.find((o) => o.engine === engine)?.available ?? false;
   }
 
+  /**
+   * Waits for the click to reach the DOM before anything tries to undo it.
+   *
+   * A radio is written back from the model only when the model's *value* changes, and
+   * that is true of Signal Forms' own binding as much as it was of the hand-rolled one.
+   * A revert that lands with no render in between is no change at all, so there is
+   * nothing to write and the browser keeps the click: the administrator is left looking
+   * at Tesseract selected on an instance still scanning with RapidOCR. One frame makes
+   * the revert a real change every time, instead of only when the request happens to be
+   * slower than the scheduler.
+   */
+  private rendered(): Promise<void> {
+    return new Promise<void>((resolve) =>
+      afterNextRender(() => resolve(), { injector: this.injector }),
+    );
+  }
+
   protected async choose(engine: OcrEngine): Promise<void> {
-    if (engine === this.current() || this.saving()) {
+    // Refused, not ignored: the click has already moved the group, and nothing else
+    // would put it back on the pick being saved. Reverting takes the same waiting frame
+    // as below, and for the same reason.
+    if (this.saving()) {
+      await this.rendered();
+      this.model.set({ engine: this.pending() ?? '' });
       return;
     }
 
-    this.saving.set(true);
-    // Let the group render with the click applied before the request can answer.
-    //
-    // A radio is written back from the model only when the model's *value* changes, and
-    // that is true of Signal Forms' own binding as much as it was of the hand-rolled
-    // one. A refusal sets the model back to where it started, so if nothing has rendered
-    // in between there is no change to write and the browser keeps the click: the
-    // administrator is left looking at Tesseract selected on an instance still scanning
-    // with RapidOCR. One frame here makes the revert a real change every time, instead
-    // of only when the request happens to be slower than the scheduler.
-    await new Promise<void>((resolve) =>
-      afterNextRender(() => resolve(), { injector: this.injector }),
-    );
+    if (engine === this.current()) {
+      return;
+    }
+
+    this.pending.set(engine);
+    await this.rendered();
 
     try {
       const updated = await firstValueFrom(this.api.setEngine(engine));
@@ -135,7 +157,7 @@ export class ScanSettingsScreen {
       // unchecks the refused radio.
       this.model.set({ engine: this.current() ?? '' });
     } finally {
-      this.saving.set(false);
+      this.pending.set(null);
     }
   }
 }
