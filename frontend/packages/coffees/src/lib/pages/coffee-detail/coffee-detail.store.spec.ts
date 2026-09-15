@@ -221,7 +221,7 @@ describe('CoffeeDetailStore', () => {
     posted.flush(review({ id: 9, userId: ME, rating: 5 }));
     await settle();
 
-    expect(store.saving()).toBe(false);
+    expect(store.rateAction.state()).toBe('done');
     expect(store.rating()).toBe(0);
     expect(store.stage()).toBe('');
     expect(store.notes()).toBe('');
@@ -247,7 +247,7 @@ describe('CoffeeDetailStore', () => {
     http.expectOne('/api/coffees/7/reviews').flush('no', { status: 500, statusText: 'Error' });
     await settle();
 
-    expect(store.saving()).toBe(false);
+    expect(store.rateAction.state()).toBe('failed');
     expect(store.rating()).toBe(4);
     expect(store.notes()).toBe('Worth keeping.');
   });
@@ -263,31 +263,18 @@ describe('CoffeeDetailStore', () => {
     expect(http.match('/api/coffees/7/reviews')).toHaveLength(1);
   });
 
-  it('arms and disarms the delete confirmation', async () => {
+  it('deletes the coffee and reports the outcome afterwards', async () => {
     const store = await load();
-
-    expect(store.confirmingDelete()).toBe(false);
-    store.armDelete();
-    expect(store.confirmingDelete()).toBe(true);
-    store.cancelDelete();
-    expect(store.confirmingDelete()).toBe(false);
-  });
-
-  it('deletes the coffee and stands the confirmation down afterwards', async () => {
-    const store = await load();
-    store.armDelete();
 
     store.confirmDelete();
     http.expectOne({ method: 'DELETE', url: '/api/coffees/7' }).flush(null);
     await settle();
 
-    expect(store.deleting()).toBe(false);
-    expect(store.confirmingDelete()).toBe(false);
+    expect(store.deleteAction.state()).toBe('done');
   });
 
-  it('stands the confirmation down when the delete is refused', async () => {
+  it('reports a refused delete as failed rather than still running', async () => {
     const store = await load();
-    store.armDelete();
 
     store.confirmDelete();
     http
@@ -295,9 +282,8 @@ describe('CoffeeDetailStore', () => {
       .flush('forbidden', { status: 403, statusText: 'Forbidden' });
     await settle();
 
-    // Left armed and disabled, the screen would strand the user on a confirm row whose
-    // buttons no longer do anything.
-    expect(store.deleting()).toBe(false);
-    expect(store.confirmingDelete()).toBe(false);
+    // Left running, the confirm row would stay inert for good. That the row also stands
+    // itself down is ct-confirm-action's, and is covered in `coffee-detail.spec.ts`.
+    expect(store.deleteAction.state()).toBe('failed');
   });
 });

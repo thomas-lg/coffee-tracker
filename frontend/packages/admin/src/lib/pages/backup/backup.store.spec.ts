@@ -67,7 +67,7 @@ describe('BackupStore', () => {
 
       expect(createObjectURL).toHaveBeenCalledOnce();
       expect(click).toHaveBeenCalledOnce();
-      expect(store.exporting()).toBe(false);
+      expect(store.exportAction.running()).toBe(false);
       vi.unstubAllGlobals();
       click.mockRestore();
     });
@@ -76,7 +76,7 @@ describe('BackupStore', () => {
       store.exportCatalog();
       http.expectOne('/api/admin/backup').flush('nope', { status: 500, statusText: 'Error' });
 
-      expect(store.exporting()).toBe(false);
+      expect(store.exportAction.running()).toBe(false);
       expect(toast.show).toHaveBeenCalledWith(expect.stringContaining('export'), 'error');
     });
   });
@@ -138,7 +138,7 @@ describe('BackupStore', () => {
       expect(store.lastResult()?.coffees).toBe(2);
       expect(store.lastResult()?.warnings).toHaveLength(1);
       expect(store.staged()).toBeNull();
-      expect(store.importing()).toBe(false);
+      expect(store.importAction.running()).toBe(false);
       expect(toast.show).toHaveBeenCalledWith('Catalog restored.', 'success');
     });
 
@@ -181,7 +181,7 @@ describe('BackupStore', () => {
       store.confirmImport();
       store.confirmImport();
 
-      // exhaustMap: the confirm button is disabled while importing, and a double
+      // exhaustMap: the confirm button goes inert while importing, and a double
       // submit that slipped through would otherwise replace the catalog twice.
       http.expectOne('/api/admin/backup').flush({ coffees: 0, reviews: 0, warnings: [] });
     });

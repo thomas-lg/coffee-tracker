@@ -11,7 +11,7 @@ import {
 } from '@ngrx/signals';
 import { rxMethod } from '@ngrx/signals/rxjs-interop';
 import { tapResponse } from '@ngrx/operators';
-import { firstValueFrom, fromEvent, pipe, switchMap, tap } from 'rxjs';
+import { exhaustMap, firstValueFrom, fromEvent, pipe, tap } from 'rxjs';
 import {
   setFulfilled,
   setPending,
@@ -76,13 +76,11 @@ export const AuthStore = signalStore(
     isAdmin: computed(() => session()?.isAdmin ?? false),
   })),
   withMethods((store) => {
-    /** True while the access token itself is still valid. */
     const hasValidAccessToken = (): boolean => {
       const s = store.session();
       return !!s && new Date(s.expiresAt).getTime() > Date.now();
     };
 
-    /** True when a refresh token is stored and not yet expired. */
     const canRefresh = (): boolean => {
       const s = store.session();
       return (
@@ -168,10 +166,16 @@ export const AuthStore = signalStore(
         return hasValidAccessToken() || canRefresh();
       },
 
+      /**
+       * exhaustMap, not switchMap: a second sign-in must be ignored, not raced, and it
+       * would spend one of the account's attempts before it is locked out. Enter in a
+       * field submits without going through the inert button, so the operator is the
+       * only thing that can refuse re-entry.
+       */
       login: rxMethod<Login>(
         pipe(
           tap(() => patchState(store, setPending())),
-          switchMap((dto) =>
+          exhaustMap((dto) =>
             store._api.login(dto).pipe(
               tapResponse({
                 next: (res) => {
@@ -190,10 +194,11 @@ export const AuthStore = signalStore(
         ),
       ),
 
+      /** Ignores re-entry for the same reason `login` does. */
       register: rxMethod<Register>(
         pipe(
           tap(() => patchState(store, setPending())),
-          switchMap((dto) =>
+          exhaustMap((dto) =>
             store._api.register(dto).pipe(
               tapResponse({
                 next: (res) => {

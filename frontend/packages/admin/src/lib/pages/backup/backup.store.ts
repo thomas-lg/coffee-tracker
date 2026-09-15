@@ -3,7 +3,8 @@ import { patchState, signalStore, withMethods, withProps, withState } from '@ngr
 import { rxMethod } from '@ngrx/signals/rxjs-interop';
 import { tapResponse } from '@ngrx/operators';
 import { HttpErrorResponse } from '@angular/common/http';
-import { exhaustMap, pipe, tap } from 'rxjs';
+import { exhaustMap, pipe } from 'rxjs';
+import { createActionState, trackAction } from '@coffee-tracker/util';
 import { AdminBackupApi, type Backup, type ImportResult } from '@coffee-tracker/data';
 import { CoffeesStore } from '@coffee-tracker/coffees';
 import { ToastService } from '@coffee-tracker/ui';
@@ -18,14 +19,15 @@ import { ToastService } from '@coffee-tracker/ui';
  */
 export const BackupStore = signalStore(
   withState({
-    exporting: false,
     /** The parsed file waiting for confirmation, and its name for the prompt. */
     staged: null as { backup: Backup; fileName: string } | null,
-    importing: false,
     /** What the last restore wrote, so the screen can report more than "done". */
     lastResult: null as ImportResult | null,
   }),
   withProps(() => ({
+    exportAction: createActionState(),
+    importAction: createActionState(),
+
     _api: inject(AdminBackupApi),
     _toast: inject(ToastService),
     _catalog: inject(CoffeesStore),
@@ -38,18 +40,14 @@ export const BackupStore = signalStore(
      */
     exportCatalog: rxMethod<void>(
       pipe(
-        tap(() => patchState(store, { exporting: true })),
         exhaustMap(() =>
           store._api.export().pipe(
+            trackAction(store.exportAction),
             tapResponse({
               next: (backup) => {
-                patchState(store, { exporting: false });
                 save(backup);
               },
-              error: () => {
-                patchState(store, { exporting: false });
-                store._toast.show('Could not export the catalog.', 'error');
-              },
+              error: () => store._toast.show('Could not export the catalog.', 'error'),
             }),
           ),
         ),
@@ -72,24 +70,28 @@ export const BackupStore = signalStore(
       }
     },
 
-    cancel: () => patchState(store, { staged: null }),
+    /** Refuses while the restore runs: the button stays focusable, so it stays clickable. */
+    cancel: () => {
+      if (store.importAction.running()) return;
+      patchState(store, { staged: null });
+    },
 
     /** Replaces the catalog. Only reachable once the user has confirmed. */
     confirmImport: rxMethod<void>(
       pipe(
-        tap(() => patchState(store, { importing: true })),
         exhaustMap(() =>
           store._api.import(store.staged()!.backup).pipe(
+            trackAction(store.importAction),
             tapResponse({
               next: (result) => {
-                patchState(store, { importing: false, staged: null, lastResult: result });
+                patchState(store, { staged: null, lastResult: result });
                 store._catalog.reload(); // the shelf is a different shelf now
                 // Short: the counts and any skipped tags are on screen in the panel
                 // below, which stays put after the toast has gone.
                 store._toast.show('Catalog restored.', 'success');
               },
               error: (err: unknown) => {
-                patchState(store, { importing: false, staged: null });
+                patchState(store, { staged: null });
                 // The API's reason is the useful one, it names the format version it
                 // found, or the row it refused.
                 store._toast.show(detailOf(err) ?? 'The restore was refused.', 'error');

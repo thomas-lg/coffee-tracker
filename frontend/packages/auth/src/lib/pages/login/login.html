@@ -81,8 +81,11 @@
 
             <!-- Stays enabled while invalid: submitting then marks every field touched so
                  the validation messages explain what's missing. -->
-            <ct-button type="submit" fullWidth [disabled]="auth.pending()" class="mt-2">
-              {{ auth.pending() ? 'Signing in…' : 'Sign in' }}
+            <ct-button type="submit" fullWidth class="mt-2"
+              [state]="auth.requestStatus()"
+              runningLabel="Signing in…"
+            >
+              Sign in
             </ct-button>
           </form>
         }
@@ -105,11 +108,12 @@
             type="button"
             fullWidth
             [variant]="localLoginEnabled() ? 'ghost' : 'primary'"
-            [disabled]="redirecting()"
+            [state]="redirecting()"
+            [runningLabel]="'Redirecting to ' + providerName() + '…'"
             (click)="signInWithProvider()"
           >
             <svg lucideIdCard [size]="18"></svg>
-            {{ redirecting() ? 'Redirecting to ' + providerName() + '…' : 'Continue with ' + providerName() }}
+            Continue with {{ providerName() }}
           </ct-button>
 
           <p class="mt-3 text-center text-xs leading-relaxed text-muted">

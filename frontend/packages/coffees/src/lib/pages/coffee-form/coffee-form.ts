@@ -82,7 +82,7 @@ export class CoffeeForm implements OnDestroy {
   }
 
   protected onSubmit(): void {
-    if (this.store.submitting()) return;
+    if (this.store.submitAction.running()) return;
     if (this.f().invalid()) {
       // Surface why nothing happened: reveal every field's validation message.
       this.f().markAsTouched();

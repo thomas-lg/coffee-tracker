@@ -15,10 +15,11 @@
     <ct-button
       class="mt-4 inline-block"
       variant="primary"
-      [disabled]="store.exporting()"
+      [state]="store.exportAction.state()"
+      runningLabel="Preparing…"
       (click)="store.exportCatalog()"
     >
-      {{ store.exporting() ? 'Preparing…' : 'Download backup' }}
+      Download backup
     </ct-button>
   </section>
 
@@ -50,21 +51,25 @@
           >?
         </p>
         <div class="mt-3 flex items-center gap-2">
+          <!-- aria-disabled rather than `disabled`: pick() puts focus here, and
+               disabling the focused button would drop it to <body> for the restore. -->
           <button
             type="button"
             #cancelBtn
             (click)="store.cancel()"
             class="rounded-full px-3 py-1.5 text-sm font-semibold text-muted hover:text-ink"
-            [disabled]="store.importing()"
+            [attr.aria-disabled]="store.importAction.running() ? 'true' : null"
+            [class.opacity-60]="store.importAction.running()"
           >
             Cancel
           </button>
           <ct-button
             variant="primary"
-            [disabled]="store.importing()"
+            [state]="store.importAction.state()"
+            runningLabel="Restoring…"
             (click)="store.confirmImport()"
           >
-            {{ store.importing() ? 'Restoring…' : 'Replace catalog' }}
+            Replace catalog
           </ct-button>
         </div>
       } @else {

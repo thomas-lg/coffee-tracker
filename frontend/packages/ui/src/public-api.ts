@@ -3,6 +3,7 @@
  */
 
 export * from './lib/button/button';
+export * from './lib/confirm-action/confirm-action';
 export * from './lib/card/card';
 export * from './lib/rating/rating';
 export * from './lib/select/select';

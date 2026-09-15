@@ -84,7 +84,7 @@ describe('CoffeeFormStore', () => {
     posted.flush({ id: 7 });
     await settle();
 
-    expect(store.submitting()).toBe(false);
+    expect(store.submitAction.running()).toBe(false);
     expect(toast.show).toHaveBeenCalledWith('Coffee added.', 'success');
   });
 
@@ -142,6 +142,10 @@ describe('CoffeeFormStore', () => {
     http.expectOne({ method: 'POST', url: '/api/coffees' }).flush({ id: 7 });
     await settle();
 
+    // The coffee is saved but the command is not done: the upload is the slow leg, and a
+    // button that goes idle here invites a second submit with no feedback.
+    expect(store.submitAction.running()).toBe(true);
+
     http
       .expectOne({ method: 'POST', url: '/api/coffees/7/photo' })
       .flush('nope', { status: 500, statusText: 'Error' });
@@ -151,7 +155,7 @@ describe('CoffeeFormStore', () => {
       expect.stringMatching(/saved, but the photo failed/i),
       'error',
     );
-    expect(store.submitting()).toBe(false);
+    expect(store.submitAction.running()).toBe(false);
   });
 
   it('keeps the user on the form when the save itself fails', async () => {
@@ -166,7 +170,7 @@ describe('CoffeeFormStore', () => {
 
     expect(toast.show).toHaveBeenCalledWith('Could not save the coffee.', 'error');
     // Released, so the user can correct and retry rather than facing a dead button.
-    expect(store.submitting()).toBe(false);
+    expect(store.submitAction.running()).toBe(false);
     expect(store.model().name).toBe('Kirinyaga AA');
   });
 
