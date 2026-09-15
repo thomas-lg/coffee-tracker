@@ -101,6 +101,11 @@ jobs:
           cache-dependency-path: frontend/package-lock.json
       - working-directory: frontend
         run: npm ci
+      # Before lint, because a drift in formatting is the cheapest thing to catch and
+      # the noisiest thing to let land. `npm run format` fixes every hit locally.
+      - name: Format check (prettier)
+        working-directory: frontend
+        run: npm run format:check
       - working-directory: frontend
         run: npm run lint --if-present
       # The production build is the comprehensive compile gate: it type-checks and

@@ -1,0 +1,12 @@
+# Generated. openapi.json is the API's exported document and api-types.ts is what
+# openapi-typescript makes of it, so formatting either one only survives until the next
+# `npm run gen:api`.
+openapi.json
+packages/data/src/lib/models/api-types.ts
+
+# Build and run outputs.
+dist/
+.angular/
+coverage/
+playwright-report/
+test-results/
