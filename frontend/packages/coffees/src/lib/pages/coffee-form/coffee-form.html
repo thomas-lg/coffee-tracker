@@ -11,7 +11,7 @@
     >
       <span class="grid size-11 place-items-center rounded-xl bg-crema text-ink"><svg lucideCamera [size]="22"></svg></span>
       <span class="flex-1">
-        <span class="block font-semibold">{{ store.scanning() ? 'Reading the label…' : 'Snap the bag' }}</span>
+        <span class="block font-semibold">{{ store.scanAction.running() ? 'Reading the label…' : 'Snap the bag' }}</span>
         <span class="block text-xs text-muted">Photograph the bag and we’ll pre-fill the form.</span>
       </span>
       <input type="file" accept="image/*" capture="environment" class="hidden" (change)="onSnap($event)" />
@@ -128,8 +128,8 @@
 
       <!-- Stays enabled while invalid: submitting then marks every field touched so
            the validation messages explain what's missing. -->
-      <ct-button type="submit" [disabled]="store.submitting()" class="mt-2">
-        {{ store.submitting() ? 'Saving…' : editing() ? 'Save changes' : 'Add coffee' }}
+      <ct-button type="submit" [state]="store.submitAction.state()" runningLabel="Saving…" class="mt-2">
+        {{ editing() ? 'Save changes' : 'Add coffee' }}
       </ct-button>
     </form>
   }

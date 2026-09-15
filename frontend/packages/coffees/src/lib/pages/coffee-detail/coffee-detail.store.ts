@@ -6,13 +6,17 @@ import { rxMethod } from '@ngrx/signals/rxjs-interop';
 import { tapResponse } from '@ngrx/operators';
 import { exhaustMap, pipe, tap } from 'rxjs';
 import { AuthStore } from '@coffee-tracker/auth';
+import { createActionState, trackAction } from '@coffee-tracker/util';
 import { CoffeesApi, FlavorTagsApi, ReviewsApi } from '@coffee-tracker/data';
 import { ToastService } from '@coffee-tracker/ui';
 import { CoffeesStore } from '@coffees/services/coffees.store';
 
 /**
  * Everything the coffee detail screen does apart from render it: three reads keyed on
- * the route id, the rate-today form, and the armed-confirm delete.
+ * the route id, the rate-today form, and the delete.
+ *
+ * Whether the delete is currently armed is not here: that is which branch
+ * ct-confirm-action has on screen, and the store can neither read nor act on it.
  *
  * Component-provided rather than root, like CoffeeFormStore, the state belongs to one
  * screen and should die with it, which also means two tabs on different coffees do not
@@ -28,16 +32,15 @@ export const CoffeeDetailStore = signalStore(
     stage: '',
     notes: '',
     selectedTags: new Set<number>(),
-    saving: false,
-
-    confirmingDelete: false,
-    deleting: false,
   }),
   withProps((store) => {
     const coffeesApi = inject(CoffeesApi);
     const reviewsApi = inject(ReviewsApi);
     const tagsApi = inject(FlavorTagsApi);
     return {
+      rateAction: createActionState(),
+      deleteAction: createActionState(),
+
       _coffeesApi: coffeesApi,
       _reviewsApi: reviewsApi,
       _auth: inject(AuthStore),
@@ -124,7 +127,6 @@ export const CoffeeDetailStore = signalStore(
        */
       rate: rxMethod<void>(
         pipe(
-          tap(() => patchState(store, { saving: true })),
           exhaustMap(() =>
             store._reviewsApi
               .create(store.coffeeId()!, {
@@ -134,9 +136,9 @@ export const CoffeeDetailStore = signalStore(
                 tagIds: [...store.selectedTags()],
               })
               .pipe(
+                trackAction(store.rateAction),
                 tapResponse({
                   next: () => {
-                    patchState(store, { saving: false });
                     resetForm();
                     store._toast.show('Rating saved for today.', 'success');
                     store._reviews.reload();
@@ -144,7 +146,6 @@ export const CoffeeDetailStore = signalStore(
                     store._catalog.reload(); // and so did the one on its shelf card
                   },
                   error: () => {
-                    patchState(store, { saving: false });
                     store._toast.show('Could not save your rating.', 'error');
                   },
                 }),
@@ -153,23 +154,18 @@ export const CoffeeDetailStore = signalStore(
         ),
       ),
 
-      armDelete: () => patchState(store, { confirmingDelete: true }),
-      cancelDelete: () => patchState(store, { confirmingDelete: false }),
-
       confirmDelete: rxMethod<void>(
         pipe(
-          tap(() => patchState(store, { deleting: true })),
           exhaustMap(() =>
             store._coffeesApi.delete(store.coffeeId()!).pipe(
+              trackAction(store.deleteAction),
               tapResponse({
                 next: () => {
-                  patchState(store, { deleting: false, confirmingDelete: false });
                   store._catalog.reload(); // a delete changes the shelf
                   store._toast.show('Coffee deleted.', 'success');
                   void store._router.navigate(['/coffees']);
                 },
                 error: () => {
-                  patchState(store, { deleting: false, confirmingDelete: false });
                   store._toast.show(
                     'Could not delete it (you may not have permission).',
                     'error',

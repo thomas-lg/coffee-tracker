@@ -1,7 +1,7 @@
 import { describe, expect, it, beforeEach, afterEach, vi } from 'vitest';
 import { provideZonelessChangeDetection } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
-import { of, throwError } from 'rxjs';
+import { Subject, of, throwError } from 'rxjs';
 import { Router } from '@angular/router';
 import { ToastService } from '@coffee-tracker/ui';
 import { AuthApi, type AuthResponse, type Login } from '@coffee-tracker/data';
@@ -185,6 +185,28 @@ describe('AuthStore', () => {
     expect(stored.userId).toBe('u1');
     expect(stored.refreshToken).toBe('refresh-1');
     expect(stored.refreshExpiresAt).toBe(response.refreshExpiresAt);
+  });
+
+  it('ignores a second sign-in while the first is still in flight', () => {
+    // The submit button is inert by then, but Enter in a field submits the form without
+    // going through it, so the operator is the only guard left.
+    api.login.mockReturnValue(new Subject<AuthResponse>());
+    const store = TestBed.inject(AuthStore);
+
+    store.login({ email: 'a@b.c', password: 'secret-123' } satisfies Login);
+    store.login({ email: 'a@b.c', password: 'secret-123' } satisfies Login);
+
+    expect(api.login).toHaveBeenCalledTimes(1);
+  });
+
+  it('ignores a second account creation while the first is still in flight', () => {
+    api.register.mockReturnValue(new Subject<AuthResponse>());
+    const store = TestBed.inject(AuthStore);
+
+    store.register({ email: 'a@b.c', password: 'secret-123', displayName: 'Ada' });
+    store.register({ email: 'a@b.c', password: 'secret-123', displayName: 'Ada' });
+
+    expect(api.register).toHaveBeenCalledTimes(1);
   });
 
   it('exchanges the refresh token for a rotated pair on refresh()', async () => {

@@ -64,8 +64,8 @@
 
       <!-- Stays enabled while invalid: submitting then marks every field touched so
            the validation messages explain what's missing. -->
-      <ct-button type="submit" [disabled]="auth.pending()" class="mt-2">
-        {{ auth.pending() ? 'Creating…' : 'Create account' }}
+      <ct-button type="submit" [state]="auth.requestStatus()" runningLabel="Creating…" class="mt-2">
+        Create account
       </ct-button>
     </form>
 

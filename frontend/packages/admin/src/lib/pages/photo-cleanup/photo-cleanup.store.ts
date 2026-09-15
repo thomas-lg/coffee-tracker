@@ -20,8 +20,6 @@ type PhotoCleanupState = {
   filter: PhotoFilter;
   /** Selected paths. Only unused photos are ever added (used ones aren't selectable). */
   selection: readonly string[];
-  /** Two-step delete: the action button arms a confirm row rather than a modal. */
-  confirming: boolean;
 };
 
 /**
@@ -30,7 +28,7 @@ type PhotoCleanupState = {
  * derived `selectionSet` keeps `isSelected` O(1) inside the template's @for.
  */
 export const PhotoCleanupStore = signalStore(
-  withState<PhotoCleanupState>({ filter: 'all', selection: [], confirming: false }),
+  withState<PhotoCleanupState>({ filter: 'all', selection: [] }),
   withRequestStatus(),
   withProps(() => {
     const api = inject(AdminPhotosApi);
@@ -88,19 +86,10 @@ export const PhotoCleanupStore = signalStore(
       patchState(store, { filter: value });
     },
 
-    /** Arming is refused with nothing selected, so the confirm row can never be empty. */
-    arm(): void {
-      if (store.selectedCount() > 0) patchState(store, { confirming: true });
-    },
-
-    cancel(): void {
-      patchState(store, { confirming: false });
-    },
-
     /**
-     * switchMap rather than concatMap: the screen arms a confirmation and disables the
-     * button while `pending()`, so a second delete cannot overlap, and if one somehow
-     * did, abandoning the stale request is the right answer.
+     * switchMap rather than concatMap: ct-confirm-action makes this a confirmed action
+     * and stops responding while `pending()`, so a second delete cannot overlap, and if
+     * one somehow did, abandoning the stale request is the right answer.
      */
     deleteSelected: rxMethod<void>(
       pipe(
@@ -109,7 +98,7 @@ export const PhotoCleanupStore = signalStore(
           store._api.delete([...store.selection()]).pipe(
             tapResponse({
               next: (result) => {
-                patchState(store, setFulfilled(), { selection: [], confirming: false });
+                patchState(store, setFulfilled(), { selection: [] });
                 store._list.reload();
                 store._toast.show(
                   `Deleted ${result.deleted}, skipped ${result.skipped}`,
@@ -118,7 +107,7 @@ export const PhotoCleanupStore = signalStore(
               },
               error: () => {
                 const message = 'Delete failed. Please retry.';
-                patchState(store, setRequestError(message), { confirming: false });
+                patchState(store, setRequestError(message));
                 store._toast.show(message, 'error');
               },
             }),

@@ -15,10 +15,11 @@
     <ct-button
       class="mt-4 inline-block"
       variant="primary"
-      [disabled]="store.exporting()"
+      [state]="store.exportAction.state()"
+      runningLabel="Preparing…"
       (click)="store.exportCatalog()"
     >
-      {{ store.exporting() ? 'Preparing…' : 'Download backup' }}
+      Download backup
     </ct-button>
   </section>
 
@@ -55,16 +56,17 @@
             #cancelBtn
             (click)="store.cancel()"
             class="rounded-full px-3 py-1.5 text-sm font-semibold text-muted hover:text-ink"
-            [disabled]="store.importing()"
+            [disabled]="store.importAction.running()"
           >
             Cancel
           </button>
           <ct-button
             variant="primary"
-            [disabled]="store.importing()"
+            [state]="store.importAction.state()"
+            runningLabel="Restoring…"
             (click)="store.confirmImport()"
           >
-            {{ store.importing() ? 'Restoring…' : 'Replace catalog' }}
+            Replace catalog
           </ct-button>
         </div>
       } @else {

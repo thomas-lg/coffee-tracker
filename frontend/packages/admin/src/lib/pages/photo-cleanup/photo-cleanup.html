@@ -40,33 +40,20 @@
     Select all unused
   </button>
 
-  <!-- Bulk action / confirm, only when something is selected -->
   @if (store.selectedCount() > 0) {
-    <!-- aria-live on the stable wrapper so arming the confirm step is announced. -->
-    <div class="ml-auto flex items-center gap-2" aria-live="polite">
-      @if (!store.confirming()) {
-        <span class="text-sm text-muted">{{ store.selectedCount() }} selected</span>
-        <button type="button" (click)="store.clearSelection()" class="text-sm font-semibold text-muted hover:text-ink">
-          Clear
-        </button>
-        <ct-button #armBtn variant="ghost" (click)="arm()"
-          >Delete {{ store.selectedCount() }}</ct-button
-        >
-      } @else {
-        <span class="text-sm font-semibold text-ink">Delete {{ store.selectedCount() }} photo(s)?</span>
-        <button type="button"
-          #cancelBtn
-          (click)="cancel()"
-          class="rounded-full px-3 py-1.5 text-sm font-semibold text-muted hover:text-ink"
-          [disabled]="store.pending()"
-        >
-          Cancel
-        </button>
-        <ct-button variant="primary" [disabled]="store.pending()" (click)="store.deleteSelected()">
-          {{ store.pending() ? 'Deleting…' : 'Confirm delete' }}
-        </ct-button>
-      }
-    </div>
+    <ct-confirm-action
+      class="ml-auto"
+      [label]="'Delete ' + store.selectedCount()"
+      [prompt]="'Delete ' + store.selectedCount() + ' photo(s)?'"
+      [state]="store.requestStatus()"
+      busyLabel="Deleting…"
+      (confirmed)="store.deleteSelected()"
+    >
+      <span class="text-sm text-muted">{{ store.selectedCount() }} selected</span>
+      <button type="button" (click)="store.clearSelection()" class="text-sm font-semibold text-muted hover:text-ink">
+        Clear
+      </button>
+    </ct-confirm-action>
   }
 </div>
 
@@ -121,7 +108,6 @@
             class="aspect-square w-full object-cover"
             [class.opacity-60]="p.used"
           />
-          <!-- Selection check (unused only) -->
           @if (!p.used) {
             <span
               class="absolute right-2 top-2 grid size-6 place-items-center rounded-full border text-xs font-bold transition"

@@ -89,7 +89,6 @@ describe('PhotoCleanupStore', () => {
 
     expect(toast.show).toHaveBeenCalledWith('Deleted 2, skipped 0', 'success');
     expect(store.selectedCount()).toBe(0);
-    expect(store.confirming()).toBe(false);
     expect(store.pending()).toBe(false);
   });
 

@@ -84,7 +84,7 @@ describe('CoffeeFormStore', () => {
     posted.flush({ id: 7 });
     await settle();
 
-    expect(store.submitting()).toBe(false);
+    expect(store.submitAction.running()).toBe(false);
     expect(toast.show).toHaveBeenCalledWith('Coffee added.', 'success');
   });
 
@@ -151,7 +151,7 @@ describe('CoffeeFormStore', () => {
       expect.stringMatching(/saved, but the photo failed/i),
       'error',
     );
-    expect(store.submitting()).toBe(false);
+    expect(store.submitAction.running()).toBe(false);
   });
 
   it('keeps the user on the form when the save itself fails', async () => {
@@ -166,7 +166,7 @@ describe('CoffeeFormStore', () => {
 
     expect(toast.show).toHaveBeenCalledWith('Could not save the coffee.', 'error');
     // Released, so the user can correct and retry rather than facing a dead button.
-    expect(store.submitting()).toBe(false);
+    expect(store.submitAction.running()).toBe(false);
     expect(store.model().name).toBe('Kirinyaga AA');
   });
 

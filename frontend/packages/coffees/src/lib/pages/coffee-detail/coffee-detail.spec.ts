@@ -157,4 +157,22 @@ describe('CoffeeDetail', () => {
 
     expect(document.activeElement).toBe(document.body);
   });
+  it('stands the confirm down and returns focus when the delete is refused', async () => {
+    // The screen stays mounted on a refusal, and the confirm row's own buttons are
+    // disabled by then, so nothing but this puts the user back somewhere usable.
+    await load();
+
+    click('Delete');
+    await settle();
+    click('Confirm delete');
+    await settle();
+
+    http
+      .expectOne({ method: 'DELETE', url: '/api/coffees/7' })
+      .flush('forbidden', { status: 403, statusText: 'Forbidden' });
+    await settle();
+
+    expect(el().textContent).not.toContain('Confirm delete');
+    expect(document.activeElement?.textContent?.trim()).toBe('Delete');
+  });
 });

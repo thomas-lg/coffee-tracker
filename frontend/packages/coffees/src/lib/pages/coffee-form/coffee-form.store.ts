@@ -6,7 +6,7 @@ import { tapResponse } from '@ngrx/operators';
 import { catchError, exhaustMap, filter, map, of, pipe, switchMap, tap } from 'rxjs';
 import { HttpErrorResponse } from '@angular/common/http';
 import { ToastService } from '@coffee-tracker/ui';
-import { today } from '@coffee-tracker/util';
+import { createActionState, today, trackAction } from '@coffee-tracker/util';
 import { CoffeesApi, ScanApi, type CoffeeCreate, type RoastLevel } from '@coffee-tracker/data';
 import { CoffeesStore } from '@coffees/services/coffees.store';
 import { roastBucket } from '@coffees/utils/coffee-visual';
@@ -52,12 +52,13 @@ function toDto(m: CoffeeFormModel): CoffeeCreate {
 export const CoffeeFormStore = signalStore(
   withState({
     loading: false,
-    scanning: false,
-    submitting: false,
     /** Photo already attached to the coffee being edited; the screen previews it. */
     photoUrl: null as string | null,
   }),
   withProps(() => ({
+    scanAction: createActionState(),
+    submitAction: createActionState(),
+
     _api: inject(CoffeesApi),
     _scanApi: inject(ScanApi),
     _router: inject(Router),
@@ -112,9 +113,9 @@ export const CoffeeFormStore = signalStore(
     /** Snap-to-fill: read the bag and pre-fill whatever the scan recognised. */
     scan: rxMethod<File>(
       pipe(
-        tap(() => patchState(store, { scanning: true })),
         switchMap((file) =>
           store._scanApi.scan(file).pipe(
+            trackAction(store.scanAction),
             tapResponse({
               next: ({ parsed }) => {
                 store.model.update((m) => ({
@@ -127,14 +128,12 @@ export const CoffeeFormStore = signalStore(
                   // OCR returns free text (e.g. "medium-dark"); map it onto the enum.
                   roastLevel: parsed.roastLevel ? roastBucket(parsed.roastLevel) : m.roastLevel,
                 }));
-                patchState(store, { scanning: false });
                 store._toast.show(
                   'Bag scanned. Fields pre-filled, check them before saving.',
                   'success',
                 );
               },
               error: (err: unknown) => {
-                patchState(store, { scanning: false });
                 const off = err instanceof HttpErrorResponse && err.status === 503;
                 store._toast.show(
                   off
@@ -159,7 +158,6 @@ export const CoffeeFormStore = signalStore(
      */
     save: rxMethod<{ id: number | null; file: File | null }>(
       pipe(
-        tap(() => patchState(store, { submitting: true })),
         exhaustMap(({ id, file }) => {
           const dto = toDto(store.model());
           const saved$ =
@@ -168,6 +166,7 @@ export const CoffeeFormStore = signalStore(
               : store._api.create(dto).pipe(map((c) => c.id));
 
           return saved$.pipe(
+            trackAction(store.submitAction),
             switchMap((savedId) =>
               file
                 ? store._api.uploadPhoto(savedId, file).pipe(
@@ -190,7 +189,6 @@ export const CoffeeFormStore = signalStore(
                 void store._router.navigate(['/coffees', savedId]);
               },
               error: () => store._toast.show('Could not save the coffee.', 'error'),
-              finalize: () => patchState(store, { submitting: false }),
             }),
           );
         }),
