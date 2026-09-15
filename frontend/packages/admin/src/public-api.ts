@@ -3,4 +3,4 @@
  */
 
 export * from './lib/admin.routes';
-export * from './lib/admin.guard';
+export * from './lib/guards/admin.guard';

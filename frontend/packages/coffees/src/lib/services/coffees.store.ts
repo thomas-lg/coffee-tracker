@@ -4,7 +4,7 @@ import { patchState, signalStore, withComputed, withMethods, withProps, withStat
 import { extendResource, withValueOnError } from '@ngrx/signals/resource';
 import { AuthStore } from '@coffee-tracker/auth';
 import { CoffeesApi, type Coffee } from '@coffee-tracker/data';
-import { roastBucket } from '../utils/coffee-visual';
+import { roastBucket } from '@coffees/utils/coffee-visual';
 
 export type RoastFilter = 'all' | 'Light' | 'Medium' | 'Dark';
 export type CoffeeSort = 'new' | 'rating' | 'name';

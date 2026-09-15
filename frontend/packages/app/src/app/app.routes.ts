@@ -17,7 +17,7 @@ export const routes: Routes = [
   {
     path: '',
     canActivate: [authGuard],
-    loadComponent: () => import('./home/home').then((m) => m.Home),
+    loadComponent: () => import('@coffee-tracker/coffees').then((m) => m.Home),
   },
   {
     path: 'coffees',
