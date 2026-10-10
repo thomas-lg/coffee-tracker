@@ -2,8 +2,7 @@ using CoffeeTracker.Application.Ports.Driven;
 using CoffeeTracker.Infrastructure.Storage;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
-using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.PixelFormats;
+using SkiaSharp;
 using System.Runtime.Versioning;
 using Xunit;
 
@@ -40,18 +39,14 @@ public sealed class FileSystemPhotoStorageTests : IDisposable
 
     private static byte[] RealImage(string contentType)
     {
-        using var img = new Image<Rgba32>(2, 2);
-        img[0, 0] = new Rgba32(255, 0, 0);
-        img[1, 1] = new Rgba32(0, 0, 255);
-        using var ms = new MemoryStream();
-        switch (contentType)
+        using var img = TestImages.HalfRedHalfBlue(2, 2);
+        return TestImages.Encode(img, contentType switch
         {
-            case "image/jpeg": img.SaveAsJpeg(ms); break;
-            case "image/png": img.SaveAsPng(ms); break;
-            case "image/webp": img.SaveAsWebp(ms); break;
-            default: throw new ArgumentOutOfRangeException(nameof(contentType));
-        }
-        return ms.ToArray();
+            "image/jpeg" => SKEncodedImageFormat.Jpeg,
+            "image/png" => SKEncodedImageFormat.Png,
+            "image/webp" => SKEncodedImageFormat.Webp,
+            _ => throw new ArgumentOutOfRangeException(nameof(contentType)),
+        });
     }
 
     private string[] StoredFiles() => Directory.Exists(_dir) ? Directory.GetFiles(_dir) : [];
@@ -74,7 +69,7 @@ public sealed class FileSystemPhotoStorageTests : IDisposable
         var stored = Assert.Single(StoredFiles());
         Assert.Equal(Path.GetFileName(result.RelativePath), Path.GetFileName(stored));
         // The re-encoded output must itself be a decodable image of the same size.
-        using var reloaded = Image.Load(stored);
+        using var reloaded = SKBitmap.Decode(stored);
         Assert.Equal(2, reloaded.Width);
         Assert.Equal(2, reloaded.Height);
     }
@@ -195,6 +190,24 @@ public sealed class FileSystemPhotoStorageTests : IDisposable
         }
 
         Assert.Empty(StoredFiles()); // no partial/zero-byte file left behind
+    }
+
+    [Fact]
+    public async Task Save_turns_a_photo_upright_when_the_camera_tagged_it_as_rotated()
+    {
+        var storage = NewStorage();
+        using var sensor = TestImages.HalfRedHalfBlue(16, 8);
+        // 6: the viewer turns it a quarter clockwise, so the red left half ends up on top.
+        var bytes = TestImages.WithExifOrientation(TestImages.Encode(sensor, SKEncodedImageFormat.Jpeg), 6);
+
+        var result = await storage.SaveAsync(new MemoryStream(bytes), "image/jpeg", bytes.Length);
+
+        Assert.Equal(PhotoStorageStatus.Stored, result.Status);
+        using var stored = SKBitmap.Decode(Assert.Single(StoredFiles()));
+        Assert.Equal(8, stored.Width);
+        Assert.Equal(16, stored.Height);
+        Assert.True(stored.GetPixel(4, 2).Red > 200, "the top should be red");
+        Assert.True(stored.GetPixel(4, 13).Blue > 200, "the bottom should be blue");
     }
 
     [Fact]
