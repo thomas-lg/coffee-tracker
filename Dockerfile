@@ -11,7 +11,7 @@
 # is frontend/package.json's engines (^20.19 || ^22.12 || ^24, i.e. Angular's supported
 # range) plus LTS status -- an even major is still "Current" until the October of its
 # release year. Dependabot ignores node majors here; move all three references at once.
-FROM --platform=$BUILDPLATFORM node:24-slim@sha256:0e0ff40c39bc087845bfb27465a0df4ea419520094bc35842ff83dd8cbe6f9b6 AS web
+FROM --platform=$BUILDPLATFORM node:24-slim@sha256:d6aa754f16b3197301076f047b5def2f02ea1dbbc2ca920407d46d7ec7f87b20 AS web
 WORKDIR /web
 # Restore deps in their own layer (cached until a manifest changes). This is an npm
 # workspaces repo, so `npm ci` needs every member's package.json present up front;
@@ -45,7 +45,7 @@ RUN npx ng build app --configuration production
 # fails --locked-mode with NU1004, because the committed lock files carry no runtime
 # identifiers. Emulating this stage would cost minutes per build for no difference in
 # output.
-FROM --platform=$BUILDPLATFORM mcr.microsoft.com/dotnet/sdk:10.0@sha256:35d40304542c8689331f8cab17c65926cdf48fe711e289321d71924b230a7d29 AS api
+FROM --platform=$BUILDPLATFORM mcr.microsoft.com/dotnet/sdk:10.0@sha256:e70cdb7f80b0348f5cb85f19a8f670fca061f033d57eed12fa003d58b0e06317 AS api
 WORKDIR /src
 # Restore in its own layer (cached until a manifest or lock file changes), the same shape
 # as the npm restore in stage 1, otherwise every edit to any .cs file re-resolves and
@@ -66,7 +66,7 @@ RUN dotnet publish backend/CoffeeTracker.Api/CoffeeTracker.Api.csproj -c Release
 # mcr.microsoft.com/dotnet/aspnet:10.0
 # The only stage that follows the target platform, and the only one that needs to: the
 # apt packages below (tesseract, gosu, curl) are the image's native dependencies.
-FROM mcr.microsoft.com/dotnet/aspnet:10.0@sha256:2d584d8147faddb0d678c5748d47953e5b8e18621ed4fb7049a91381d9d7746f AS runtime
+FROM mcr.microsoft.com/dotnet/aspnet:10.0@sha256:222759b391a1aaf241166672c8f99b2d4ada452e7b5319f3c6e8f265a37b5ad4 AS runtime
 # Two OCR engines, both driven by shelling out and piping the image over stdin.
 #
 # RapidOCR (PP-OCR on onnxruntime) is the default, and it is what costs the size here:
