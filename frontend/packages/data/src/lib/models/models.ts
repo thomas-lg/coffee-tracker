@@ -44,6 +44,8 @@ export interface Coffee {
   reviewCount: number;
   /** Distinct flavour descriptors aggregated across this coffee's reviews. */
   flavorTags: string[];
+  /** Only hides the controls; the API refuses anyone else's edit on its own. */
+  canEdit: boolean;
 }
 
 export interface CoffeeCreate {

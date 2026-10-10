@@ -24,6 +24,7 @@ const COFFEE: Coffee = {
   averageRating: 4.5,
   reviewCount: 2,
   flavorTags: [],
+  canEdit: true,
 };
 
 /**
@@ -103,6 +104,15 @@ describe('CoffeeDetail', () => {
       'Bought',
       'Shop',
     ]);
+  });
+
+  it('offers neither Edit nor Delete on a coffee someone else added', async () => {
+    await load({ ...COFFEE, canEdit: false });
+
+    expect(el().querySelector('a[href="/coffees/7/edit"]')).toBeNull();
+    expect(
+      Array.from(el().querySelectorAll('button')).some((b) => b.textContent?.trim() === 'Delete'),
+    ).toBe(false);
   });
 
   it('omits the shop row for a coffee that has not got one', async () => {

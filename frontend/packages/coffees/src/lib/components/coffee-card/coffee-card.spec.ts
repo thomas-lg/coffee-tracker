@@ -20,6 +20,7 @@ const SAMPLE: Coffee = {
   averageRating: 4.5,
   reviewCount: 2,
   flavorTags: ['Citrus', 'Fruity', 'Nutty', 'Berry'],
+  canEdit: true,
 };
 
 describe('CoffeeCard', () => {

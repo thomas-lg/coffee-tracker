@@ -22,6 +22,7 @@ function coffee(p: Partial<Coffee> & Pick<Coffee, 'id' | 'name'>): Coffee {
     averageRating: null,
     reviewCount: 0,
     flavorTags: [],
+    canEdit: true,
     ...p,
   };
 }

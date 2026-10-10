@@ -68,18 +68,20 @@
             </p>
             <h1 class="font-display text-4xl font-semibold">{{ c.name }}</h1>
           </div>
-          <ct-confirm-action
-            class="lg:shrink-0"
-            label="Delete"
-            prompt="Delete this coffee? Its ratings go with it."
-            [state]="store.deleteAction.state()"
-            busyLabel="Deleting…"
-            (confirmed)="store.confirmDelete()"
-          >
-            <a [routerLink]="['/coffees', c.id, 'edit']"
-              ><ct-button variant="ghost">Edit</ct-button></a
+          @if (c.canEdit) {
+            <ct-confirm-action
+              class="lg:shrink-0"
+              label="Delete"
+              prompt="Delete this coffee? Its ratings go with it."
+              [state]="store.deleteAction.state()"
+              busyLabel="Deleting…"
+              (confirmed)="store.confirmDelete()"
             >
-          </ct-confirm-action>
+              <a [routerLink]="['/coffees', c.id, 'edit']"
+                ><ct-button variant="ghost">Edit</ct-button></a
+              >
+            </ct-confirm-action>
+          }
         </div>
 
         <div class="mt-3 flex items-center gap-3">
