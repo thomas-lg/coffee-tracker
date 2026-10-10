@@ -1,7 +1,5 @@
-using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.Formats.Png;
-using SixLabors.ImageSharp.Metadata.Profiles.Exif;
-using SixLabors.ImageSharp.Processing;
+using CoffeeTracker.Infrastructure.Imaging;
+using SkiaSharp;
 
 namespace CoffeeTracker.Infrastructure.Ocr;
 
@@ -23,58 +21,36 @@ internal static class UprightImage
 {
     public static async Task WriteToAsync(Stream image, Stream destination, CancellationToken ct)
     {
-        // The header has to be read and then the same bytes replayed. The one caller
-        // hands over a MemoryStream, but the port promises only a Stream.
-        Stream source = image;
-        MemoryStream? buffered = null;
-        if (!image.CanSeek)
+        using var buffered = new MemoryStream();
+        await image.CopyToAsync(buffered, ct);
+        var bytes = buffered.GetBuffer().AsMemory(0, (int)buffered.Length);
+
+        using var upright = Decode(bytes);
+        if (upright is null)
         {
-            buffered = new MemoryStream();
-            await image.CopyToAsync(buffered, ct);
-            buffered.Position = 0;
-            source = buffered;
+            // Upright, which is the overwhelmingly common case, or undecodable, which is
+            // not this method's call to make: the application layer already validated the
+            // bytes, so the engine gets them as they came and refuses them if it disagrees.
+            await destination.WriteAsync(bytes, ct);
+            return;
         }
 
-        try
-        {
-            var start = source.Position;
-            if (!await IsRotatedAsync(source, ct))
-            {
-                // The overwhelmingly common case, and it stays free: no decode, no
-                // re-encode, the upload's own bytes straight down the pipe.
-                source.Position = start;
-                await source.CopyToAsync(destination, ct);
-                return;
-            }
-
-            source.Position = start;
-            using var picture = await Image.LoadAsync(source, ct);
-            picture.Mutate(x => x.AutoOrient());
-            // PNG, not JPEG: re-encoding would lay a second generation of block artefacts
-            // over the camera's own, right on the glyph edges the engine reads.
-            await picture.SaveAsync(destination, new PngEncoder(), ct);
-        }
-        finally
-        {
-            buffered?.Dispose();
-        }
+        // PNG, not JPEG: re-encoding would lay a second generation of block artefacts
+        // over the camera's own, right on the glyph edges the engine reads.
+        using var png = upright.Encode(SKEncodedImageFormat.Png, 100);
+        await png.AsStream().CopyToAsync(destination, ct);
     }
 
-    /// <summary>Reads only the header, so an upright photo is never decoded twice.</summary>
-    private static async Task<bool> IsRotatedAsync(Stream source, CancellationToken ct)
+    /// <summary>
+    /// Only pays for a decode when the camera tagged the photo as rotated; the codec reads
+    /// the orientation from the header alone.
+    /// </summary>
+    private static SKBitmap? Decode(ReadOnlyMemory<byte> bytes)
     {
-        try
-        {
-            var info = await Image.IdentifyAsync(source, ct);
-            return info.Metadata.ExifProfile?.TryGetValue(ExifTag.Orientation, out var orientation) == true
-                && orientation?.Value is > 1;
-        }
-        catch (Exception ex) when (ex is UnknownImageFormatException or InvalidImageContentException)
-        {
-            // Undecodable here is not this method's call to make: the application layer
-            // already validated the bytes, so hand them over and let the engine refuse
-            // them if it disagrees.
-            return false;
-        }
+        using var data = SKData.CreateCopy(bytes.Span);
+        using var codec = SKCodec.Create(data);
+        return codec is null || codec.EncodedOrigin == SKEncodedOrigin.TopLeft
+            ? null
+            : OrientedImage.Decode(codec);
     }
 }

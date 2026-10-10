@@ -1,11 +1,8 @@
 using CoffeeTracker.Application.Ports.Driven;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.Formats;
-using SixLabors.ImageSharp.Formats.Jpeg;
-using SixLabors.ImageSharp.Formats.Png;
-using SixLabors.ImageSharp.Formats.Webp;
+using CoffeeTracker.Infrastructure.Imaging;
+using SkiaSharp;
 
 namespace CoffeeTracker.Infrastructure.Storage;
 
@@ -13,7 +10,8 @@ namespace CoffeeTracker.Infrastructure.Storage;
 /// Driven adapter: stores uploaded photos on the local filesystem. Owns the
 /// storage-security decisions, content-type allowlist, size cap, server-generated
 /// filenames, and re-encoding the image through a decoder so only pixel data (no
-/// embedded payload/EXIF) is ever written to disk.
+/// embedded payload/EXIF) is ever written to disk. The camera's orientation is applied
+/// to those pixels first, since the tag that carried it does not survive.
 /// </summary>
 public class FileSystemPhotoStorage : IPhotoStorage
 {
@@ -62,8 +60,10 @@ public class FileSystemPhotoStorage : IPhotoStorage
 
             try
             {
+                using var encoded = image.Encode(FormatFor(extension!), EncodeQuality)
+                    ?? throw new InvalidOperationException($"Could not encode the photo as {extension}.");
                 await using var file = new FileStream(fullPath, FileMode.CreateNew, FileAccess.Write, FileShare.None);
-                await image.SaveAsync(file, EncoderFor(extension!), ct);
+                await encoded.AsStream().CopyToAsync(file, ct);
             }
             catch
             {
@@ -92,7 +92,7 @@ public class FileSystemPhotoStorage : IPhotoStorage
     /// Returns the decoded image so a caller that means to keep it does not pay for a
     /// second decode. A null image means rejection, and the status says why.
     /// </summary>
-    private async Task<(PhotoStorageStatus Status, Image? Image, string? Extension)> DecodeAsync(
+    private async Task<(PhotoStorageStatus Status, SKBitmap? Image, string? Extension)> DecodeAsync(
         Stream content, string? contentType, long length, CancellationToken ct)
     {
         if (contentType is null || !AllowedTypes.TryGetValue(contentType, out var extension))
@@ -129,18 +129,14 @@ public class FileSystemPhotoStorage : IPhotoStorage
         // Read only the header to learn the pixel dimensions, and reject a decompression
         // bomb (a tiny file that declares huge dimensions) BEFORE the full decode would
         // allocate gigabytes. The byte cap above bounds compressed size, not decoded size.
-        buffer.Position = 0;
-        ImageInfo info;
-        try
-        {
-            info = await Image.IdentifyAsync(buffer, ct);
-        }
-        catch (Exception ex) when (ex is UnknownImageFormatException or InvalidImageContentException)
+        using var data = SKData.CreateCopy(buffer.GetBuffer().AsSpan(0, (int)buffer.Length));
+        using var codec = SKCodec.Create(data);
+        if (codec is null)
         {
             return (PhotoStorageStatus.InvalidContentType, null, null);
         }
 
-        if ((long)info.Width * info.Height > _maxPixels)
+        if ((long)codec.Info.Width * codec.Info.Height > _maxPixels)
         {
             return (PhotoStorageStatus.TooLarge, null, null);
         }
@@ -148,15 +144,10 @@ public class FileSystemPhotoStorage : IPhotoStorage
         // Decoding is itself the last check: a file that sniffed as an image but cannot
         // actually be decoded is rejected. Callers that store it re-encode from these
         // pixels, which is what discards any trailing payload or metadata in the upload.
-        buffer.Position = 0;
-        try
-        {
-            return (PhotoStorageStatus.Stored, await Image.LoadAsync(buffer, ct), extension);
-        }
-        catch (Exception ex) when (ex is UnknownImageFormatException or InvalidImageContentException)
-        {
-            return (PhotoStorageStatus.InvalidContentType, null, null);
-        }
+        var image = OrientedImage.Decode(codec);
+        return image is null
+            ? (PhotoStorageStatus.InvalidContentType, null, null)
+            : (PhotoStorageStatus.Stored, image, extension);
     }
 
     /// <summary>Bytes to read for signature sniffing (WebP needs the first 12).</summary>
@@ -165,11 +156,17 @@ public class FileSystemPhotoStorage : IPhotoStorage
     /// <summary>The 8-byte PNG file signature (89 50 4E 47 0D 0A 1A 0A).</summary>
     private static readonly byte[] PngSignature = [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A];
 
-    private static IImageEncoder EncoderFor(string extension) => extension switch
+    /// <summary>
+    /// ImageSharp's default for JPEG and lossy WebP, kept so stored photos weigh what they
+    /// did before the switch to Skia. PNG ignores it.
+    /// </summary>
+    private const int EncodeQuality = 75;
+
+    private static SKEncodedImageFormat FormatFor(string extension) => extension switch
     {
-        ".jpg" => new JpegEncoder(),
-        ".png" => new PngEncoder(),
-        ".webp" => new WebpEncoder(),
+        ".jpg" => SKEncodedImageFormat.Jpeg,
+        ".png" => SKEncodedImageFormat.Png,
+        ".webp" => SKEncodedImageFormat.Webp,
         _ => throw new ArgumentOutOfRangeException(nameof(extension), extension, "No encoder for extension."),
     };
 

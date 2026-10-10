@@ -1,10 +1,7 @@
 using CoffeeTracker.Application.Ports.Driven;
 using CoffeeTracker.Infrastructure.Ocr;
 using Microsoft.Extensions.Options;
-using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.Formats.Jpeg;
-using SixLabors.ImageSharp.Metadata.Profiles.Exif;
-using SixLabors.ImageSharp.Processing;
+using SkiaSharp;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -32,28 +29,22 @@ public sealed class TesseractOrientationTests(ITestOutputHelper output)
     /// pixels turned, and an EXIF tag saying to turn them back. Nothing about how the
     /// image *looks* changes, only how it is encoded.
     /// </summary>
-    private static async Task<MemoryStream> AsPhoneWouldStoreIt(string fixture)
+    private static MemoryStream AsPhoneWouldStoreIt(string fixture)
     {
-        using var picture = await Image.LoadAsync(
-            Path.Combine(OcrFixtures.Root, "synthetic", fixture));
+        using var picture = SKBitmap.Decode(Path.Combine(OcrFixtures.Root, "synthetic", fixture));
 
         // Orientation 6 means "the top of the subject is on the right", so a viewer
         // rotates 90° clockwise to show it. Counter-rotating the pixels here is what
         // makes that tag true rather than decorative.
-        picture.Mutate(x => x.Rotate(RotateMode.Rotate270));
-        (picture.Metadata.ExifProfile ??= new ExifProfile())
-            .SetValue(ExifTag.Orientation, (ushort)6);
-
-        var stored = new MemoryStream();
-        await picture.SaveAsync(stored, new JpegEncoder { Quality = 90 });
-        stored.Position = 0;
-        return stored;
+        using var sideways = TestImages.Rotate270(picture);
+        var jpeg = TestImages.Encode(sideways, SKEncodedImageFormat.Jpeg, quality: 90);
+        return new MemoryStream(TestImages.WithExifOrientation(jpeg, 6));
     }
 
     [OcrBenchmarkFact(OcrEngine.Tesseract)]
     public async Task A_photo_the_camera_tagged_as_rotated_is_read_upright()
     {
-        using var photo = await AsPhoneWouldStoreIt("kirinyaga-flat.jpg");
+        using var photo = AsPhoneWouldStoreIt("kirinyaga-flat.jpg");
 
         var read = await NewService().ReadAsync(photo);
 

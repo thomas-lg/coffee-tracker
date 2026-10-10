@@ -1,8 +1,7 @@
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using CoffeeTracker.Application.Dtos;
-using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.PixelFormats;
+using SkiaSharp;
 
 namespace CoffeeTracker.Tests.Integration;
 
@@ -72,15 +71,13 @@ internal static class ApiClient
 
     /// <summary>
     /// A real, decodable 1x1 PNG. The storage adapter now decodes and re-encodes
-    /// uploads through ImageSharp, so accept-path tests must send a genuine image;
+    /// uploads through Skia, so accept-path tests must send a genuine image;
     /// a header-only fake would be rejected as InvalidContentType.
     /// </summary>
     public static byte[] RealPng()
     {
-        using var img = new Image<Rgba32>(1, 1);
-        using var ms = new MemoryStream();
-        img.SaveAsPng(ms);
-        return ms.ToArray();
+        using var img = new SKBitmap(1, 1);
+        return TestImages.Encode(img, SKEncodedImageFormat.Png);
     }
 
     /// <summary>Genuinely-non-image bytes for reject-path tests (any claimed type).</summary>
