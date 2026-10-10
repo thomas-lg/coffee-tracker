@@ -41,6 +41,7 @@ function coffee(p: Partial<Coffee> = {}): Coffee {
     averageRating: 4.5,
     reviewCount: 2,
     flavorTags: [],
+    canEdit: true,
     ...p,
   };
 }

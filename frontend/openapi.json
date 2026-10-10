@@ -1500,7 +1500,8 @@
           "createdAt",
           "averageRating",
           "reviewCount",
-          "flavorTags"
+          "flavorTags",
+          "canEdit"
         ],
         "type": "object",
         "properties": {
@@ -1580,6 +1581,9 @@
             "items": {
               "type": "string"
             }
+          },
+          "canEdit": {
+            "type": "boolean"
           }
         }
       },

@@ -54,7 +54,10 @@ test.describe('ownership', () => {
     // And the stranger is not offered the edit either.
     await injectSession(page, sessionFor(stranger));
     await page.goto(`/coffees/${coffee.id}`);
+    // A count of zero also holds while the page is still loading, so wait for the coffee.
+    await expect(page.getByRole('heading', { name: /^Owned / })).toBeVisible();
     await expect(page.getByRole('link', { name: /^edit$/i })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: /^delete$/i })).toHaveCount(0);
   });
 });
 

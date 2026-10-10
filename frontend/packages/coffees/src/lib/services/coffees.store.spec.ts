@@ -20,6 +20,7 @@ function coffee(p: Partial<Coffee> & Pick<Coffee, 'id' | 'name'>): Coffee {
     averageRating: null,
     reviewCount: 0,
     flavorTags: [],
+    canEdit: true,
     ...p,
   };
 }
@@ -35,6 +36,7 @@ const SEED: Coffee[] = [
     averageRating: 4.5,
     reviewCount: 2,
     flavorTags: ['Citrus', 'Fruity'],
+    canEdit: true,
   }),
   coffee({
     id: 2,
@@ -45,6 +47,7 @@ const SEED: Coffee[] = [
     averageRating: 4.8,
     reviewCount: 3,
     flavorTags: ['Floral'],
+    canEdit: true,
   }),
   coffee({
     id: 1,
@@ -56,6 +59,7 @@ const SEED: Coffee[] = [
     reviewCount: 1,
     shopName: 'Local Roast',
     flavorTags: ['Nutty', 'Chocolatey'],
+    canEdit: true,
   }),
 ];
 

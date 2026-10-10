@@ -20,4 +20,5 @@ public record CoffeeResponseDto(
     DateTimeOffset CreatedAt,
     double? AverageRating,
     int ReviewCount,
-    IReadOnlyList<string> FlavorTags);
+    IReadOnlyList<string> FlavorTags,
+    bool CanEdit);

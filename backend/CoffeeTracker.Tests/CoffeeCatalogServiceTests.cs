@@ -185,6 +185,19 @@ public class CoffeeCatalogServiceTests
         Assert.Null(await service.GetByIdAsync(99));
     }
 
+    [Theory]
+    [InlineData(OwnerId, false, true)]
+    [InlineData("intruder", false, false)]
+    [InlineData("moderator", true, true)]
+    public async Task GetByIdAsync_TellsTheCallerWhetherTheyMayEdit(string userId, bool isAdmin, bool expected)
+    {
+        var service = NewService(new InMemoryCoffeeRepository(SampleCoffee()), currentUserId: userId, isAdmin: isAdmin);
+
+        var dto = await service.GetByIdAsync(7);
+
+        Assert.Equal(expected, dto!.CanEdit);
+    }
+
     [Fact]
     public async Task CreateAsync_AssignsId_StampsCreatedAt_AndMapsFields()
     {

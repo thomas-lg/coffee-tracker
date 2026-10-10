@@ -199,6 +199,7 @@ describe('CoffeeFormStore', () => {
       averageRating: null,
       reviewCount: 0,
       flavorTags: [],
+      canEdit: true,
     });
     await settle();
 

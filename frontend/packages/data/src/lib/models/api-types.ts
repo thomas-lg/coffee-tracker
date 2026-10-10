@@ -1029,6 +1029,7 @@ export interface components {
             /** Format: int32 */
             reviewCount: number | string;
             flavorTags: string[];
+            canEdit: boolean;
         };
         CoffeeUpdateDto: {
             name: string;

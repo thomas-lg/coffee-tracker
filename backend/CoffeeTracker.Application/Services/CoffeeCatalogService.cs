@@ -185,5 +185,6 @@ public class CoffeeCatalogService(
         c.CreatedAt,
         averageRating,
         reviewCount,
-        flavorTags ?? []);
+        flavorTags ?? [],
+        CanModify(c));
 }
